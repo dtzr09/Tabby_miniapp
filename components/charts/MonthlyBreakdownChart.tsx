@@ -24,7 +24,7 @@ export default function MonthlyBreakdownChart({ data, month, onPrevMonth }: Mont
         </PieChart>
       </ResponsiveContainer>
       <Box sx={{ textAlign: 'center', mt: -10 }}>
-        <Typography sx={{ fontSize: 18 }}>{data[0].emoji} {data[0].name}</Typography>
+        {/* <Typography sx={{ fontSize: 18 }}>{data[0].emoji} {data[0].name}</Typography> */}
         <Typography sx={{ color: '#b0bec5', fontSize: 16 }}>{percent}%</Typography>
       </Box>
       <Button variant="text" sx={{ color: '#42a5f5', textTransform: 'none', fontWeight: 600, fontSize: 16, mt: 1 }} onClick={onPrevMonth}>
