@@ -23,8 +23,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<{
     id: string;
     hash: string;
-    // eslint-disable-line @typescript-eslint/no-explicit-any
-    user: any;
+    user: any;// eslint-disable-line @typescript-eslint/no-explicit-any
   } | null>(null);
 
   useEffect(() => {
