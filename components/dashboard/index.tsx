@@ -18,6 +18,15 @@ interface Expense {
   };
 }
 
+const DebugObject: React.FC<{ label?: string; value: unknown }> = ({ label, value }) => (
+  <Box sx={{ my: 1 }}>
+    {label && <Typography variant="subtitle2">{label}</Typography>}
+    <pre style={{ color: "#90caf9", fontSize: 12, overflowX: "auto" }}>
+      {JSON.stringify(value, null, 2)}
+    </pre>
+  </Box>
+);
+
 const Dashboard = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [user, setUser] = useState<{
@@ -135,9 +144,7 @@ const Dashboard = () => {
         <pre style={{ color: "#90caf9", fontSize: 12, overflowX: "auto" }}>
           {JSON.stringify(expenses, null, 2)}
         </pre>
-        <pre style={{ color: "#90caf9", fontSize: 12, overflowX: "auto" }}>
-          {JSON.stringify(user, null, 2)}
-        </pre>
+        <DebugObject label="Telegram User Context" value={user} />
       </Box>
       <AppHeader />
       <Box
