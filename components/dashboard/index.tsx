@@ -20,26 +20,41 @@ interface Expense {
 
 const Dashboard = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [user, setUser] = useState<{
+    id: string;
+    hash: string;
+    // eslint-disable-line @typescript-eslint/no-explicit-any
+    user: any;
+  } | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.Telegram && typeof window.Telegram.WebApp !== 'undefined') {
+    if (
+      typeof window !== "undefined" &&
+      window.Telegram &&
+      typeof window.Telegram.WebApp !== "undefined"
+    ) {
       // Use type assertion for Telegram WebApp
-      const tg = (window.Telegram.WebApp as {
+      const tg = window.Telegram.WebApp as {
         initDataUnsafe?: { user?: { id: string }; hash?: string };
         initData?: string;
-      });
+      };
       const user = tg.initDataUnsafe?.user;
       const hash = tg.initDataUnsafe?.hash;
       const initData = tg.initData;
+      setUser({
+        id: user?.id || "",
+        user: user,
+        hash: hash || "",
+      });
       if (user && hash && initData) {
         const params = new URLSearchParams({
           telegram_id: user.id,
           hash,
-          initData
+          initData,
         });
         fetch(`/api/expenses?${params.toString()}`)
-          .then(res => res.json())
-          .then(data => {
+          .then((res) => res.json())
+          .then((data) => {
             setExpenses(Array.isArray(data) ? data : []);
           })
           .catch(() => {
@@ -58,19 +73,23 @@ const Dashboard = () => {
     description: exp.description,
     date: new Date(exp.date).toLocaleDateString(),
     amount: exp.amount,
-    currency: 'USD', // Adjust if you store currency
+    currency: "USD", // Adjust if you store currency
   }));
 
   // Example: Calculate total, income, expenses for summary card
   const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const income = expenses.filter(e => e.amount > 0).reduce((sum, e) => sum + e.amount, 0);
-  const expenseTotal = expenses.filter(e => e.amount < 0).reduce((sum, e) => sum + Math.abs(e.amount), 0);
+  const income = expenses
+    .filter((e) => e.amount > 0)
+    .reduce((sum, e) => sum + e.amount, 0);
+  const expenseTotal = expenses
+    .filter((e) => e.amount < 0)
+    .reduce((sum, e) => sum + Math.abs(e.amount), 0);
 
   // Example: Monthly breakdown by category
   const monthlyBreakdownData = Object.values(
     expenses.reduce((acc, exp) => {
-      const cat = exp.category?.name || 'Other';
-      const emoji = exp.category?.emoji || '⚪';
+      const cat = exp.category?.name || "Other";
+      const emoji = exp.category?.emoji || "⚪";
       if (!acc[cat]) acc[cat] = { name: cat, value: 0, emoji };
       acc[cat].value += Math.abs(exp.amount);
       return acc;
@@ -80,7 +99,9 @@ const Dashboard = () => {
   // Example: Yearly overview (sum by month)
   const yearlyOverviewData = Object.values(
     expenses.reduce((acc, exp) => {
-      const month = new Date(exp.date).toLocaleString('default', { month: 'long' });
+      const month = new Date(exp.date).toLocaleString("default", {
+        month: "long",
+      });
       if (!acc[month]) acc[month] = { month, value: 0 };
       acc[month].value += Math.abs(exp.amount);
       return acc;
@@ -89,13 +110,13 @@ const Dashboard = () => {
 
   // Example: Categories for legend
   const categories = Array.from(
-    new Set(expenses.map(exp => exp.category?.name || 'Other'))
-  ).map(name => {
-    const exp = expenses.find(e => (e.category?.name || 'Other') === name);
+    new Set(expenses.map((exp) => exp.category?.name || "Other"))
+  ).map((name) => {
+    const exp = expenses.find((e) => (e.category?.name || "Other") === name);
     return {
       name,
-      emoji: exp?.category?.emoji || '⚪',
-      color: '#42a5f5', // You can map to real colors if you store them
+      emoji: exp?.category?.emoji || "⚪",
+      color: "#42a5f5", // You can map to real colors if you store them
     };
   });
 
@@ -112,7 +133,12 @@ const Dashboard = () => {
     >
       <Box sx={{ p: 2, bgcolor: "#222", borderRadius: 2, mb: 2 }}>
         <Typography variant="h6">Fetched Expenses (Test)</Typography>
-        <pre style={{ color: '#90caf9', fontSize: 12, overflowX: 'auto' }}>{JSON.stringify(expenses, null, 2)}</pre>
+        <pre style={{ color: "#90caf9", fontSize: 12, overflowX: "auto" }}>
+          {JSON.stringify(expenses, null, 2)}
+        </pre>
+        <pre style={{ color: "#90caf9", fontSize: 12, overflowX: "auto" }}>
+          {JSON.stringify(user, null, 2)}
+        </pre>
       </Box>
       <AppHeader />
       <Box
@@ -124,15 +150,26 @@ const Dashboard = () => {
           px: { xs: 1, sm: 0 },
         }}
       >
-        <ExpenseSummaryCard total={total} income={income} expenses={expenseTotal} month={new Date().toLocaleString('default', { month: 'long' })} />
+        <ExpenseSummaryCard
+          total={total}
+          income={income}
+          expenses={expenseTotal}
+          month={new Date().toLocaleString("default", { month: "long" })}
+        />
         <Box sx={{ width: "100%", maxWidth: 400, mb: 2 }}>
           <ExpenseList transactions={transactions} />
         </Box>
         <Box sx={{ width: "100%", maxWidth: 400, mb: 2 }}>
-          <MonthlyBreakdownChart data={monthlyBreakdownData} month={new Date().toLocaleString('default', { month: 'long' })} />
+          <MonthlyBreakdownChart
+            data={monthlyBreakdownData}
+            month={new Date().toLocaleString("default", { month: "long" })}
+          />
         </Box>
         <Box sx={{ width: "100%", maxWidth: 400, mb: 2 }}>
-          <YearlyOverviewChart data={yearlyOverviewData} year={new Date().getFullYear().toString()} />
+          <YearlyOverviewChart
+            data={yearlyOverviewData}
+            year={new Date().getFullYear().toString()}
+          />
         </Box>
         <Box sx={{ width: "100%", maxWidth: 400, mb: 2 }}>
           <CategoryLegend categories={categories} />
@@ -147,7 +184,7 @@ const Dashboard = () => {
             textAlign: "center",
           }}
         >
-          @cointrybot
+          @Tabby
         </Typography>
       </Box>
     </Box>
