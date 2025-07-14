@@ -7,8 +7,14 @@ interface Category {
   color: string;
 }
 
+// Data type: { month: string; [category: string]: number | string }
+type YearlyTrendsData = {
+  month: string;
+  [category: string]: number | string;
+};
+
 interface YearlyTrendsChartProps {
-  data: any[];
+  data: YearlyTrendsData[];
   categories: Category[];
   year: string;
 }
