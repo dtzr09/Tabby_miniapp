@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import AppHeader from "../navigation/AppHeader";
 import ExpenseSummaryCard from "../cards/ExpenseSummaryCard";
-import ExpenseList, { Transaction } from "../cards/ExpenseList";
+import ExpenseList from "../cards/ExpenseList";
 import MonthlyBreakdownChart from "../charts/MonthlyBreakdownChart";
 import YearlyOverviewChart from "../charts/YearlyOverviewChart";
 import CategoryLegend from "../charts/CategoryLegend";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Card } from "@mui/material";
 
 interface Expense {
   id: number;
@@ -18,22 +18,8 @@ interface Expense {
   };
 }
 
-const DebugObject: React.FC<{ label?: string; value: unknown }> = ({ label, value }) => (
-  <Box sx={{ my: 1 }}>
-    {label && <Typography variant="subtitle2">{label}</Typography>}
-    <pre style={{ color: "#90caf9", fontSize: 12, overflowX: "auto" }}>
-      {JSON.stringify(value, null, 2)}
-    </pre>
-  </Box>
-);
-
 const Dashboard = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [user, setUser] = useState<{
-    id: string;
-    hash: string;
-    user: any;// eslint-disable-line @typescript-eslint/no-explicit-any
-  } | null>(null);
 
   useEffect(() => {
     if (
@@ -49,11 +35,6 @@ const Dashboard = () => {
       const user = tg.initDataUnsafe?.user;
       const hash = tg.initDataUnsafe?.hash;
       const initData = tg.initData;
-      setUser({
-        id: user?.id || "",
-        user: user,
-        hash: hash || "",
-      });
       if (user && hash && initData) {
         const params = new URLSearchParams({
           telegram_id: user.id,
@@ -76,22 +57,8 @@ const Dashboard = () => {
     }
   }, []);
 
-  // Map expenses to transactions for ExpenseList
-  const transactions: Transaction[] = expenses.map((exp) => ({
-    description: exp.description,
-    date: new Date(exp.date).toLocaleDateString(),
-    amount: exp.amount,
-    currency: "USD", // Adjust if you store currency
-  }));
-
-  // Example: Calculate total, income, expenses for summary card
-  const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const income = expenses
-    .filter((e) => e.amount > 0)
-    .reduce((sum, e) => sum + e.amount, 0);
-  const expenseTotal = expenses
-    .filter((e) => e.amount < 0)
-    .reduce((sum, e) => sum + Math.abs(e.amount), 0);
+  // Get the complete Telegram WebApp object for debugging
+  const telegramWebApp = typeof window !== "undefined" && window.Telegram ? window.Telegram.WebApp : null;
 
   // Example: Monthly breakdown by category
   const monthlyBreakdownData = Object.values(
@@ -131,21 +98,14 @@ const Dashboard = () => {
   return (
     <Box
       sx={{
-        bgcolor: "#181f2a",
+        bgcolor: "#f3f6fa",
         minHeight: "100vh",
-        color: "#fff",
+        color: "#222",
         fontFamily: "inherit",
         p: 0,
         m: 0,
       }}
     >
-      <Box sx={{ p: 2, bgcolor: "#222", borderRadius: 2, mb: 2 }}>
-        <Typography variant="h6">Fetched Expenses (Test)</Typography>
-        <pre style={{ color: "#90caf9", fontSize: 12, overflowX: "auto" }}>
-          {JSON.stringify(expenses, null, 2)}
-        </pre>
-        <DebugObject label="Telegram User Context" value={user} />
-      </Box>
       <AppHeader />
       <Box
         sx={{
@@ -156,29 +116,44 @@ const Dashboard = () => {
           px: { xs: 1, sm: 0 },
         }}
       >
-        <ExpenseSummaryCard
-          total={total}
-          income={income}
-          expenses={expenseTotal}
-          month={new Date().toLocaleString("default", { month: "long" })}
-        />
+        {/* Debug: Complete Telegram WebApp Object */}
+        <Box sx={{ width: "100%", maxWidth: 500, mb: 2 }}>
+          <Card sx={{ bgcolor: "#fff", borderRadius: 3, boxShadow: 0, border: "1.5px solid #dde6f2", p: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: "#111827", mb: 2 }}>
+              Complete Telegram WebApp Object
+            </Typography>
+            <pre style={{ color: "#90caf9", fontSize: 12, overflowX: "auto", backgroundColor: "#f8fafc", padding: "12px", borderRadius: "4px" }}>
+              {telegramWebApp ? JSON.stringify(telegramWebApp, null, 2) : "Telegram WebApp not available"}
+            </pre>
+          </Card>
+        </Box>
+        {/* Summary Card (now at the top) */}
+        <ExpenseSummaryCard />
+        {/* Recent Transactions Card (now below summary) */}
+        <Box sx={{ width: "100%", maxWidth: 500, mb: 2 }}>
+          <ExpenseList />
+        </Box>
+        {/* Charts wrapped in Card */}
         <Box sx={{ width: "100%", maxWidth: 400, mb: 2 }}>
-          <ExpenseList transactions={transactions} />
+          <Card sx={{ bgcolor: "#fff", borderRadius: 3, boxShadow: 0, p: 2 }}>
+            <MonthlyBreakdownChart
+              data={monthlyBreakdownData}
+              month={new Date().toLocaleString("default", { month: "long" })}
+            />
+          </Card>
         </Box>
         <Box sx={{ width: "100%", maxWidth: 400, mb: 2 }}>
-          <MonthlyBreakdownChart
-            data={monthlyBreakdownData}
-            month={new Date().toLocaleString("default", { month: "long" })}
-          />
+          <Card sx={{ bgcolor: "#fff", borderRadius: 3, boxShadow: 0, p: 2 }}>
+            <YearlyOverviewChart
+              data={yearlyOverviewData}
+              year={new Date().getFullYear().toString()}
+            />
+          </Card>
         </Box>
         <Box sx={{ width: "100%", maxWidth: 400, mb: 2 }}>
-          <YearlyOverviewChart
-            data={yearlyOverviewData}
-            year={new Date().getFullYear().toString()}
-          />
-        </Box>
-        <Box sx={{ width: "100%", maxWidth: 400, mb: 2 }}>
-          <CategoryLegend categories={categories} />
+          <Card sx={{ bgcolor: "#fff", borderRadius: 3, boxShadow: 0, p: 2 }}>
+            <CategoryLegend categories={categories} />
+          </Card>
         </Box>
         <Typography
           sx={{
