@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from "react";
-import AppHeader from "../navigation/AppHeader";
 import ExpenseSummaryCard from "../cards/ExpenseSummaryCard";
 import ExpenseList from "../cards/ExpenseList";
-import MonthlyBreakdownChart from "../charts/MonthlyBreakdownChart";
-import YearlyOverviewChart from "../charts/YearlyOverviewChart";
-import CategoryLegend from "../charts/CategoryLegend";
-import { Box, Typography, Card } from "@mui/material";
+import SwipeableBudgetCard from "../cards/SwipeableBudgetCard";
+import BalanceCard from "../cards/BalanceCard";
+import { Box, Typography } from "@mui/material";
+import { useTheme } from "../../src/contexts/ThemeContext";
 
 interface Expense {
   id: number;
   amount: number;
   description: string;
   date: string;
+  is_income: boolean;
   category?: {
     name: string;
     emoji?: string;
@@ -19,9 +19,13 @@ interface Expense {
 }
 
 const Dashboard = () => {
+  const { colors, fontFamily } = useTheme();
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [budgets, setBudgets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // For development/testing - use hardcoded data when not in Telegram WebApp
     if (
       typeof window !== "undefined" &&
       window.Telegram &&
@@ -35,138 +39,142 @@ const Dashboard = () => {
       const user = tg.initDataUnsafe?.user;
       const hash = tg.initDataUnsafe?.hash;
       const initData = tg.initData;
+
       if (user && hash && initData) {
         const params = new URLSearchParams({
           telegram_id: user.id,
           hash,
           initData,
         });
+
+        // Fetch expenses
         fetch(`/api/expenses?${params.toString()}`)
-          .then((res) => res.json())
-          .then((data) => {
-            setExpenses(Array.isArray(data) ? data : []);
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
           })
-          .catch(() => {
+          .then((data) => {
+            const expensesArray = Array.isArray(data) ? data : [];
+            setExpenses(expensesArray);
+          })
+          .catch((error) => {
+            console.error("❌ Error fetching expenses:", error);
             setExpenses([]);
           });
+
+        // Fetch budgets
+        fetch(`/api/budgets?${params.toString()}`)
+          .then((res) => res.json())
+          .then((data) => {
+            const budgetsArray = Array.isArray(data) ? data : [];
+            setBudgets(budgetsArray);
+          })
+          .catch((error) => {
+            console.error("❌ Error fetching budgets:", error);
+          })
+          .finally(() => {
+            setLoading(false);
+          });
       } else {
-        setExpenses([]);
+        setLoading(false);
       }
-    } else {
-      setExpenses([]);
     }
   }, []);
 
-  // Get the complete Telegram WebApp object for debugging
-  const telegramWebApp = typeof window !== "undefined" && window.Telegram ? window.Telegram.WebApp : null;
+  // Calculate summary data from real expenses
+  const totalIncome = expenses
+    .filter((exp) => exp.is_income)
+    .reduce((sum, exp) => sum + exp.amount, 0);
 
-  // Example: Monthly breakdown by category
-  const monthlyBreakdownData = Object.values(
-    expenses.reduce((acc, exp) => {
-      const cat = exp.category?.name || "Other";
-      const emoji = exp.category?.emoji || "⚪";
-      if (!acc[cat]) acc[cat] = { name: cat, value: 0, emoji };
-      acc[cat].value += Math.abs(exp.amount);
-      return acc;
-    }, {} as Record<string, { name: string; value: number; emoji: string }>)
-  ) as { name: string; value: number; emoji: string }[];
+  const totalExpenses = expenses
+    .filter((exp) => !exp.is_income)
+    .reduce((sum, exp) => sum + Math.abs(exp.amount), 0);
 
-  // Example: Yearly overview (sum by month)
-  const yearlyOverviewData = Object.values(
-    expenses.reduce((acc, exp) => {
-      const month = new Date(exp.date).toLocaleString("default", {
-        month: "long",
-      });
-      if (!acc[month]) acc[month] = { month, value: 0 };
-      acc[month].value += Math.abs(exp.amount);
-      return acc;
-    }, {} as Record<string, { month: string; value: number }>)
-  ) as { month: string; value: number }[];
+  const totalBalance = totalIncome - totalExpenses;
 
-  // Example: Categories for legend
-  const categories = Array.from(
-    new Set(expenses.map((exp) => exp.category?.name || "Other"))
-  ).map((name) => {
-    const exp = expenses.find((e) => (e.category?.name || "Other") === name);
-    return {
-      name,
-      emoji: exp?.category?.emoji || "⚪",
-      color: "#42a5f5", // You can map to real colors if you store them
-    };
-  });
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          bgcolor: colors.background,
+          minHeight: "100vh",
+          color: colors.text,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          mx: "auto",
+        }}
+      >
+        <Typography>Loading...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
       sx={{
-        bgcolor: "#f3f6fa",
+        bgcolor: colors.background,
         minHeight: "100vh",
-        color: "#222",
-        fontFamily: "inherit",
-        p: 0,
+        color: colors.text,
+        fontFamily: fontFamily,
         m: 0,
+        display: "flex",
+        justifyContent: "center",
       }}
     >
-      <AppHeader />
       <Box
         sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          mt: 2,
-          px: { xs: 1, sm: 0 },
+          maxWidth: "24rem",
+          bgcolor: colors.background,
         }}
       >
-        {/* Debug: Complete Telegram WebApp Object */}
-        <Box sx={{ width: "100%", maxWidth: 500, mb: 2 }}>
-          <Card sx={{ bgcolor: "#fff", borderRadius: 3, boxShadow: 0, border: "1.5px solid #dde6f2", p: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: "#111827", mb: 2 }}>
-              Complete Telegram WebApp Object
-            </Typography>
-            <pre style={{ color: "#90caf9", fontSize: 12, overflowX: "auto", backgroundColor: "#f8fafc", padding: "12px", borderRadius: "4px" }}>
-              {telegramWebApp ? JSON.stringify(telegramWebApp, null, 2) : "Telegram WebApp not available"}
-            </pre>
-          </Card>
-        </Box>
-        {/* Summary Card (now at the top) */}
-        <ExpenseSummaryCard />
-        {/* Recent Transactions Card (now below summary) */}
-        <Box sx={{ width: "100%", maxWidth: 500, mb: 2 }}>
-          <ExpenseList />
-        </Box>
-        {/* Charts wrapped in Card */}
-        <Box sx={{ width: "100%", maxWidth: 400, mb: 2 }}>
-          <Card sx={{ bgcolor: "#fff", borderRadius: 3, boxShadow: 0, p: 2 }}>
-            <MonthlyBreakdownChart
-              data={monthlyBreakdownData}
-              month={new Date().toLocaleString("default", { month: "long" })}
-            />
-          </Card>
-        </Box>
-        <Box sx={{ width: "100%", maxWidth: 400, mb: 2 }}>
-          <Card sx={{ bgcolor: "#fff", borderRadius: 3, boxShadow: 0, p: 2 }}>
-            <YearlyOverviewChart
-              data={yearlyOverviewData}
-              year={new Date().getFullYear().toString()}
-            />
-          </Card>
-        </Box>
-        <Box sx={{ width: "100%", maxWidth: 400, mb: 2 }}>
-          <Card sx={{ bgcolor: "#fff", borderRadius: 3, boxShadow: 0, p: 2 }}>
-            <CategoryLegend categories={categories} />
-          </Card>
-        </Box>
-        <Typography
+        <Box
           sx={{
-            color: "#90caf9",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             mt: 2,
-            mb: 2,
-            fontWeight: 600,
-            fontSize: 18,
-            textAlign: "center",
+            px: { xs: 4, sm: 1, md: 0 },
+            gap: 2,
           }}
         >
-          @Tabby
-        </Typography>
+          {/* Summary Card (now at the top) */}
+
+          {/* Balance Card */}
+          <Box sx={{ width: "100%" }}>
+            <BalanceCard
+              availableBalance={totalBalance}
+              daysRemaining={30 - new Date().getDate()}
+              dailyBudget={totalBalance / (30 - new Date().getDate())}
+              spentAmount={totalExpenses}
+              totalBudget={totalIncome}
+            />
+          </Box>
+
+          <ExpenseSummaryCard
+            totalBalance={totalBalance}
+            totalIncome={totalIncome}
+            totalExpenses={totalExpenses}
+          />
+
+          {/* Budget Overview Card */}
+          <Box sx={{ width: "100%" }}>
+            <SwipeableBudgetCard
+              expenses={expenses}
+              budgets={budgets}
+              onCategoryAction={(categoryId: string) =>
+                console.log("Category action:", categoryId)
+              }
+            />
+          </Box>
+
+          {/* Recent Transactions Card (now below summary) */}
+          <Box sx={{ width: "100%" }}>
+            <ExpenseList expenses={expenses} />
+          </Box>
+        </Box>
       </Box>
     </Box>
   );

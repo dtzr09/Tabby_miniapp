@@ -6,142 +6,253 @@ import {
   CardContent,
   Avatar,
   Button,
+  alpha,
+  IconButton,
+  TextField,
+  Collapse,
 } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { useState } from "react";
 
-const TELEGRAM_ACCENT = "#eaf1ff";
-const ENTRY_BG = "#f8fafc";
-const INCOME_ICON_BG = "#bbf7d0";
-const EXPENSE_ICON_BG = "#fecaca";
-const TELEGRAM_BLUE = "#3390ec";
+interface Expense {
+  id: number;
+  amount: number;
+  description: string;
+  date: string;
+  is_income: boolean;
+  category?: {
+    name: string;
+    emoji?: string;
+  };
+}
 
-const transactions = [
-  {
-    description: "Lunch at cafe",
-    category: "Food",
-    date: "Jul 14",
-    amount: -25.5,
-    isIncome: false,
-  },
-  {
-    description: "Salary",
-    category: "Income",
-    date: "Jul 14",
-    amount: 1500.0,
-    isIncome: true,
-  },
-  {
-    description: "Uber ride",
-    category: "Transport",
-    date: "Jul 13",
-    amount: -45.0,
-    isIncome: false,
-  },
-  {
-    description: "Groceries",
-    category: "Shopping",
-    date: "Jul 13",
-    amount: -120.0,
-    isIncome: false,
-  },
-];
+interface ExpenseListProps {
+  expenses: Expense[];
+}
 
-export default function ExpenseList() {
+export default function ExpenseList({ expenses }: ExpenseListProps) {
+  const { colors } = useTheme();
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Use sample data if no expenses provided, otherwise use provided expenses
+  const transactionsToUse = expenses.length > 0 ? expenses : [];
+
+  // Get recent transactions (last 4) and filter by search query
+  const recentTransactions = transactionsToUse
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .filter((exp) => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        exp.description.toLowerCase().includes(query) ||
+        (exp.category?.name || "Other").toLowerCase().includes(query)
+      );
+    })
+    .slice(0, 5)
+    .map((exp) => ({
+      description: exp.description,
+      category: exp.category?.name || "Other",
+      date: new Date(exp.date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      amount: exp.amount,
+      isIncome: exp.is_income,
+    }));
+
+  const handleSearchToggle = () => {
+    setIsSearchExpanded(!isSearchExpanded);
+    if (isSearchExpanded) {
+      setSearchQuery("");
+    }
+  };
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
+
   return (
     <Card
       sx={{
-        borderRadius: 4,
+        borderRadius: 3,
         boxShadow: 0,
-        bgcolor: "#fff",
-        color: "#222",
-        border: "1.5px solid #dde6f2",
-        p: 2,
+        bgcolor: colors.card,
+        color: colors.text,
+        border: `1px solid ${colors.border}`,
       }}
     >
-      <CardContent sx={{ p: 0 }}>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 3, ml: 1 }}>
-          <Avatar
+      <CardContent sx={{ p: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 1.5,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Avatar
+              sx={{
+                bgcolor: colors.surface,
+                color: colors.primary,
+                width: 30,
+                height: 30,
+                mr: 1,
+              }}
+            >
+              <AccessTimeIcon />
+            </Avatar>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: colors.text,
+                fontSize: "1.2rem",
+                letterSpacing: "-.025em",
+              }}
+            >
+              Recent Spendings
+            </Typography>
+          </Box>
+          <IconButton
+            onClick={handleSearchToggle}
             sx={{
-              bgcolor: TELEGRAM_ACCENT,
-              color: "#2563eb",
-              width: 32,
-              height: 32,
-              mr: 1,
+              color: colors.textSecondary,
+              p: 0.5,
+              "&:hover": {
+                color: colors.primary,
+                bgcolor: alpha(colors.primary, 0.1),
+              },
+              transition: "all 0.2s ease-in-out",
             }}
           >
-            <AccessTimeIcon />
-          </Avatar>
-          <Typography
-            variant="h5"
-            sx={{ fontWeight: 700, color: "#111827", fontSize: 28 }}
-          >
-            Recent Transactions
-          </Typography>
+            {isSearchExpanded ? <CloseIcon /> : <SearchIcon />}
+          </IconButton>
         </Box>
+
+        {/* Search Input */}
+        <Collapse in={isSearchExpanded}>
+          <Box sx={{ mb: 2 }}>
+            <TextField
+              fullWidth
+              placeholder="Search transactions..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              variant="outlined"
+              size="small"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                  bgcolor: colors.surface,
+                  border: `1px solid ${colors.border}`,
+                  "& fieldset": {
+                    border: "none",
+                  },
+                  "&:hover fieldset": {
+                    border: `1px solid ${colors.primary}`,
+                  },
+                  "&.Mui-focused fieldset": {
+                    border: `2px solid ${colors.primary}`,
+                  },
+                },
+                "& .MuiInputBase-input": {
+                  color: colors.text,
+                  fontSize: "0.9rem",
+                  fontWeight: 500,
+                  "&::placeholder": {
+                    color: colors.textSecondary,
+                    opacity: 0.7,
+                  },
+                },
+              }}
+            />
+          </Box>
+        </Collapse>
+
         <List sx={{ width: "100%", p: 0 }}>
-          {transactions.map((tx, idx) => {
-            const isIncome = tx.isIncome;
-            return (
-              <Box
-                key={idx}
-                sx={{
-                  bgcolor: ENTRY_BG,
-                  borderRadius: 3,
-                  mb: 2.5,
-                  px: 2,
-                  py: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Avatar
-                    sx={{
-                      bgcolor: isIncome ? INCOME_ICON_BG : EXPENSE_ICON_BG,
-                      color: isIncome ? "#22c55e" : "#ef4444",
-                      width: 44,
-                      height: 44,
-                      mr: 2.5,
-                    }}
-                  >
-                    {isIncome ? (
-                      <TrendingUpIcon sx={{ fontSize: 28 }} />
-                    ) : (
-                      <TrendingDownIcon sx={{ fontSize: 28 }} />
-                    )}
-                  </Avatar>
-                  <Box>
-                    <Typography
-                      sx={{ fontWeight: 700, fontSize: 20, color: "#222" }}
-                    >
-                      {tx.description}
-                    </Typography>
-                    <Typography
-                      sx={{ color: "#6b7280", fontSize: 16, fontWeight: 500 }}
-                    >
-                      {tx.category} b7 {tx.date}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Typography
+          {recentTransactions.length > 0 ? (
+            recentTransactions.map((tx, idx) => {
+              const isIncome = tx.isIncome;
+              return (
+                <Box
+                  key={idx}
                   sx={{
-                    fontWeight: 700,
-                    color: isIncome ? "#22c55e" : "#ef4444",
-                    fontSize: 22,
+                    bgcolor: colors.incomeExpenseCard,
+                    borderRadius: 3,
+                    mb: 1.5,
+                    px: 2,
+                    py: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
                   }}
                 >
-                  {isIncome ? "+" : "-"}
-                  {Math.abs(tx.amount).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </Typography>
-              </Box>
-            );
-          })}
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: "0.8rem",
+                          color: colors.text,
+                          mb: 0.8,
+                        }}
+                      >
+                        {tx.description}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          color: colors.textSecondary,
+                          fontSize: "0.7rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {tx.category} • {tx.date}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontWeight: 700,
+                      color: isIncome ? colors.income : colors.expense,
+                      fontSize: "1rem",
+                    }}
+                  >
+                    {isIncome ? "+" : "-"}
+                    {Math.abs(tx.amount).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Typography>
+                </Box>
+              );
+            })
+          ) : (
+            <Box
+              sx={{
+                textAlign: "center",
+                py: 6,
+                color: colors.textSecondary,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "0.95rem",
+                  fontWeight: 500,
+                  opacity: 0.8,
+                }}
+              >
+                {searchQuery.trim()
+                  ? "No transactions found"
+                  : "No transactions yet"}
+              </Typography>
+            </Box>
+          )}
         </List>
         <Button
           variant="contained"
@@ -149,15 +260,20 @@ export default function ExpenseList() {
           sx={{
             mt: 3,
             width: "100%",
-            bgcolor: TELEGRAM_BLUE,
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 18,
+            bgcolor: colors.primary,
+            color: "#ffffff",
+            fontWeight: 600,
+            fontSize: "0.9rem",
             borderRadius: 2,
             textTransform: "none",
             boxShadow: 0,
-            py: 1.5,
-            '&:hover': { bgcolor: '#2776c5' },
+            py: 1.2,
+            "&:hover": {
+              bgcolor: colors.accent,
+              transform: "translateY(-1px)",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            },
+            transition: "all 0.2s ease-in-out",
           }}
         >
           Advanced Search

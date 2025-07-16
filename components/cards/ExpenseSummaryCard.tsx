@@ -1,100 +1,129 @@
-import { Card, CardContent, Typography, Box, Avatar } from "@mui/material";
-import Grid from "@mui/material/Grid";
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Avatar,
+  Grid,
+  Divider,
+} from "@mui/material";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import IncomeExpenseCard from "./IncomeExpenseCard";
 
-export default function ExpenseSummaryCard() {
-  // Placeholder values for now
-  const total = 1309.5;
-  const income = 1500.0;
-  const expenses = 190.5;
+interface ExpenseSummaryCardProps {
+  totalBalance: number;
+  totalIncome: number;
+  totalExpenses: number;
+}
+
+export default function ExpenseSummaryCard({
+  totalBalance,
+  totalIncome,
+  totalExpenses,
+}: ExpenseSummaryCardProps) {
+  const { colors } = useTheme();
 
   return (
-    <Box sx={{ width: "100%", maxWidth: 500, mx: "auto", mb: 3 }}>
+    <Box
+      sx={{
+        width: "100%",
+        maxWidth: 500,
+        mx: "auto",
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+      }}
+    >
       {/* Total Balance Card */}
-      <Card sx={{ borderRadius: 4, boxShadow: 0, bgcolor: "#fff", mb: 2 }}>
+      {/* <Card
+        sx={{
+          borderRadius: 4,
+          bgcolor: colors.card,
+        }}
+      >
         <CardContent
           sx={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            p: 4,
+            px: 2,
+            py: 1,
+            "&:last-child": {
+              pb: 1,
+            },
           }}
         >
           <Box>
             <Typography
-              sx={{ color: "#64748b", fontWeight: 600, fontSize: 20, mb: 1 }}
+              sx={{
+                color: colors.textSecondary,
+                fontWeight: 550,
+                fontSize: "1rem",
+                lineHeight: "1.5rem",
+                mb: 0.5,
+              }}
             >
               Total Balance
             </Typography>
             <Typography
-              sx={{ fontWeight: 700, fontSize: 40, color: "#111827" }}
+              sx={{
+                fontWeight: 700,
+                fontSize: "1.8rem",
+                lineHeight: "2rem",
+                letterSpacing: "-.025em",
+                color: colors.text,
+              }}
             >
-              {total.toLocaleString(undefined, {
+              $
+              {totalBalance.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
             </Typography>
           </Box>
-          <Avatar sx={{ bgcolor: "#eaf1ff", width: 64, height: 64 }}>
+          <Avatar
+            sx={{ width: 45, height: 45, backgroundColor: colors.cardBg }}
+          >
             <AccountBalanceWalletOutlinedIcon
-              sx={{ color: "#2563eb", fontSize: 40 }}
+              sx={{ color: colors.primary, fontSize: 25 }}
             />
           </Avatar>
         </CardContent>
-      </Card>
+      </Card> */}
       {/* Income & Expenses Cards */}
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Card sx={{ borderRadius: 4, boxShadow: 0, bgcolor: "#fff" }}>
-            <CardContent sx={{ display: "flex", alignItems: "center", p: 3 }}>
-              <Avatar sx={{ bgcolor: "#e6f9ed", width: 48, height: 48, mr: 2 }}>
-                <TrendingUpIcon sx={{ color: "#22c55e", fontSize: 28 }} />
-              </Avatar>
-              <Box>
-                <Typography
-                  sx={{ color: "#64748b", fontWeight: 600, fontSize: 16 }}
-                >
-                  Income
-                </Typography>
-                <Typography
-                  sx={{ fontWeight: 700, fontSize: 24, color: "#22c55e" }}
-                >
-                  {income.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Card sx={{ borderRadius: 4, boxShadow: 0, bgcolor: "#fff" }}>
-            <CardContent sx={{ display: "flex", alignItems: "center", p: 3 }}>
-              <Avatar sx={{ bgcolor: "#ffeaea", width: 48, height: 48, mr: 2 }}>
-                <TrendingDownIcon sx={{ color: "#ef4444", fontSize: 28 }} />
-              </Avatar>
-              <Box>
-                <Typography
-                  sx={{ color: "#64748b", fontWeight: 600, fontSize: 16 }}
-                >
-                  Expenses
-                </Typography>
-                <Typography
-                  sx={{ fontWeight: 700, fontSize: 24, color: "#ef4444" }}
-                >
-                  {expenses.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      <Box
+        sx={{
+          gap: 2,
+          width: "100%",
+          maxWidth: "100%",
+        }}
+      >
+        <Card
+          sx={{
+            px: 4,
+            py: 2,
+            borderRadius: 4,
+            bgcolor: colors.card,
+            flex: 1,
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-around",
+              gap: 2,
+            }}
+          >
+            <IncomeExpenseCard amount={totalIncome} type="income" />
+            <Divider orientation="vertical" flexItem />
+            <IncomeExpenseCard amount={totalExpenses} type="expense" />
+          </Box>
+        </Card>
+      </Box>
     </Box>
   );
 }

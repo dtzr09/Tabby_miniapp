@@ -14,14 +14,22 @@ export default async function handler(
   if (req.method === "GET") {
     const { telegram_id, initData } = req.query;
 
+    console.log("🔍 Budgets API Request received:", {
+      telegram_id,
+      initDataLength: initData ? (initData as string).length : 0,
+      hasBotToken: !!BOT_TOKEN,
+    });
+
     // Validate Telegram WebApp data
     const isValid = validateTelegramWebApp(initData as string, BOT_TOKEN);
+    console.log("🔐 Budgets validation result:", isValid);
 
     if (!isValid) {
+      console.log("❌ Invalid Telegram WebApp data for budgets");
       return res.status(401).json({ error: "Invalid Telegram WebApp data" });
     }
 
-    // Get the user row by telegram_id    
+    // Get the user row by telegram_id
     const { data: users, error: userError } = await supabaseAdmin
       .from("users")
       .select("id")
@@ -29,24 +37,38 @@ export default async function handler(
       .limit(1);
 
     if (userError || !users || users.length === 0) {
+      console.log("❌ User not found for budgets:", { telegram_id, userError });
       return res.status(404).json({ error: "User not found" });
     }
-
     const userId = users[0].id;
+    console.log("✅ User found for budgets:", { telegram_id, userId });
 
-    // Get expenses for this user, join with categories
+    // Get budgets for this user
+    console.log("🔍 Fetching budgets for user ID:", userId);
     const { data, error } = await supabaseAdmin
-      .from("expenses")
+      .from("budgets")
       .select(
-        "id, amount, description, date, is_income, category:category_id (name)"
+        `
+        id, 
+        amount, 
+        created_at, 
+        updated_at,
+        category_id,
+        categories!budgets_category_id_fkey (
+          id,
+          name
+        )
+      `
       )
-      .eq("payer_id", userId);
+      .eq("user_id", userId);
 
     if (error) {
+      console.log("❌ Budgets database error:", error);
       return res.status(400).json({ error: error.message });
     }
 
-    return res.status(200).json(data);
+    console.log("✅ Budgets fetched:", { count: data?.length || 0, data });
+    return res.status(200).json(data || []);
   }
 
   res.setHeader("Allow", ["GET"]);

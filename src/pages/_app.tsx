@@ -1,6 +1,6 @@
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
-import { useEffect } from "react";
+import { ThemeProvider } from "../contexts/ThemeContext";
 
 // Extend the Window interface to include Telegram
 declare global {
@@ -10,22 +10,34 @@ declare global {
         themeParams?: {
           bg_color?: string;
           text_color?: string;
+          hint_color?: string;
+          link_color?: string;
+          button_color?: string;
+          button_text_color?: string;
+          secondary_bg_color?: string;
+          accent_text_color?: string;
+          destructive_text_color?: string;
+          header_bg_color?: string;
+          section_bg_color?: string;
+          section_header_text_color?: string;
+          section_separator_color?: string;
+          subtitle_text_color?: string;
+          bottom_bar_bg_color?: string;
         };
+        onEvent?: (eventType: string, eventHandler: () => void) => void;
       };
     };
   }
 }
 
 function MyApp({ Component, pageProps }: AppProps) {
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
-      const tg = window.Telegram.WebApp;
-      const theme = tg?.themeParams || {};
-      document.body.style.backgroundColor = theme.bg_color || '#fff';
-      document.body.style.color = theme.text_color || '#000';
-    }
-  }, []);
-  return <Component {...pageProps} />;
+  return (
+    <>
+      <ThemeProvider>
+        <Component {...pageProps} />
+      </ThemeProvider>
+    </>
+  );
 }
 
 export default MyApp;
