@@ -1,23 +1,34 @@
 import { useState, useRef, TouchEvent } from "react";
 import BudgetOverviewCard from "./BudgetOverviewCard";
 
-interface Expense {
-  id: number;
-  amount: number;
-  description: string;
-  date: string;
-  is_income: boolean;
-  category?: {
-    name: string;
-    emoji?: string;
-  };
-}
+// interface Budget {
+//   id: number;
+//   amount: number;
+//   created_at: string;
+//   updated_at: string;
+//   category: {
+//     id: number;
+//     name: string;
+//   };
+// }
 
-interface SwipeableBudgetCardProps {
-  onCategoryAction?: (categoryId: string) => void;
-  expenses?: Expense[];
-  budgets?: any[];
-}
+// interface Expense {
+//   id: number;
+//   amount: number;
+//   description: string;
+//   date: string;
+//   is_income: boolean;
+//   category?: {
+//     name: string;
+//     emoji?: string;
+//   };
+// }
+
+// interface SwipeableBudgetCardProps {
+//   onCategoryAction?: (categoryId: string) => void;
+//   expenses?: Expense[];
+//   budgets?: Budget[];
+// }
 
 // Mock budgets
 const mockBudgets = [
@@ -126,7 +137,7 @@ const mockExpenses = [
   },
 ];
 
-export default function SwipeableBudgetCard(props: SwipeableBudgetCardProps) {
+export default function SwipeableBudgetCard() {
   const [viewMode, setViewMode] = useState<"daily" | "weekly" | "monthly">(
     "weekly"
   );

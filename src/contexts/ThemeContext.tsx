@@ -246,7 +246,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
       document.body.style.backgroundColor = bgColor;
       document.body.style.color = contextValue.colors.text;
     }
-  }, [manualTheme, isDark, theme, mounted]);
+  }, [manualTheme, isDark, theme, mounted, contextValue.colors.background, contextValue.colors.text]);
 
   if (!mounted) return null;
 

@@ -6,6 +6,17 @@ import BalanceCard from "../cards/BalanceCard";
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 
+// interface Budget {
+//   id: number;
+//   amount: number;
+//   created_at: string;
+//   updated_at: string;
+//   category: {
+//     id: number;
+//     name: string;
+//   };
+// }
+
 interface Expense {
   id: number;
   amount: number;
@@ -21,7 +32,7 @@ interface Expense {
 const Dashboard = () => {
   const { colors, fontFamily } = useTheme();
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [budgets, setBudgets] = useState<any[]>([]);
+  // const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -68,8 +79,9 @@ const Dashboard = () => {
         fetch(`/api/budgets?${params.toString()}`)
           .then((res) => res.json())
           .then((data) => {
-            const budgetsArray = Array.isArray(data) ? data : [];
-            setBudgets(budgetsArray);
+            console.log("budgets", data);
+            // const budgetsArray = Array.isArray(data) ? data : [];
+            // setBudgets(budgetsArray);
           })
           .catch((error) => {
             console.error("❌ Error fetching budgets:", error);
@@ -154,7 +166,7 @@ const Dashboard = () => {
           </Box>
 
           <ExpenseSummaryCard
-            totalBalance={totalBalance}
+            // totalBalance={totalBalance}
             totalIncome={totalIncome}
             totalExpenses={totalExpenses}
           />
@@ -162,11 +174,11 @@ const Dashboard = () => {
           {/* Budget Overview Card */}
           <Box sx={{ width: "100%" }}>
             <SwipeableBudgetCard
-              expenses={expenses}
-              budgets={budgets}
-              onCategoryAction={(categoryId: string) =>
-                console.log("Category action:", categoryId)
-              }
+            // expenses={expenses}
+            // budgets={budgets}
+            // onCategoryAction={(categoryId: string) =>
+            //   console.log("Category action:", categoryId)
+            // }
             />
           </Box>
 

@@ -1,26 +1,13 @@
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Avatar,
-  Grid,
-  Divider,
-} from "@mui/material";
-import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import { Card, Box, Divider } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import IncomeExpenseCard from "./IncomeExpenseCard";
 
 interface ExpenseSummaryCardProps {
-  totalBalance: number;
   totalIncome: number;
   totalExpenses: number;
 }
 
 export default function ExpenseSummaryCard({
-  totalBalance,
   totalIncome,
   totalExpenses,
 }: ExpenseSummaryCardProps) {
