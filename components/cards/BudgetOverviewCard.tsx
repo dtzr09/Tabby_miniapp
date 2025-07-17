@@ -23,7 +23,7 @@ interface Budget {
   updated_at: string;
   category: {
     id: number;
-  name: string;
+    name: string;
   };
 }
 
@@ -97,14 +97,16 @@ export default function BudgetOverviewCard({
 
     // First, add all budgets to the map
     budgets.forEach((budget) => {
-      const categoryName = budget.category?.name || "Other";
-      
+      // Handle both nested category object and direct category name
+      const categoryName = budget.category?.name;
+      if (!categoryName) return;
+
       // Extract emoji from category name (more comprehensive emoji regex)
       const emojiMatch = categoryName.match(
         /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]/u
       );
       const emoji = emojiMatch ? emojiMatch[0] : "⚪";
-      
+
       // Remove emoji from category name and trim
       const cleanName = categoryName
         .replace(
@@ -112,7 +114,7 @@ export default function BudgetOverviewCard({
           ""
         )
         .trim();
-      
+
       categoryMap.set(cleanName, {
         name: cleanName,
         spent: 0, // Will be updated with expenses
@@ -123,14 +125,15 @@ export default function BudgetOverviewCard({
 
     // Then, add expenses to the map
     filteredExpenses.forEach((exp) => {
+      // Handle both nested category object and direct category name
       const categoryName = exp.category?.name || "Other";
-      
+
       // Extract emoji from category name (more comprehensive emoji regex)
       const emojiMatch = categoryName.match(
         /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]/u
       );
       const emoji = emojiMatch ? emojiMatch[0] : "⚪";
-      
+
       // Remove emoji from category name and trim
       const cleanName = categoryName
         .replace(
@@ -138,7 +141,7 @@ export default function BudgetOverviewCard({
           ""
         )
         .trim();
-      
+
       if (categoryMap.has(cleanName)) {
         categoryMap.get(cleanName)!.spent += Math.abs(exp.amount);
       } else {
@@ -587,109 +590,129 @@ export default function BudgetOverviewCard({
             </Box>
           </Box>
 
+          {data.categories.length === 0 && (
+            <Box
+              sx={{
+                textAlign: "center",
+                py: 4,
+                color: colors.textSecondary,
+              }}
+            >
+              <Typography variant="body2">
+                No budgets or expenses found. Add some expenses to see your
+                budget overview!
+              </Typography>
+            </Box>
+          )}
+
           {/* Budget Categories */}
-          <Box
-            sx={{
-              display: "flex",
-              gap: 2,
-              overflowX: "auto",
-              "&::-webkit-scrollbar": { display: "none" },
-            }}
-          >
-            {data.categories.map((category) => {
-              const progress = (category.spent / category.budget) * 100;
+          {data.categories.length > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                overflowX: "auto",
+                "&::-webkit-scrollbar": { display: "none" },
+              }}
+            >
+              {data.categories.map((category) => {
+                if (category.budget === 0 || category.spent === undefined) {
+                  return null;
+                }
+                const progress = (category.spent / category.budget) * 100;
 
-              return (
-                <Box
-                  key={category.id}
-                  sx={{
-                    minWidth: 120,
-                    p: 2,
-                    borderRadius: 3,
-                    backgroundColor: colors.surface,
-                    position: "relative",
-                  }}
-                >
-                  <IconButton
-                    size="small"
-                    sx={{
-                      position: "absolute",
-                      top: 4,
-                      right: 4,
-                      color: colors.textSecondary,
-                    }}
-                    onClick={() => onCategoryAction?.(category.id)}
-                  >
-                    <MoreVertIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-
+                return (
                   <Box
+                    key={category.id}
                     sx={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: "50%",
-                      background: `conic-gradient(${category.color} ${
-                        progress * 3.6
-                      }deg, ${colors.surface} 0deg)`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      mx: "auto",
-                      mb: 1,
+                      minWidth: 120,
+                      p: 2,
+                      borderRadius: 3,
+                      backgroundColor: colors.surface,
+                      position: "relative",
                     }}
                   >
+                    <IconButton
+                      size="small"
+                      sx={{
+                        position: "absolute",
+                        top: 4,
+                        right: 4,
+                        color: colors.textSecondary,
+                      }}
+                      onClick={() => onCategoryAction?.(category.id)}
+                    >
+                      <MoreVertIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+
                     <Box
                       sx={{
-                        width: 45,
-                        height: 45,
+                        width: 60,
+                        height: 60,
                         borderRadius: "50%",
-                        backgroundColor: colors.card,
+                        background: `conic-gradient(${category.color} ${
+                          progress * 3.6
+                        }deg, ${colors.surface} 0deg)`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        mx: "auto",
+                        mb: 1,
                       }}
                     >
-                      <Box sx={{ color: category.color, fontSize: 20 }}>
-                        {category.icon}
+                      <Box
+                        sx={{
+                          width: 45,
+                          height: 45,
+                          borderRadius: "50%",
+                          backgroundColor: colors.card,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Box sx={{ color: category.color, fontSize: 20 }}>
+                          {category.icon}
+                        </Box>
                       </Box>
                     </Box>
+
+                    <Typography
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: "1rem",
+                        color: colors.text,
+                        textAlign: "center",
+                      }}
+                    >
+                      ${category.spent}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: "0.7rem",
+                        color: colors.textSecondary,
+                        textAlign: "center",
+                        opacity: 0.7,
+                        mb: 1,
+                      }}
+                    >
+                      {`of $${category.budget}`}
+                    </Typography>
+
+                    <Typography
+                      sx={{
+                        fontSize: "0.8rem",
+                        color: colors.textSecondary,
+                        textAlign: "center",
+                      }}
+                    >
+                      {category.name}
+                    </Typography>
                   </Box>
-
-                  <Typography
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: "1rem",
-                      color: colors.text,
-                      textAlign: "center",
-                    }}
-                  >
-                    ${category.spent}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      fontSize: "0.7rem",
-                      color: colors.textSecondary,
-                      textAlign: "center",
-                      opacity: 0.7,
-                      mb: 1,
-                    }}
-                  >
-                    of ${category.budget}
-                  </Typography>
-
-                  <Typography
-                    sx={{
-                      fontSize: "0.8rem",
-                      color: colors.textSecondary,
-                      textAlign: "center",
-                    }}
-                  >
-                    {category.name}
-                  </Typography>
-                </Box>
-              );
-            })}
-          </Box>
+                );
+              })}
+            </Box>
+          )}
         </Box>
       </CardContent>
     </Card>

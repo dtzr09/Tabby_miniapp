@@ -1,4 +1,4 @@
-import { Card, CardContent, Typography, Box } from "@mui/material";
+import { Card, CardContent, Typography, Box, alpha } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 
 interface BalanceCardProps {
@@ -20,6 +20,7 @@ export default function BalanceCard({
 
   // Check if there's a budget set
   const hasBudget = totalBudget > 0;
+  const remainingBudget = totalBudget - spentAmount;
 
   return (
     <Card
@@ -30,7 +31,7 @@ export default function BalanceCard({
         border: `1px solid ${colors.border}`,
       }}
     >
-      <CardContent sx={{ px: 3, py: 2 }}>
+      <CardContent sx={{ px: 3 }}>
         {/* Header */}
         <Box
           sx={{
@@ -47,12 +48,12 @@ export default function BalanceCard({
               fontWeight: 500,
             }}
           >
-            Available Balance
+            Remaining Balance
           </Typography>
         </Box>
 
         {/* Main Balance */}
-        <Box sx={{ mb: hasBudget ? 3 : 0 }}>
+        <Box sx={{ mb: hasBudget ? 2 : 0 }}>
           <Typography
             sx={{
               fontSize: "2.5rem",
@@ -88,43 +89,23 @@ export default function BalanceCard({
         {hasBudget && (
           <Box
             sx={{
-              backgroundColor: colors.incomeExpenseCard,
-              px: 2,
-              py: 2,
-              borderRadius: 2,
-              position: "relative",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
             }}
           >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-              }}
-            >
-              <Typography
-                sx={{
-                  fontSize: "0.85rem",
-                  color: colors.textSecondary,
-                  lineHeight: 1.3,
-                  mb: 1,
-                }}
-              >
-                {daysRemaining} more days -{" "}
-                <span style={{ fontWeight: 700, color: colors.text }}>
-                  ${dailyBudget.toFixed(2)} per day
-                </span>
-                .
-              </Typography>
-            </Box>
             <Typography
               sx={{
-                fontSize: "0.9rem",
-                color: colors.text,
-                fontWeight: 500,
+                fontSize: "0.85rem",
+                color: colors.textSecondary,
+                lineHeight: 1.3,
               }}
             >
-              Left ${spentAmount.toFixed(2)} of ${totalBudget.toFixed(2)}
+              {daysRemaining} more days -{" "}
+              <span style={{ fontWeight: 700, color: alpha(colors.text, 0.7) }}>
+                ${dailyBudget.toFixed(2)} per day
+              </span>
+              .
             </Typography>
           </Box>
         )}

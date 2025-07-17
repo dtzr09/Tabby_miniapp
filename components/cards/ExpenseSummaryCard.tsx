@@ -1,4 +1,4 @@
-import { Card, Box, Divider } from "@mui/material";
+import { Card, Box, Divider, alpha } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import IncomeExpenseCard from "./IncomeExpenseCard";
 
@@ -106,7 +106,11 @@ export default function ExpenseSummaryCard({
             }}
           >
             <IncomeExpenseCard amount={totalIncome} type="income" />
-            <Divider orientation="vertical" flexItem />
+            <Divider
+              orientation="vertical"
+              flexItem
+              sx={{ backgroundColor: alpha(colors.border, 0.5) }}
+            />
             <IncomeExpenseCard amount={totalExpenses} type="expense" />
           </Box>
         </Card>

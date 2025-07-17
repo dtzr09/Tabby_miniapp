@@ -1,6 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY!;
+// Only create Supabase client if we have a valid Supabase URL
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey); 
+console.log("🔧 Supabase Config:", {
+  nodeEnv: process.env.NODE_ENV,
+  hasSupabaseUrl: !!supabaseUrl,
+  hasServiceKey: !!supabaseServiceKey,
+  supabaseUrl: supabaseUrl?.substring(0, 30) + "..."
+});
+
+// Create Supabase client only if we have the required environment variables
+export const supabaseAdmin = supabaseUrl && supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : null;

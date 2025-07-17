@@ -10,6 +10,7 @@ import {
   IconButton,
   TextField,
   Collapse,
+  Tooltip,
 } from "@mui/material";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import SearchIcon from "@mui/icons-material/Search";
@@ -252,30 +253,35 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
             </Box>
           )}
         </List>
-        <Button
-          variant="contained"
-          href="/advanced-search"
-          sx={{
-            mt: 3,
-            width: "100%",
-            bgcolor: colors.primary,
-            color: "#ffffff",
-            fontWeight: 600,
-            fontSize: "0.9rem",
-            borderRadius: 2,
-            textTransform: "none",
-            boxShadow: 0,
-            py: 1.2,
-            "&:hover": {
-              bgcolor: colors.accent,
-              transform: "translateY(-1px)",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            },
-            transition: "all 0.2s ease-in-out",
-          }}
-        >
-          Advanced Search
-        </Button>
+        <Tooltip title="Coming soon">
+          <span>
+            <Button
+              variant="contained"
+              href="/advanced-search"
+              disabled={true}
+              sx={{
+                mt: 3,
+                width: "100%",
+                bgcolor: colors.primary,
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: "0.9rem",
+                borderRadius: 2,
+                textTransform: "none",
+                boxShadow: 0,
+                py: 1.2,
+                "&:hover": {
+                  bgcolor: colors.accent,
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                },
+                transition: "all 0.2s ease-in-out",
+              }}
+            >
+              Advanced Search
+            </Button>
+          </span>
+        </Tooltip>
       </CardContent>
     </Card>
   );
