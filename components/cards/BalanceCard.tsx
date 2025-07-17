@@ -20,7 +20,6 @@ export default function BalanceCard({
 
   // Check if there's a budget set
   const hasBudget = totalBudget > 0;
-  const remainingBudget = totalBudget - spentAmount;
 
   return (
     <Card
