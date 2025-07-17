@@ -159,7 +159,6 @@ const Dashboard = () => {
               availableBalance={totalBalance}
               daysRemaining={30 - new Date().getDate()}
               dailyBudget={totalBalance / (30 - new Date().getDate())}
-              spentAmount={totalExpenses}
               totalBudget={totalIncome}
             />
           </Box>

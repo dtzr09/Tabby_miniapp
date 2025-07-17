@@ -2,19 +2,17 @@ import { Card, CardContent, Typography, Box, alpha } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 
 interface BalanceCardProps {
-  availableBalance?: number;
-  daysRemaining?: number;
-  dailyBudget?: number;
-  spentAmount?: number;
-  totalBudget?: number;
+  availableBalance: number;
+  daysRemaining: number;
+  dailyBudget: number;
+  totalBudget: number;
 }
 
 export default function BalanceCard({
-  availableBalance = 689.21,
-  daysRemaining = 24,
-  dailyBudget = 34.78,
-  spentAmount = 510.79,
-  totalBudget = 1200,
+  availableBalance,
+  daysRemaining,
+  dailyBudget,
+  totalBudget,
 }: BalanceCardProps) {
   const { colors } = useTheme();
 
