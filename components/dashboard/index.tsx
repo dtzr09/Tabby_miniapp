@@ -54,19 +54,29 @@ const Dashboard = () => {
       if (user && hash && initData) {
         const params = new URLSearchParams({
           telegram_id: user.id,
-          hash,
           initData,
+        });
+
+        console.log("🔍 Fetching expenses with params:", {
+          telegram_id: user.id,
+          hasInitData: !!initData,
+          url: `/api/expenses?${params.toString()}`
         });
 
         // Fetch expenses
         fetch(`/api/expenses?${params.toString()}`)
           .then((res) => {
+            console.log("📡 Expenses API response status:", res.status);
             if (!res.ok) {
-              throw new Error(`HTTP error! status: ${res.status}`);
+              return res.text().then(text => {
+                console.error("❌ API Error response:", text);
+                throw new Error(`HTTP error! status: ${res.status}, body: ${text}`);
+              });
             }
             return res.json();
           })
           .then((data) => {
+            console.log("✅ Expenses data received:", data);
             const expensesArray = Array.isArray(data) ? data : [];
             setExpenses(expensesArray);
           })
@@ -77,8 +87,18 @@ const Dashboard = () => {
 
         // Fetch budgets
         fetch(`/api/budgets?${params.toString()}`)
-          .then((res) => res.json())
+          .then((res) => {
+            console.log("📡 Budgets API response status:", res.status);
+            if (!res.ok) {
+              return res.text().then(text => {
+                console.error("❌ Budgets API Error response:", text);
+                throw new Error(`HTTP error! status: ${res.status}, body: ${text}`);
+              });
+            }
+            return res.json();
+          })
           .then((data) => {
+            console.log("✅ Budgets data received:", data);
             const budgetsArray = Array.isArray(data) ? data : [];
             setBudgets(budgetsArray);
           })
@@ -89,8 +109,12 @@ const Dashboard = () => {
             setLoading(false);
           });
       } else {
+        console.log("⚠️ Telegram WebApp data not available, using fallback");
         setLoading(false);
       }
+    } else {
+      console.log("⚠️ Not in Telegram WebApp environment");
+      setLoading(false);
     }
   }, []);
 
