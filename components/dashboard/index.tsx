@@ -127,7 +127,11 @@ const Dashboard = () => {
     .filter((exp) => !exp.is_income)
     .reduce((sum, exp) => sum + Math.abs(exp.amount), 0);
 
-  const totalBalance = totalIncome - totalExpenses;
+  // Calculate total budget from budgets data
+  const totalBudget = budgets.reduce((sum, budget) => sum + budget.amount, 0);
+
+  // Calculate remaining balance as total budget minus expenses
+  const totalBalance = totalBudget - totalExpenses;
 
   if (loading) {
     return (
@@ -183,7 +187,7 @@ const Dashboard = () => {
               availableBalance={totalBalance}
               daysRemaining={30 - new Date().getDate()}
               dailyBudget={totalBalance / (30 - new Date().getDate())}
-              totalBudget={totalIncome}
+              totalBudget={totalBudget}
             />
           </Box>
 
