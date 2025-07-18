@@ -1,6 +1,5 @@
 import { getFilteredExpenses } from "./getFilteredExpenses";
-import { Budget } from "../components/cards/ExpensesOverviewCard";
-import { Expense } from "../components/cards/ExpensesOverviewCard";
+import { Budget, Expense } from "../components/dashboard";
 
 export const getCategoryData = (
   expenses: Expense[],

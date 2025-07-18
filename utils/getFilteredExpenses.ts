@@ -1,4 +1,4 @@
-import { Expense } from "../components/cards/ExpensesOverviewCard";
+import { Expense } from "../components/dashboard";
 
 export const getFilteredExpenses = (
   expenses: Expense[],

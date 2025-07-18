@@ -1,5 +1,4 @@
-import { Card, CardContent, Typography, Box, IconButton } from "@mui/material";
-import { useState } from "react";
+import { Card, CardContent, Typography, Box } from "@mui/material";
 import {
   Bar,
   XAxis,
@@ -13,31 +12,7 @@ import {
   ComposedChart,
   Label,
 } from "recharts";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { useTheme } from "../../src/contexts/ThemeContext";
-
-export interface Budget {
-  id: number;
-  amount: number;
-  created_at: string;
-  updated_at: string;
-  category: {
-    id: number;
-    name: string;
-  };
-}
-
-export interface Expense {
-  id: number;
-  amount: number;
-  description: string;
-  date: string;
-  is_income: boolean;
-  category?: {
-    name: string;
-    emoji?: string;
-  };
-}
 
 interface ExpensesOverviewCardProps {
   viewMode?: "daily" | "weekly" | "monthly";
@@ -55,16 +30,12 @@ interface ExpensesOverviewCardProps {
       color: string;
     }[];
   };
-  expenses?: Expense[];
-  budgets?: Budget[];
 }
 
 export default function ExpensesOverviewCard({
   viewMode,
   onViewModeChange,
   data,
-  expenses = [],
-  budgets = [],
 }: ExpensesOverviewCardProps) {
   const { colors } = useTheme();
   // Color palette for charts

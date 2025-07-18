@@ -10,7 +10,7 @@ import { getCategoryData } from "../../utils/getCategoryData";
 import BudgetOverviewCard from "../cards/BudgetOverviewCard";
 import ExpensesOverviewCard from "../cards/ExpensesOverviewCard";
 
-interface Budget {
+export interface Budget {
   id: number;
   amount: number;
   created_at: string;
@@ -21,7 +21,7 @@ interface Budget {
   };
 }
 
-interface Expense {
+export interface Expense {
   id: number;
   amount: number;
   description: string;
@@ -237,8 +237,6 @@ const Dashboard = () => {
           <Box sx={{ width: "100%" }}>
             <ExpensesOverviewCard
               data={data}
-              expenses={expenses}
-              budgets={budgets}
               viewMode={internalViewMode}
               onViewModeChange={setInternalViewMode}
             />

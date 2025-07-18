@@ -1,5 +1,5 @@
 import { getFilteredExpenses } from "./getFilteredExpenses";
-import { Expense } from "../components/cards/ExpensesOverviewCard";
+import { Expense } from "../components/dashboard";
 
 // Function to generate daily/weekly breakdown from real expenses
 export const getDailyBreakdown = (
