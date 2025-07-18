@@ -1,5 +1,5 @@
 import { getFilteredExpenses } from "./getFilteredExpenses";
-import { Budget, Expense } from "../components/dashboard";
+import { Budget, Expense } from "./types";
 
 export const getCategoryData = (
   expenses: Expense[],

@@ -2,41 +2,65 @@ import React, { useEffect, useState } from "react";
 import ExpenseSummaryCard from "../cards/ExpenseSummaryCard";
 import ExpenseList from "../cards/ExpenseList";
 import BalanceCard from "../cards/BalanceCard";
-import { Box, Typography } from "@mui/material";
+import { Box, Skeleton } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { getDailyBreakdown } from "../../utils/getDailyBreakdown";
 import { getFilteredExpenses } from "../../utils/getFilteredExpenses";
 import { getCategoryData } from "../../utils/getCategoryData";
 import ExpensesAndBudgetOverview from "../cards/ExpensesAndBudgetOverview";
-
-export interface Budget {
-  id: number;
-  amount: number;
-  created_at: string;
-  updated_at: string;
-  category: {
-    id: number;
-    name: string;
-  };
-}
-
-export interface Expense {
-  id: number;
-  amount: number;
-  description: string;
-  date: string;
-  is_income: boolean;
-  category?: {
-    name: string;
-    emoji?: string;
-  };
-}
+import { Budget, Expense, TelegramWebApp } from "../../utils/types";
+import {
+  backButton,
+  init,
+  mainButton,
+  settingsButton,
+} from "@telegram-apps/sdk";
+import { useRouter } from "next/router";
 
 const Dashboard = () => {
   const { colors, fontFamily } = useTheme();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const initializeTelegram = () => {
+      const webApp = window.Telegram?.WebApp as TelegramWebApp;
+      if (webApp && webApp.initData) {
+        try {
+          init();
+
+          settingsButton.mount();
+          settingsButton.show();
+          settingsButton.onClick(() => {
+            router.push("/settings");
+          });
+
+          if (backButton.isMounted()) {
+            backButton.hide();
+          }
+          if (mainButton.isMounted()) {
+            mainButton.setParams({
+              isVisible: false,
+            });
+          }
+
+          console.log("✅ Telegram WebApp initialized successfully");
+        } catch (error) {
+          console.error("❌ Error initializing Telegram WebApp:", error);
+        }
+      } else {
+        console.log("⏳ Waiting for Telegram WebApp to initialize...");
+        // Retry after a short delay
+        setTimeout(initializeTelegram, 100);
+      }
+    };
+
+    initializeTelegram();
+  }, [router]);
 
   useEffect(() => {
     // For development/testing - use hardcoded data when not in Telegram WebApp
@@ -60,16 +84,9 @@ const Dashboard = () => {
           initData,
         });
 
-        console.log("🔍 Fetching expenses with params:", {
-          telegram_id: user.id,
-          hasInitData: !!initData,
-          url: `/api/expenses?${params.toString()}`,
-        });
-
         // Fetch expenses
         fetch(`/api/expenses?${params.toString()}`)
           .then((res) => {
-            console.log("📡 Expenses API response status:", res.status);
             if (!res.ok) {
               return res.text().then((text) => {
                 console.error("❌ API Error response:", text);
@@ -81,7 +98,6 @@ const Dashboard = () => {
             return res.json();
           })
           .then((data) => {
-            console.log("✅ Expenses data received:", data);
             const expensesArray = Array.isArray(data) ? data : [];
             setExpenses(expensesArray);
           })
@@ -93,7 +109,6 @@ const Dashboard = () => {
         // Fetch budgets
         fetch(`/api/budgets?${params.toString()}`)
           .then((res) => {
-            console.log("📡 Budgets API response status:", res.status);
             if (!res.ok) {
               return res.text().then((text) => {
                 console.error("❌ Budgets API Error response:", text);
@@ -105,7 +120,6 @@ const Dashboard = () => {
             return res.json();
           })
           .then((data) => {
-            console.log("✅ Budgets data received:", data);
             const budgetsArray = Array.isArray(data) ? data : [];
             setBudgets(budgetsArray);
           })
@@ -116,11 +130,9 @@ const Dashboard = () => {
             setLoading(false);
           });
       } else {
-        console.log("⚠️ Telegram WebApp data not available, using fallback");
         setLoading(false);
       }
     } else {
-      console.log("⚠️ Not in Telegram WebApp environment");
       setLoading(false);
     }
   }, []);
@@ -183,9 +195,28 @@ const Dashboard = () => {
           alignItems: "center",
           justifyContent: "center",
           mx: "auto",
+          flexDirection: "column",
+          gap: 2,
         }}
       >
-        <Typography>Loading...</Typography>
+        <Skeleton
+          variant="rectangular"
+          width={300}
+          height={100}
+          sx={{ borderRadius: 2 }}
+        />
+        <Skeleton
+          variant="rectangular"
+          width={300}
+          height={100}
+          sx={{ borderRadius: 2 }}
+        />
+        <Skeleton
+          variant="rectangular"
+          width={300}
+          height={200}
+          sx={{ borderRadius: 2 }}
+        />
       </Box>
     );
   }

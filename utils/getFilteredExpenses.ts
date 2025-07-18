@@ -1,4 +1,4 @@
-import { Expense } from "../components/dashboard";
+import { Expense } from "./types";
 
 export const getFilteredExpenses = (
   expenses: Expense[],

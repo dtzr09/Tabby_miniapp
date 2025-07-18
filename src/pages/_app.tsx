@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { ThemeProvider } from "../contexts/ThemeContext";
+import { UserPreferencesProvider } from "../contexts/UserPreferencesContext";
 
 // Extend the Window interface to include Telegram
 declare global {
@@ -34,7 +35,9 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <ThemeProvider>
-        <Component {...pageProps} />
+        <UserPreferencesProvider>
+          <Component {...pageProps} />
+        </UserPreferencesProvider>
       </ThemeProvider>
     </>
   );
