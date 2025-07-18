@@ -7,8 +7,7 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 import { getDailyBreakdown } from "../../utils/getDailyBreakdown";
 import { getFilteredExpenses } from "../../utils/getFilteredExpenses";
 import { getCategoryData } from "../../utils/getCategoryData";
-import BudgetOverviewCard from "../cards/BudgetOverviewCard";
-import ExpensesOverviewCard from "../cards/ExpensesOverviewCard";
+import ExpensesAndBudgetOverview from "../cards/ExpensesAndBudgetOverview";
 
 export interface Budget {
   id: number;
@@ -219,14 +218,16 @@ const Dashboard = () => {
           {/* Summary Card (now at the top) */}
 
           {/* Balance Card */}
-          <Box sx={{ width: "100%" }}>
-            <BalanceCard
-              availableBalance={totalBalance}
-              daysRemaining={30 - new Date().getDate()}
-              dailyBudget={totalBalance / (30 - new Date().getDate())}
-              totalBudget={totalBudget}
-            />
-          </Box>
+          {totalBudget > 0 && (
+            <Box sx={{ width: "100%" }}>
+              <BalanceCard
+                availableBalance={totalBalance}
+                daysRemaining={30 - new Date().getDate()}
+                dailyBudget={totalBalance / (30 - new Date().getDate())}
+                totalBudget={totalBudget}
+              />
+            </Box>
+          )}
 
           <ExpenseSummaryCard
             totalIncome={totalIncome}
@@ -235,16 +236,14 @@ const Dashboard = () => {
 
           {/* Budget Overview Card */}
           <Box sx={{ width: "100%" }}>
-            <ExpensesOverviewCard
+            <ExpensesAndBudgetOverview
               data={data}
               viewMode={internalViewMode}
               onViewModeChange={setInternalViewMode}
             />
           </Box>
 
-          <Box sx={{ width: "100%" }}>
-            <BudgetOverviewCard data={data} />
-          </Box>
+          <Box sx={{ width: "100%" }}></Box>
 
           {/* Recent Transactions Card (now below summary) */}
           <Box sx={{ width: "100%" }}>

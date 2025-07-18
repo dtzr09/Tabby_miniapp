@@ -1,8 +1,10 @@
-import { Box, Card, Typography } from "@mui/material";
-import React from "react";
+import { Box, Typography } from "@mui/material";
+import React, { useMemo } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 
 interface BudgetOverviewCardProps {
+  viewMode?: "daily" | "weekly" | "monthly";
+  onViewModeChange?: (mode: "daily" | "weekly" | "monthly") => void;
   data: {
     totalExpenses: number;
     dateRange: string;
@@ -17,17 +19,73 @@ interface BudgetOverviewCardProps {
     }[];
   };
 }
+
 const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
   const { colors } = useTheme();
+
+  // Calculate actual days and weeks in current month
+  const getCurrentMonthInfo = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+
+    // Get the last day of the current month
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+
+    // Calculate weeks in month (including partial weeks)
+    const firstDay = new Date(year, month, 1);
+
+    // Get the day of week for first and last day (0 = Sunday, 1 = Monday, etc.)
+    const firstDayOfWeek = firstDay.getDay();
+
+    // Calculate total weeks (including partial weeks at start and end)
+    const weeksInMonth = Math.ceil((daysInMonth + firstDayOfWeek) / 7);
+
+    return {
+      daysInMonth,
+      weeksInMonth,
+      currentDay: now.getDate(),
+      currentWeek: Math.ceil((now.getDate() + firstDayOfWeek) / 7),
+    };
+  };
+
+  // Calculate adjusted budgets based on view mode
+  const adjustedCategories = useMemo(() => {
+    if (!props.viewMode) return props.data.categories;
+
+    const monthInfo = getCurrentMonthInfo();
+
+    return props.data.categories.map((category) => {
+      let adjustedBudget = category.budget;
+      const adjustedSpent = category.spent;
+
+      switch (props.viewMode) {
+        case "daily":
+          // For daily view, divide monthly budget by actual days in month
+          adjustedBudget = category.budget / monthInfo.daysInMonth;
+          break;
+        case "weekly":
+          // For weekly view, divide monthly budget by actual weeks in month
+          adjustedBudget = category.budget / 4;
+          break;
+        case "monthly":
+          // For monthly view, use the original budget
+          adjustedBudget = category.budget;
+          break;
+      }
+
+      return {
+        ...category,
+        budget: adjustedBudget,
+        spent: adjustedSpent,
+        originalBudget: category.budget, // Keep original for reference
+      };
+    });
+  }, [props.data.categories, props.viewMode]);
+
   return (
-    <Card
-      sx={{
-        px: 2,
-        py: 2,
-        borderRadius: 4,
-        bgcolor: colors.card,
-      }}
-    >
+    <>
       <Box
         sx={{
           display: "flex",
@@ -44,7 +102,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
               color: colors.text,
             }}
           >
-            Budget
+            Budget {props.viewMode && `(${props.viewMode})`}
           </Typography>
           <Typography
             sx={{
@@ -52,12 +110,12 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
               color: colors.textSecondary,
             }}
           >
-            {props.data.categories.length} in total
+            {adjustedCategories.length} in total
           </Typography>
         </Box>
       </Box>
 
-      {props.data.categories.length === 0 && (
+      {adjustedCategories.length === 0 && (
         <Box
           sx={{
             textAlign: "center",
@@ -73,7 +131,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
       )}
 
       {/* Budget Categories */}
-      {props.data.categories.length > 0 && (
+      {adjustedCategories.length > 0 && (
         <Box
           sx={{
             display: "flex",
@@ -82,7 +140,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
             "&::-webkit-scrollbar": { display: "none" },
           }}
         >
-          {props.data.categories.map((category) => {
+          {adjustedCategories.map((category) => {
             if (category.budget === 0 || category.spent === undefined) {
               return null;
             }
@@ -139,7 +197,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
                     textAlign: "center",
                   }}
                 >
-                  ${category.spent}
+                  ${category.spent.toFixed(2)}
                 </Typography>
                 <Typography
                   sx={{
@@ -150,7 +208,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
                     mb: 1,
                   }}
                 >
-                  {`of $${category.budget}`}
+                  {`of $${category.budget.toFixed(2)}`}
                 </Typography>
 
                 <Typography
@@ -167,7 +225,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
           })}
         </Box>
       )}
-    </Card>
+    </>
   );
 };
 

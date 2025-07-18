@@ -1,4 +1,4 @@
-import { Card, CardContent, Typography, Box } from "@mui/material";
+import { Typography, Box } from "@mui/material";
 import {
   Bar,
   XAxis,
@@ -58,29 +58,24 @@ export default function ExpensesOverviewCard({
     fill: index === 1 ? colors.accent : colors.primary,
   }));
 
-  const pieChartData = data.categories.map((category, index) => ({
-    name: category.name,
-    value: category.spent,
-    fill: chartColors[index % chartColors.length],
-  }));
+  const pieChartData = data.categories
+    .filter((category) => category.spent > 0) // Only include categories with expenses
+    .map((category, index) => ({
+      name: category.name,
+      value: category.spent,
+      fill: chartColors[index % chartColors.length],
+    }));
 
   return (
-    <Card
-      sx={{
-        borderRadius: 4,
-        bgcolor: colors.card,
-        boxShadow: 0,
-        border: `1px solid ${colors.border}`,
-      }}
-    >
-      <CardContent sx={{ p: 3 }}>
+    <>
+      <Box sx={{ px: 1 }}>
         {/* View Mode Toggle */}
         <Box
           sx={{
             display: "flex",
-            justifyContent: "center",
-            mb: 3,
+            mb: 4,
             position: "relative",
+            justifyContent: "space-between",
           }}
         >
           {(["daily", "weekly", "monthly"] as const).map((mode) => (
@@ -127,7 +122,6 @@ export default function ExpensesOverviewCard({
           sx={{
             display: "flex",
             justifyContent: "center",
-            mb: 3,
             position: "relative",
           }}
         >
@@ -193,119 +187,124 @@ export default function ExpensesOverviewCard({
         </Box>
 
         {/* Legend */}
-        <Box
-          sx={{
-            mt: 4,
-            display: "flex",
-            justifyContent: "center",
-            gap: {
-              xs: 2,
-              sm: 4,
-            },
-            mb: 3,
-          }}
-        >
-          {/* Left Column */}
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: {
-                xs: 1,
-                sm: 1.5,
-              },
-              alignItems: "flex-end",
-              minWidth: "120px",
-            }}
-          >
-            {pieChartData
-              .slice(0, Math.ceil(pieChartData.length / 2))
-              .map((entry, idx) => (
-                <Box
-                  key={idx}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    width: "100%",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: "50%",
-                      backgroundColor: chartColors[idx % chartColors.length],
-                      flexShrink: 0,
-                    }}
-                  />
-                  <Typography
-                    sx={{
-                      color: colors.textSecondary,
-                      fontSize: "0.85rem",
-                      fontWeight: 500,
-                      textAlign: "right",
-                    }}
-                  >
-                    {entry.name}
-                  </Typography>
-                </Box>
-              ))}
-          </Box>
+        {pieChartData.length > 0 && (
+          <>
+            <Box
+              sx={{
+                mt: 4,
+                display: "flex",
+                justifyContent: "center",
+                gap: {
+                  xs: 2,
+                  sm: 4,
+                },
+                mb: 3,
+              }}
+            >
+              {/* Left Column */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: {
+                    xs: 1,
+                    sm: 1.5,
+                  },
+                  alignItems: "flex-end",
+                  minWidth: "120px",
+                }}
+              >
+                {pieChartData
+                  .slice(0, Math.ceil(pieChartData.length / 2))
+                  .map((entry, idx) => (
+                    <Box
+                      key={idx}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        width: "100%",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          backgroundColor:
+                            chartColors[idx % chartColors.length],
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Typography
+                        sx={{
+                          color: colors.textSecondary,
+                          fontSize: "0.85rem",
+                          fontWeight: 500,
+                          textAlign: "right",
+                        }}
+                      >
+                        {entry.name}
+                      </Typography>
+                    </Box>
+                  ))}
+              </Box>
 
-          {/* Right Column */}
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 1.5,
-              mb: 3,
-              alignItems: "flex-start",
-            }}
-          >
-            {pieChartData
-              .slice(Math.ceil(pieChartData.length / 2))
-              .map((entry, idx) => (
-                <Box
-                  key={idx}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    width: "100%",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: "50%",
-                      backgroundColor:
-                        chartColors[
-                          Math.ceil(pieChartData.length / 2) +
-                            (idx % chartColors.length)
-                        ],
-                      flexShrink: 0,
-                    }}
-                  />
-                  <Typography
-                    sx={{
-                      color: colors.textSecondary,
-                      fontSize: "0.85rem",
-                      fontWeight: 500,
-                      textAlign: "left",
-                      flex: 1,
-                    }}
-                  >
-                    {entry.name}
-                  </Typography>
-                </Box>
-              ))}
-          </Box>
-        </Box>
+              {/* Right Column */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1.5,
+                  mb: 3,
+                  alignItems: "flex-start",
+                }}
+              >
+                {pieChartData
+                  .slice(Math.ceil(pieChartData.length / 2))
+                  .map((entry, idx) => (
+                    <Box
+                      key={idx}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        width: "100%",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          backgroundColor:
+                            chartColors[
+                              Math.ceil(pieChartData.length / 2) +
+                                (idx % chartColors.length)
+                            ],
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Typography
+                        sx={{
+                          color: colors.textSecondary,
+                          fontSize: "0.85rem",
+                          fontWeight: 500,
+                          textAlign: "left",
+                          flex: 1,
+                        }}
+                      >
+                        {entry.name}
+                      </Typography>
+                    </Box>
+                  ))}
+              </Box>
+            </Box>
+          </>
+        )}
 
         {/* Daily/Weekly Breakdown */}
-        <Box sx={{ mb: 4, height: 200 }}>
+        <Box sx={{ height: 200, mt: 4, mb: 2 }}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={barChartData}
@@ -360,7 +359,7 @@ export default function ExpensesOverviewCard({
             </ComposedChart>
           </ResponsiveContainer>
         </Box>
-      </CardContent>
-    </Card>
+      </Box>
+    </>
   );
 }

@@ -76,6 +76,15 @@ export default function BalanceCard({
                   >
                     .{cents}
                   </span>
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      color: colors.textSecondary,
+                      marginLeft: "8px",
+                    }}
+                  >
+                    of ${totalBudget.toFixed(2)}
+                  </span>
                 </>
               );
             })()}
