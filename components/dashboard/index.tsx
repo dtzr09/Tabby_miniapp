@@ -164,6 +164,9 @@ const Dashboard = () => {
           : "This Month",
       dailyExpenses,
       categories,
+      num_of_budgets: budgets.filter(
+        (budget) => !budget.category.name.toLowerCase().includes("flexible")
+      ).length,
     };
   };
 
@@ -215,8 +218,6 @@ const Dashboard = () => {
             gap: 2,
           }}
         >
-          {/* Summary Card (now at the top) */}
-
           {/* Balance Card */}
           {totalBudget > 0 && (
             <Box sx={{ width: "100%" }}>

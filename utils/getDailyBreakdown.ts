@@ -21,11 +21,29 @@ export const getDailyBreakdown = (
       amount: hourMap.get(i) || 0,
     }));
   } else if (period === "weekly") {
-    // Group by day of week
+    // Calculate the start of the current week (Monday)
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1; // Convert to Monday-based week
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - daysFromMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    // Filter expenses to only include current week
+    const currentWeekExpenses = filteredExpenses.filter((exp) => {
+      const expDate = new Date(exp.date);
+      return expDate >= startOfWeek && expDate <= endOfWeek;
+    });
+
+    // Group by day of week for current week only
     const dayMap = new Map<string, number>();
     const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-    filteredExpenses.forEach((exp) => {
+    currentWeekExpenses.forEach((exp) => {
       const day = dayNames[new Date(exp.date).getDay()];
       dayMap.set(day, (dayMap.get(day) || 0) + Math.abs(exp.amount));
     });

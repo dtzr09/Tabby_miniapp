@@ -17,6 +17,7 @@ interface ExpensesAndBudgetOverviewProps {
       spent: number;
       color: string;
     }[];
+    num_of_budgets: number;
   };
   viewMode?: "daily" | "weekly" | "monthly";
   onViewModeChange?: (mode: "daily" | "weekly" | "monthly") => void;

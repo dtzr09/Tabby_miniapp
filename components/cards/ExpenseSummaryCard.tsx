@@ -34,13 +34,17 @@ export default function ExpenseSummaryCard({
           gap: 2,
         }}
       >
-        <IncomeExpenseCard amount={totalIncome} type="income" />
+        <Box sx={{ flex: 1 }}>
+          <IncomeExpenseCard amount={totalIncome} type="income" />
+        </Box>
         <Divider
           orientation="vertical"
           flexItem
           sx={{ backgroundColor: alpha(colors.border, 0.5) }}
         />
-        <IncomeExpenseCard amount={totalExpenses} type="expense" />
+        <Box sx={{ flex: 1 }}>
+          <IncomeExpenseCard amount={totalExpenses} type="expense" />
+        </Box>
       </Box>
     </Card>
   );

@@ -17,6 +17,7 @@ interface BudgetOverviewCardProps {
       spent: number;
       color: string;
     }[];
+    num_of_budgets: number;
   };
 }
 
@@ -52,36 +53,40 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
 
   // Calculate adjusted budgets based on view mode
   const adjustedCategories = useMemo(() => {
-    if (!props.viewMode) return props.data.categories;
+    if (!props.viewMode)
+      return props.data.categories.filter(
+        (category) => !category.name.toLowerCase().includes("flexible")
+      );
 
     const monthInfo = getCurrentMonthInfo();
 
-    return props.data.categories.map((category) => {
-      let adjustedBudget = category.budget;
-      const adjustedSpent = category.spent;
+    return props.data.categories
+      .filter((category) => !category.name.toLowerCase().includes("flexible"))
+      .map((category) => {
+        let adjustedBudget = category.budget;
+        const adjustedSpent = category.spent;
 
-      switch (props.viewMode) {
-        case "daily":
-          // For daily view, divide monthly budget by actual days in month
-          adjustedBudget = category.budget / monthInfo.daysInMonth;
-          break;
-        case "weekly":
-          // For weekly view, divide monthly budget by actual weeks in month
-          adjustedBudget = category.budget / 4;
-          break;
-        case "monthly":
-          // For monthly view, use the original budget
-          adjustedBudget = category.budget;
-          break;
-      }
+        switch (props.viewMode) {
+          case "daily":
+            // For daily view, divide monthly budget by actual days in month
+            adjustedBudget = category.budget / monthInfo.daysInMonth;
+            break;
+          case "weekly":
+            // For weekly view, divide monthly budget by actual weeks in month
+            adjustedBudget = category.budget / 4;
+            break;
+          case "monthly":
+            // For monthly view, use the original budget
+            adjustedBudget = category.budget;
+            break;
+        }
 
-      return {
-        ...category,
-        budget: adjustedBudget,
-        spent: adjustedSpent,
-        originalBudget: category.budget, // Keep original for reference
-      };
-    });
+        return {
+          ...category,
+          budget: adjustedBudget,
+          spent: adjustedSpent,
+        };
+      });
   }, [props.data.categories, props.viewMode]);
 
   return (
@@ -110,7 +115,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
               color: colors.textSecondary,
             }}
           >
-            {adjustedCategories.length} in total
+            {props.data.num_of_budgets} in total
           </Typography>
         </Box>
       </Box>

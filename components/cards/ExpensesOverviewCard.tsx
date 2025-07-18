@@ -308,7 +308,7 @@ export default function ExpensesOverviewCard({
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={barChartData}
-              margin={{ right: 10, bottom: 20, left: -30 }}
+              margin={{ right: 10, bottom: 20 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={colors.surface} />
               <XAxis
