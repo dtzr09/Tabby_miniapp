@@ -47,7 +47,7 @@ const IncomeExpenseCard = ({ amount, type }: IncomeExpenseCardProps) => {
         <Typography
           sx={{
             fontWeight: 700,
-            fontSize: "1.25rem",
+            fontSize: "1.4rem",
             lineHeight: "1.25rem",
             color: {
               xs: type === "income" ? colors.income : colors.expense,
@@ -68,6 +68,9 @@ const IncomeExpenseCard = ({ amount, type }: IncomeExpenseCardProps) => {
             fontWeight: 550,
             fontSize: "0.8rem",
             lineHeight: "1rem",
+            mb: {
+              xs: 0.5,
+            },
             order: { xs: 1, sm: 2 },
           }}
         >

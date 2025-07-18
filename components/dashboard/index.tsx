@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
 import ExpenseSummaryCard from "../cards/ExpenseSummaryCard";
 import ExpenseList from "../cards/ExpenseList";
-import SwipeableBudgetCard from "../cards/SwipeableBudgetCard";
 import BalanceCard from "../cards/BalanceCard";
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { getDailyBreakdown } from "../../utils/getDailyBreakdown";
+import { getFilteredExpenses } from "../../utils/getFilteredExpenses";
+import { getCategoryData } from "../../utils/getCategoryData";
+import BudgetOverviewCard from "../cards/BudgetOverviewCard";
+import ExpensesOverviewCard from "../cards/ExpensesOverviewCard";
 
 interface Budget {
   id: number;
@@ -60,7 +64,7 @@ const Dashboard = () => {
         console.log("🔍 Fetching expenses with params:", {
           telegram_id: user.id,
           hasInitData: !!initData,
-          url: `/api/expenses?${params.toString()}`
+          url: `/api/expenses?${params.toString()}`,
         });
 
         // Fetch expenses
@@ -68,9 +72,11 @@ const Dashboard = () => {
           .then((res) => {
             console.log("📡 Expenses API response status:", res.status);
             if (!res.ok) {
-              return res.text().then(text => {
+              return res.text().then((text) => {
                 console.error("❌ API Error response:", text);
-                throw new Error(`HTTP error! status: ${res.status}, body: ${text}`);
+                throw new Error(
+                  `HTTP error! status: ${res.status}, body: ${text}`
+                );
               });
             }
             return res.json();
@@ -90,9 +96,11 @@ const Dashboard = () => {
           .then((res) => {
             console.log("📡 Budgets API response status:", res.status);
             if (!res.ok) {
-              return res.text().then(text => {
+              return res.text().then((text) => {
                 console.error("❌ Budgets API Error response:", text);
-                throw new Error(`HTTP error! status: ${res.status}, body: ${text}`);
+                throw new Error(
+                  `HTTP error! status: ${res.status}, body: ${text}`
+                );
               });
             }
             return res.json();
@@ -132,6 +140,35 @@ const Dashboard = () => {
 
   // Calculate remaining balance as total budget minus expenses
   const totalBalance = totalBudget - totalExpenses;
+
+  const [internalViewMode, setInternalViewMode] = useState<
+    "daily" | "weekly" | "monthly"
+  >("weekly");
+
+  // Generate real data based on expenses
+  const getRealData = (period: "daily" | "weekly" | "monthly") => {
+    const filteredExpenses = getFilteredExpenses(expenses, period);
+    const totalExpenses = filteredExpenses.reduce(
+      (sum, exp) => sum + Math.abs(exp.amount),
+      0
+    );
+    const categories = getCategoryData(expenses, budgets, period);
+    const dailyExpenses = getDailyBreakdown(expenses, period);
+
+    return {
+      totalExpenses,
+      dateRange:
+        period === "daily"
+          ? "Today"
+          : period === "weekly"
+          ? "This Week"
+          : "This Month",
+      dailyExpenses,
+      categories,
+    };
+  };
+
+  const data = getRealData(internalViewMode);
 
   if (loading) {
     return (
@@ -192,20 +229,23 @@ const Dashboard = () => {
           </Box>
 
           <ExpenseSummaryCard
-            // totalBalance={totalBalance}
             totalIncome={totalIncome}
             totalExpenses={totalExpenses}
           />
 
           {/* Budget Overview Card */}
           <Box sx={{ width: "100%" }}>
-            <SwipeableBudgetCard
+            <ExpensesOverviewCard
+              data={data}
               expenses={expenses}
               budgets={budgets}
-              onCategoryAction={(categoryId: string) =>
-                console.log("Category action:", categoryId)
-              }
+              viewMode={internalViewMode}
+              onViewModeChange={setInternalViewMode}
             />
+          </Box>
+
+          <Box sx={{ width: "100%" }}>
+            <BudgetOverviewCard data={data} />
           </Box>
 
           {/* Recent Transactions Card (now below summary) */}
