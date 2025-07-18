@@ -175,7 +175,7 @@ const Dashboard = () => {
             flexDirection: "column",
             alignItems: "center",
             mt: 2,
-            px: { xs: 4, sm: 1, md: 0 },
+            px: { xs: 2, sm: 1, md: 0 },
             gap: 2,
           }}
         >
