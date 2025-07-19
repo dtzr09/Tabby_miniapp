@@ -63,13 +63,11 @@ const Dashboard = () => {
   }, [router]);
 
   useEffect(() => {
-    // For development/testing - use hardcoded data when not in Telegram WebApp
     if (
       typeof window !== "undefined" &&
       window.Telegram &&
       typeof window.Telegram.WebApp !== "undefined"
     ) {
-      // Use type assertion for Telegram WebApp
       const tg = window.Telegram.WebApp as {
         initDataUnsafe?: { user?: { id: string }; hash?: string };
         initData?: string;
@@ -84,8 +82,7 @@ const Dashboard = () => {
           initData,
         });
 
-        // Fetch expenses
-        fetch(`/api/expenses?${params.toString()}`)
+        const fetchExpenses = fetch(`/api/expenses?${params.toString()}`)
           .then((res) => {
             if (!res.ok) {
               return res.text().then((text) => {
@@ -100,14 +97,9 @@ const Dashboard = () => {
           .then((data) => {
             const expensesArray = Array.isArray(data) ? data : [];
             setExpenses(expensesArray);
-          })
-          .catch((error) => {
-            console.error("❌ Error fetching expenses:", error);
-            setExpenses([]);
           });
 
-        // Fetch budgets
-        fetch(`/api/budgets?${params.toString()}`)
+        const fetchBudgets = fetch(`/api/budgets?${params.toString()}`)
           .then((res) => {
             if (!res.ok) {
               return res.text().then((text) => {
@@ -122,13 +114,11 @@ const Dashboard = () => {
           .then((data) => {
             const budgetsArray = Array.isArray(data) ? data : [];
             setBudgets(budgetsArray);
-          })
-          .catch((error) => {
-            console.error("❌ Error fetching budgets:", error);
-          })
-          .finally(() => {
-            setLoading(false);
           });
+
+        Promise.allSettled([fetchExpenses, fetchBudgets]).finally(() => {
+          setLoading(false);
+        });
       } else {
         setLoading(false);
       }
