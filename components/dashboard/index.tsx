@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ExpenseList from "../expenseList/ExpenseList";
 import BalanceCard from "../balance/BalanceCard";
-import { Box, Skeleton } from "@mui/material";
+import { Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { getDailyBreakdown } from "../../utils/getDailyBreakdown";
 import { getFilteredExpenses } from "../../utils/getFilteredExpenses";
