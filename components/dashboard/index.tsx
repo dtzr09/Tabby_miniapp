@@ -21,111 +21,14 @@ const Dashboard = () => {
   const { colors, fontFamily } = useTheme();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [expensesLoaded, setExpensesLoaded] = useState(false);
+  const [budgetsLoaded, setBudgetsLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // useEffect(() => {
-  //   if (typeof window === "undefined") return;
-
-  //   const initializeTelegram = () => {
-  //     const webApp = window.Telegram?.WebApp as TelegramWebApp;
-  //     if (webApp && webApp.initData) {
-  //       try {
-  //         init();
-
-  //         settingsButton.mount();
-  //         settingsButton.show();
-  //         settingsButton.onClick(() => {
-  //           router.push("/settings");
-  //         });
-
-  //         if (backButton.isMounted()) {
-  //           backButton.hide();
-  //         }
-  //         if (mainButton.isMounted()) {
-  //           mainButton.setParams({
-  //             isVisible: false,
-  //           });
-  //         }
-
-  //         console.log("✅ Telegram WebApp initialized successfully");
-  //       } catch (error) {
-  //         console.error("❌ Error initializing Telegram WebApp:", error);
-  //       }
-  //     } else {
-  //       console.log("⏳ Waiting for Telegram WebApp to initialize...");
-  //       // Retry after a short delay
-  //       setTimeout(initializeTelegram, 100);
-  //     }
-  //   };
-
-  //   initializeTelegram();
-  // }, [router]);
-
-  // useEffect(() => {
-  //   if (
-  //     typeof window !== "undefined" &&
-  //     window.Telegram &&
-  //     typeof window.Telegram.WebApp !== "undefined"
-  //   ) {
-  //     const tg = window.Telegram.WebApp as {
-  //       initDataUnsafe?: { user?: { id: string }; hash?: string };
-  //       initData?: string;
-  //     };
-  //     const user = tg.initDataUnsafe?.user;
-  //     const hash = tg.initDataUnsafe?.hash;
-  //     const initData = tg.initData;
-
-  //     if (user && hash && initData) {
-  //       const params = new URLSearchParams({
-  //         telegram_id: user.id,
-  //         initData,
-  //       });
-
-  //       const fetchExpenses = fetch(`/api/expenses?${params.toString()}`)
-  //         .then((res) => {
-  //           if (!res.ok) {
-  //             return res.text().then((text) => {
-  //               console.error("❌ API Error response:", text);
-  //               throw new Error(
-  //                 `HTTP error! status: ${res.status}, body: ${text}`
-  //               );
-  //             });
-  //           }
-  //           return res.json();
-  //         })
-  //         .then((data) => {
-  //           const expensesArray = Array.isArray(data) ? data : [];
-  //           setExpenses(expensesArray);
-  //         });
-
-  //       const fetchBudgets = fetch(`/api/budgets?${params.toString()}`)
-  //         .then((res) => {
-  //           if (!res.ok) {
-  //             return res.text().then((text) => {
-  //               console.error("❌ Budgets API Error response:", text);
-  //               throw new Error(
-  //                 `HTTP error! status: ${res.status}, body: ${text}`
-  //               );
-  //             });
-  //           }
-  //           return res.json();
-  //         })
-  //         .then((data) => {
-  //           const budgetsArray = Array.isArray(data) ? data : [];
-  //           setBudgets(budgetsArray);
-  //         });
-
-  //       Promise.allSettled([fetchExpenses, fetchBudgets]).finally(() => {
-  //         setLoading(false);
-  //       });
-  //     } else {
-  //       setLoading(false);
-  //     }
-  //   } else {
-  //     setLoading(false);
-  //   }
-  // }, []);
+  useEffect(() => {
+    setLoading(true);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -169,6 +72,7 @@ const Dashboard = () => {
               })
               .then((data) => {
                 setExpenses(Array.isArray(data) ? data : []);
+                setExpensesLoaded(true);
               });
 
             const fetchBudgets = fetch(`/api/budgets?${params.toString()}`)
@@ -183,6 +87,7 @@ const Dashboard = () => {
               })
               .then((data) => {
                 setBudgets(Array.isArray(data) ? data : []);
+                setBudgetsLoaded(true);
               });
 
             await Promise.allSettled([fetchExpenses, fetchBudgets]);
@@ -200,6 +105,12 @@ const Dashboard = () => {
 
     initializeApp();
   }, [router]);
+
+  useEffect(() => {
+    if (expensesLoaded && budgetsLoaded) {
+      setLoading(false);
+    }
+  }, [expensesLoaded, budgetsLoaded]);
 
   // Calculate summary data from real expenses
   const totalIncome = expenses
@@ -312,7 +223,7 @@ const Dashboard = () => {
           }}
         >
           {/* Balance Card */}
-          {totalBudget > 0 && (
+          {budgets.length > 0 && totalBudget > 0 && (
             <Box sx={{ width: "100%" }}>
               <BalanceCard
                 availableBalance={totalBalance}
@@ -336,8 +247,6 @@ const Dashboard = () => {
               onViewModeChange={setInternalViewMode}
             />
           </Box>
-
-          <Box sx={{ width: "100%" }}></Box>
 
           {/* Recent Transactions Card (now below summary) */}
           <Box sx={{ width: "100%" }}>
