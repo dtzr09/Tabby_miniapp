@@ -5,13 +5,21 @@ import {
   setMainButtonParams,
 } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
-import React, { useEffect, useState } from "react";
-import { Box, Typography, Select, MenuItem, FormControl } from "@mui/material";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  Box,
+  Typography,
+  Select,
+  MenuItem,
+  FormControl,
+  Skeleton,
+} from "@mui/material";
 import { useTheme } from "../contexts/ThemeContext";
-import { useUserPreferences } from "../contexts/UserPreferencesContext";
 import { currencies } from "../../utils/preferencesData";
-import { getAllCountries, getCountry } from "countries-and-timezones";
+import { Country, getAllCountries, getCountry } from "countries-and-timezones";
 import { TelegramWebApp } from "../../utils/types";
+import countryToCurrency from "country-to-currency";
+import { useForm, Controller } from "react-hook-form";
 
 // Define UserPreferences interface locally since it's not exported from the context
 interface UserPreferences {
@@ -20,103 +28,28 @@ interface UserPreferences {
   country: string;
 }
 
-// Use the interface locally
-
-// Country to currency mapping
-const countryToCurrency: { [key: string]: string } = {
-  // Major countries and their currencies
-  US: "USD", // United States
-  GB: "GBP", // United Kingdom
-  JP: "JPY", // Japan
-  EU: "EUR", // European Union
-  CA: "CAD", // Canada
-  AU: "AUD", // Australia
-  CH: "CHF", // Switzerland
-  CN: "CNY", // China
-  IN: "INR", // India
-  BR: "BRL", // Brazil
-  MX: "MXN", // Mexico
-  KR: "KRW", // South Korea
-  SG: "SGD", // Singapore
-  MY: "MYR", // Malaysia
-  TH: "THB", // Thailand
-  ID: "IDR", // Indonesia
-  PH: "PHP", // Philippines
-  VN: "VND", // Vietnam
-  HK: "HKD", // Hong Kong
-  TW: "TWD", // Taiwan
-  NZ: "NZD", // New Zealand
-  ZA: "ZAR", // South Africa
-  RU: "RUB", // Russia
-  TR: "TRY", // Turkey
-  SA: "SAR", // Saudi Arabia
-  AE: "AED", // United Arab Emirates
-  IL: "ILS", // Israel
-  NO: "NOK", // Norway
-  SE: "SEK", // Sweden
-  DK: "DKK", // Denmark
-  PL: "PLN", // Poland
-  CZ: "CZK", // Czech Republic
-  HU: "HUF", // Hungary
-  RO: "RON", // Romania
-  BG: "BGN", // Bulgaria
-  HR: "HRK", // Croatia
-  RS: "RSD", // Serbia
-  // European countries using EUR
-  FI: "EUR", // Finland
-  PT: "EUR", // Portugal
-  ES: "EUR", // Spain
-  IT: "EUR", // Italy
-  DE: "EUR", // Germany
-  FR: "EUR", // France
-  NL: "EUR", // Netherlands
-  BE: "EUR", // Belgium
-  AT: "EUR", // Austria
-  IE: "EUR", // Ireland
-  GR: "EUR", // Greece
-  CY: "EUR", // Cyprus
-  MT: "EUR", // Malta
-  LU: "EUR", // Luxembourg
-  SK: "EUR", // Slovakia
-  SI: "EUR", // Slovenia
-  EE: "EUR", // Estonia
-  LV: "EUR", // Latvia
-  LT: "EUR", // Lithuania
-  // Additional countries
-  // Additional countries
-  EG: "EGP", // Egypt
-  NG: "NGN", // Nigeria
-  KE: "KES", // Kenya
-  GH: "GHS", // Ghana
-  UA: "UAH", // Ukraine
-  UY: "UYU", // Uruguay
-  CL: "CLP", // Chile
-  CO: "COP", // Colombia
-  PE: "PEN", // Peru
-  AR: "ARS", // Argentina
-};
-
 const Settings = () => {
   const router = useRouter();
   const { colors } = useTheme();
-  const {
-    preferences,
-    updateCurrency,
-    updateTimezone,
-    updateCountry,
-    updatePreferences,
-    syncPreferencesWithBackend,
-    loadPreferencesFromBackend,
-  } = useUserPreferences();
-  const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [originalPreferences, setOriginalPreferences] =
-    useState<UserPreferences>({
-      currency: "USD",
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      country: "SG",
-    });
-  const [hasChanges, setHasChanges] = useState(false);
+
+  const defaultValues: UserPreferences = {
+    currency: "SGD",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    country: "SG",
+  };
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    formState: { isDirty, isSubmitting },
+    reset,
+  } = useForm<UserPreferences>({
+    defaultValues,
+    mode: "onChange",
+  });
+
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
   // Get all countries and sort them by name
@@ -125,53 +58,76 @@ const Settings = () => {
     a.name.localeCompare(b.name)
   );
 
-  // Default to Singapore if no country is set
-  const currentCountryCode = preferences.country || "SG";
+  const [filterDataLoaded, setFilterDataLoaded] = useState(false);
+  const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
+  const [filteredCurrencies, setFilteredCurrencies] = useState<
+    typeof currencies
+  >([]);
 
-  // Check if current country code is valid
-  const isValidCountry = sortedCountries.some(
-    (c) => c.id === currentCountryCode
-  );
-
-  // Log when currentCountryCode changes
   useEffect(() => {
-    console.log("currentCountryCode changed to:", currentCountryCode);
-  }, [currentCountryCode]);
+    const allCountries = getAllCountries();
 
-  // Log when preferences change
-  useEffect(() => {
-    console.log("preferences changed:", preferences);
-  }, [preferences]);
+    const supportedCurrencyCodes = new Set(
+      currencies.map((c) => c.code as keyof typeof countryToCurrency)
+    );
 
-  // Update original preferences when preferences are loaded from backend
-  useEffect(() => {
-    if (!isLoading && preferencesLoaded) {
-      console.log("Updating original preferences:", preferences);
-      setOriginalPreferences(preferences);
-    }
-  }, [preferences, isLoading, preferencesLoaded]);
-
-  // Track changes when preferences change
-  useEffect(() => {
-    const hasCurrencyChanged =
-      preferences.currency !== originalPreferences.currency;
-    const hasTimezoneChanged =
-      preferences.timezone !== originalPreferences.timezone;
-    const hasCountryChanged =
-      preferences.country !== originalPreferences.country;
-
-    console.log("Change tracking:", {
-      hasCurrencyChanged,
-      hasTimezoneChanged,
-      hasCountryChanged,
-      preferences: preferences,
-      originalPreferences: originalPreferences,
+    const validCountries = Object.values(allCountries).filter((country) => {
+      const currency =
+        countryToCurrency[country.id as keyof typeof countryToCurrency];
+      return (
+        currency &&
+        supportedCurrencyCodes.has(currency as keyof typeof countryToCurrency)
+      );
     });
 
-    setHasChanges(
-      hasCurrencyChanged || hasTimezoneChanged || hasCountryChanged
+    const pairedCurrencyCodes = new Set<string>(
+      Object.values(countryToCurrency)
     );
-  }, [preferences, originalPreferences]);
+
+    const validCurrencies = currencies.filter((c) =>
+      pairedCurrencyCodes.has(c.code)
+    );
+
+    setFilteredCountries(validCountries);
+    setFilteredCurrencies(validCurrencies);
+    setFilterDataLoaded(true);
+  }, []);
+
+  const loadPreferencesFromBackend = useCallback(async (
+    telegram_id: string,
+    initData: string
+  ): Promise<boolean> => {
+    try {
+      const params = new URLSearchParams({
+        telegram_id,
+        initData,
+      });
+
+      const response = await fetch(`/api/preferences?${params.toString()}`);
+
+      if (!response.ok) {
+        console.error("Failed to load preferences:", response.statusText);
+        return false;
+      }
+
+      const data = await response.json();
+
+      // Update form with backend data
+      const formData = {
+        currency: data.currency || defaultValues.currency,
+        timezone: data.timezone || defaultValues.timezone,
+        country: data.country || defaultValues.country,
+      };
+
+      // Reset the form with the backend data as the new baseline
+      reset(formData, { keepDirty: false });
+
+      return true;
+    } catch (error) {
+      console.error("❌ Error loading preferences:", error);
+      return false;
+    }
+  }, [reset, defaultValues]);
 
   // Load preferences from backend only once on mount
   useEffect(() => {
@@ -224,164 +180,135 @@ const Settings = () => {
   useEffect(() => {
     if (typeof window !== "undefined" && setMainButtonParams.isAvailable()) {
       try {
+        const isEnabled = !isSubmitting && !isLoading && isDirty;
+        const baseColor = colors.primary.startsWith("#")
+          ? colors.primary
+          : `#${colors.primary}`;
+
+        const enabledColor = colors.surface.startsWith("#")
+          ? colors.surface
+          : `#${colors.surface}`;
+
+        const enabledTextColor = colors.text.startsWith("#")
+          ? colors.text
+          : `#${colors.text}`;
+
+        const disabledTextColor = colors.disabled.startsWith("#")
+          ? colors.disabled
+          : `#${colors.disabled}`;
+
+        // Make background darker when disabled
+        const backgroundColor = isEnabled
+          ? (baseColor as `#${string}`)
+          : (enabledColor as `#${string}`);
+
+        const textColor = isEnabled
+          ? (enabledTextColor as `#${string}`)
+          : (disabledTextColor as `#${string}`);
+
         setMainButtonParams({
-          backgroundColor: (colors.primary.startsWith("#")
-            ? colors.primary
-            : `#${colors.primary}`) as `#${string}`,
-          isEnabled: !isSaving && !isLoading && hasChanges,
-          isLoaderVisible: isSaving,
+          backgroundColor,
+          isEnabled,
+          isLoaderVisible: isSubmitting,
           isVisible: true,
-          text: isSaving ? "Saving..." : isLoading ? "Loading..." : "Save",
-          textColor: (colors.text.startsWith("#")
-            ? colors.text
-            : `#${colors.text}`) as `#${string}`,
+          text: isSubmitting ? "Saving..." : isLoading ? "Loading..." : "Save",
+          textColor,
         });
       } catch (err) {
         console.error("Error updating button parameters:", err);
       }
     }
-  }, [colors.primary, colors.text, isSaving, isLoading, hasChanges]);
+  }, [colors.primary, colors.text, colors.surface, colors.disabled, isSubmitting, isLoading, isDirty]);
 
-  // Handle main button click
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const handleMainButtonClick = async () => {
-        if (isSaving) return;
+  const onSubmit = useCallback(async (data: UserPreferences) => {
+    try {
+      const webApp = window.Telegram?.WebApp as TelegramWebApp;
+      const user = webApp.initDataUnsafe?.user;
+      const initData = webApp.initData;
 
-        setIsSaving(true);
-
-        try {
-          // Get Telegram WebApp data
-          const webApp = window.Telegram?.WebApp as TelegramWebApp;
-          if (!webApp) {
-            console.error("Telegram WebApp not available");
-            return;
-          }
-
-          const user = webApp.initDataUnsafe?.user;
-          const initData = webApp.initData;
-
-          if (!user?.id || !initData) {
-            console.error("Missing user data or init data");
-            return;
-          }
-
-          // Sync preferences with backend
-          const success = await syncPreferencesWithBackend(
-            user.id.toString(),
-            initData
-          );
-
-          if (success) {
-            // Update original preferences to reset change tracking
-            setOriginalPreferences(preferences);
-            setHasChanges(false);
-          }
-        } catch (error) {
-          console.error("Error saving preferences:", error);
-        } finally {
-          setIsSaving(false);
-        }
-      };
-
-      // Add main button click handler
-      if (mainButton && mainButton.onClick) {
-        mainButton.onClick(handleMainButtonClick);
+      if (!user?.id || !initData) {
+        console.error("Missing Telegram user/init data");
+        return;
       }
 
-      // Cleanup
+      const response = await fetch("/api/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          telegram_id: user.id.toString(),
+          initData,
+          ...data,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to save preferences:", await response.text());
+        return;
+      }
+
+      // Mark form as clean after save with the new baseline values
+      reset(data, { keepDirty: false });
+    } catch (err) {
+      console.error("Error saving preferences:", err);
+    }
+  }, [reset]);
+
+  useEffect(() => {
+    if (mainButton && mainButton.onClick) {
+      const handleClick = handleSubmit(onSubmit);
+      mainButton.onClick(handleClick);
+
       return () => {
-        if (mainButton && mainButton.offClick) {
-          mainButton.offClick(handleMainButtonClick);
-        }
+        mainButton.offClick(handleClick);
       };
     }
-  }, [syncPreferencesWithBackend, isSaving, isLoading, preferences]);
+  }, [handleSubmit, onSubmit]);
 
-  // Check if countries data is available
-  if (!countries || Object.keys(countries).length === 0) {
-    console.error("Countries data is not available");
-    return <div>Loading countries...</div>;
+  if (
+    !countries ||
+    Object.keys(countries).length === 0 ||
+    !filterDataLoaded ||
+    !preferencesLoaded ||
+    isLoading
+  ) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Skeleton
+            variant="rectangular"
+            sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
+          />
+          <Skeleton
+            variant="rectangular"
+            sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
+          />
+        </Box>
+      </Box>
+    );
   }
 
-  console.log("Countries data:", {
-    totalCountries: Object.keys(countries).length,
-    sortedCountriesCount: sortedCountries.length,
-    sampleCountries: sortedCountries
-      .slice(0, 5)
-      .map((c) => ({ id: c.id, name: c.name })),
-    firstCountry: sortedCountries[0],
-    sgCountry: sortedCountries.find((c) => c.id === "SG"),
-    usCountry: sortedCountries.find((c) => c.id === "US"),
-    allCountryIds: sortedCountries.slice(0, 10).map((c) => c.id),
-    countryMappingKeys: Object.keys(countryToCurrency).slice(0, 10),
-  });
-
-  console.log("Country validation:", {
-    currentCountryCode,
-    isValidCountry,
-    availableCountries: sortedCountries.slice(0, 5).map((c) => c.id),
-  });
-
-  console.log("Settings page state:", {
-    preferences,
-    currentCountryCode,
-    originalPreferences,
-    hasChanges,
-    preferencesLoaded,
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleCurrencyChange = (event: any) => {
-    const newCurrency = event.target.value as string;
-    updateCurrency(newCurrency);
-  };
-
   const handleCountryChange = (newCountryCode: string) => {
-    console.log("handleCountryChange called with:", newCountryCode);
-
-    // Test getCountry function
-    const testCountry = getCountry("US");
-    console.log("Test getCountry('US'):", testCountry);
-
     const newCountry = getCountry(newCountryCode);
-
-    console.log("Country change triggered:", {
-      newCountryCode,
-      newCountry,
-      currentPreferences: preferences,
-    });
 
     if (newCountry && newCountry.timezones && newCountry.timezones.length > 0) {
       // Use the first timezone of the country
       const newTimezone = newCountry.timezones[0];
-      console.log(
-        "Updating country to:",
-        newCountryCode,
-        "timezone to:",
-        newTimezone
-      );
-      updateCountry(newCountryCode);
-      updateTimezone(newTimezone);
+
+      setValue("country", newCountry.id, { shouldDirty: true });
+      setValue("timezone", newTimezone, { shouldDirty: true });
 
       // Auto-update currency based on country
-      const countryCurrency = countryToCurrency[newCountryCode];
+      const countryCurrency =
+        countryToCurrency[newCountryCode as keyof typeof countryToCurrency];
       if (countryCurrency) {
         // Check if the currency is available in our supported currencies
         const isCurrencySupported = currencies.some(
           (c) => c.code === countryCurrency
         );
         if (isCurrencySupported) {
-          console.log("Auto-updating currency to:", countryCurrency);
-          updateCurrency(countryCurrency);
-        } else {
-          console.log("Currency not supported:", countryCurrency);
+          setValue("currency", countryCurrency, { shouldDirty: true });
         }
-      } else {
-        console.log("No currency mapping found for country:", newCountryCode);
       }
-    } else {
-      console.log("Invalid country or no timezones found:", newCountryCode);
     }
   };
 
@@ -395,7 +322,6 @@ const Settings = () => {
       }}
     >
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {/* Country Section */}
         <Box>
           <Typography
             variant="overline"
@@ -411,71 +337,80 @@ const Settings = () => {
             COUNTRY
           </Typography>
           <FormControl fullWidth>
-            <Select
-              value={preferences.country || "SG"}
-              onChange={(event) => {
-                console.log("Select onChange triggered:", event.target.value);
-                const newCountryCode = event.target.value as string;
-                handleCountryChange(newCountryCode);
-              }}
-              disabled={isLoading}
-              displayEmpty
-              renderValue={(value) => {
-                const country = sortedCountries.find((c) => c.id === value);
-                return country ? country.name : value;
-              }}
-              sx={{
-                color: colors.text,
-                background: colors.card,
-                borderRadius: 1,
-                "& .MuiOutlinedInput-notchedOutline": {
-                  border: "none",
-                },
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  border: "none",
-                },
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  border: "none",
-                },
-                "& .MuiSelect-icon": {
-                  color: colors.textSecondary,
-                },
-                "& .MuiSelect-select": {
-                  padding: "12px 16px",
-                },
-                "& .MuiMenu-paper": {
-                  background: colors.card,
-                },
-              }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
+            <Controller
+              name="country"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  value={field.value || "SG"}
+                  onChange={(event) => {
+                    const newCountryCode = event.target.value.toUpperCase();
+                    field.onChange(newCountryCode);
+                    handleCountryChange(newCountryCode);
+                  }}
+                  disabled={isLoading}
+                  displayEmpty
+                  renderValue={(value) => {
+                    const country = filteredCountries.find(
+                      (c) => c.id === value
+                    );
+                    return country ? country.name : value;
+                  }}
+                  sx={{
+                    color: colors.text,
                     background: colors.card,
-                    "& .MuiMenuItem-root": {
-                      color: colors.text,
-                      "&:hover": {
-                        background: colors.surface,
-                      },
-                      "&.Mui-selected": {
-                        background: colors.primary,
-                        color: colors.text,
-                        "&:hover": {
-                          background: colors.primary,
+                    borderRadius: 1,
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "& .MuiSelect-icon": {
+                      color: colors.textSecondary,
+                    },
+                    "& .MuiSelect-select": {
+                      padding: "12px 16px",
+                    },
+                    "& .MuiMenu-paper": {
+                      background: colors.card,
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        background: colors.card,
+                        "& .MuiMenuItem-root": {
+                          color: colors.text,
+                          "&:hover": {
+                            background: colors.surface,
+                          },
+                          "&.Mui-selected": {
+                            background: colors.primary,
+                            color: colors.text,
+                            "&:hover": {
+                              background: colors.primary,
+                            },
+                          },
                         },
                       },
                     },
-                  },
-                },
-              }}
-            >
-              {sortedCountries.map((country) => (
-                <MenuItem key={country.id} value={country.id}>
-                  <Typography sx={{ color: "inherit" }}>
-                    {country.name}
-                  </Typography>
-                </MenuItem>
-              ))}
-            </Select>
+                  }}
+                >
+                  {sortedCountries.map((country) => (
+                    <MenuItem key={country.id} value={country.id}>
+                      <Typography sx={{ color: "inherit" }}>
+                        {country.name}
+                      </Typography>
+                    </MenuItem>
+                  ))}
+                </Select>
+              )}
+            />
           </FormControl>
         </Box>
 
@@ -495,148 +430,71 @@ const Settings = () => {
             CURRENCY
           </Typography>
           <FormControl fullWidth>
-            <Select
-              value={preferences.currency || "USD"}
-              onChange={handleCurrencyChange}
-              disabled={isLoading}
-              displayEmpty
-              sx={{
-                color: colors.text,
-                background: colors.card,
-                borderRadius: 1,
-                "& .MuiOutlinedInput-notchedOutline": {
-                  border: "none",
-                },
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  border: "none",
-                },
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  border: "none",
-                },
-                "& .MuiSelect-icon": {
-                  color: colors.textSecondary,
-                },
-                "& .MuiSelect-select": {
-                  padding: "12px 16px",
-                },
-                "& .MuiMenu-paper": {
-                  background: colors.card,
-                },
-              }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
+            <Controller
+              name="currency"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  value={field.value || "SGD"}
+                  onChange={field.onChange}
+                  disabled={isLoading}
+                  displayEmpty
+                  sx={{
+                    color: colors.text,
                     background: colors.card,
-                    "& .MuiMenuItem-root": {
-                      color: colors.text,
-                      "&:hover": {
-                        background: colors.surface,
-                      },
-                      "&.Mui-selected": {
-                        background: colors.primary,
-                        color: colors.text,
-                        "&:hover": {
-                          background: colors.primary,
+                    borderRadius: 1,
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "& .MuiSelect-icon": {
+                      color: colors.textSecondary,
+                    },
+                    "& .MuiSelect-select": {
+                      padding: "12px 16px",
+                    },
+                    "& .MuiMenu-paper": {
+                      background: colors.card,
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        background: colors.card,
+                        "& .MuiMenuItem-root": {
+                          color: colors.text,
+                          "&:hover": {
+                            background: colors.surface,
+                          },
+                          "&.Mui-selected": {
+                            background: colors.primary,
+                            color: colors.text,
+                            "&:hover": {
+                              background: colors.primary,
+                            },
+                          },
                         },
                       },
                     },
-                  },
-                },
-              }}
-            >
-              {currencies.map((currency) => (
-                <MenuItem key={currency.code} value={currency.code}>
-                  <Typography sx={{ color: "inherit" }}>
-                    {currency.code} - {currency.name}
-                  </Typography>
-                </MenuItem>
-              ))}
-            </Select>
+                  }}
+                >
+                  {filteredCurrencies.map((currency) => (
+                    <MenuItem key={currency.code} value={currency.code}>
+                      <Typography sx={{ color: "inherit" }}>
+                        {currency.code} - {currency.name}
+                      </Typography>
+                    </MenuItem>
+                  ))}
+                </Select>
+              )}
+            />
           </FormControl>
-        </Box>
-
-        {/* Debug Section */}
-        <Box>
-          <Typography
-            variant="overline"
-            sx={{
-              color: colors.primary,
-              fontWeight: 600,
-              fontSize: "0.75rem",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              marginBottom: 1,
-            }}
-          >
-            DEBUG
-          </Typography>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <button
-              onClick={() => {
-                console.log("Test button clicked");
-                updateCountry("US");
-                updateCurrency("USD");
-                console.log("After update - preferences should be:", {
-                  country: "US",
-                  currency: "USD",
-                });
-              }}
-              style={{
-                padding: "8px 16px",
-                background: colors.primary,
-                color: colors.text,
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              Test US
-            </button>
-            <button
-              onClick={() => {
-                console.log("Test button clicked");
-                updateCountry("GB");
-                updateCurrency("GBP");
-                console.log("After update - preferences should be:", {
-                  country: "GB",
-                  currency: "GBP",
-                });
-              }}
-              style={{
-                padding: "8px 16px",
-                background: colors.primary,
-                color: colors.text,
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              Test GB
-            </button>
-            <button
-              onClick={() => {
-                console.log("Direct state test");
-                updatePreferences({ country: "JP", currency: "JPY" });
-              }}
-              style={{
-                padding: "8px 16px",
-                background: colors.primary,
-                color: colors.text,
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              Direct State Test
-            </button>
-          </Box>
-          <Box
-            sx={{ mt: 1, p: 1, background: colors.surface, borderRadius: 1 }}
-          >
-            <Typography variant="caption" sx={{ color: colors.textSecondary }}>
-              Current State: {JSON.stringify(preferences, null, 2)}
-            </Typography>
-          </Box>
         </Box>
       </Box>
     </Box>
