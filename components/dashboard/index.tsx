@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
-import ExpenseSummaryCard from "../cards/ExpenseSummaryCard";
-import ExpenseList from "../cards/ExpenseList";
-import BalanceCard from "../cards/BalanceCard";
+import ExpenseList from "../expenseList/ExpenseList";
+import BalanceCard from "../balance/BalanceCard";
 import { Box, Skeleton } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { getDailyBreakdown } from "../../utils/getDailyBreakdown";
 import { getFilteredExpenses } from "../../utils/getFilteredExpenses";
 import { getCategoryData } from "../../utils/getCategoryData";
-import ExpensesAndBudgetOverview from "../cards/ExpensesAndBudgetOverview";
-import { Budget, Expense, TelegramWebApp } from "../../utils/types";
+import ExpensesAndBudgetOverview from "../expensesOverview/ExpensesAndBudgetOverview";
+import { Budget, Expense, TelegramWebApp, ViewMode } from "../../utils/types";
 import {
   backButton,
   init,
@@ -16,6 +15,7 @@ import {
   settingsButton,
 } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
+import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 
 const Dashboard = () => {
   const { colors, fontFamily } = useTheme();
@@ -24,14 +24,117 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // useEffect(() => {
+  //   if (typeof window === "undefined") return;
+
+  //   const initializeTelegram = () => {
+  //     const webApp = window.Telegram?.WebApp as TelegramWebApp;
+  //     if (webApp && webApp.initData) {
+  //       try {
+  //         init();
+
+  //         settingsButton.mount();
+  //         settingsButton.show();
+  //         settingsButton.onClick(() => {
+  //           router.push("/settings");
+  //         });
+
+  //         if (backButton.isMounted()) {
+  //           backButton.hide();
+  //         }
+  //         if (mainButton.isMounted()) {
+  //           mainButton.setParams({
+  //             isVisible: false,
+  //           });
+  //         }
+
+  //         console.log("✅ Telegram WebApp initialized successfully");
+  //       } catch (error) {
+  //         console.error("❌ Error initializing Telegram WebApp:", error);
+  //       }
+  //     } else {
+  //       console.log("⏳ Waiting for Telegram WebApp to initialize...");
+  //       // Retry after a short delay
+  //       setTimeout(initializeTelegram, 100);
+  //     }
+  //   };
+
+  //   initializeTelegram();
+  // }, [router]);
+
+  // useEffect(() => {
+  //   if (
+  //     typeof window !== "undefined" &&
+  //     window.Telegram &&
+  //     typeof window.Telegram.WebApp !== "undefined"
+  //   ) {
+  //     const tg = window.Telegram.WebApp as {
+  //       initDataUnsafe?: { user?: { id: string }; hash?: string };
+  //       initData?: string;
+  //     };
+  //     const user = tg.initDataUnsafe?.user;
+  //     const hash = tg.initDataUnsafe?.hash;
+  //     const initData = tg.initData;
+
+  //     if (user && hash && initData) {
+  //       const params = new URLSearchParams({
+  //         telegram_id: user.id,
+  //         initData,
+  //       });
+
+  //       const fetchExpenses = fetch(`/api/expenses?${params.toString()}`)
+  //         .then((res) => {
+  //           if (!res.ok) {
+  //             return res.text().then((text) => {
+  //               console.error("❌ API Error response:", text);
+  //               throw new Error(
+  //                 `HTTP error! status: ${res.status}, body: ${text}`
+  //               );
+  //             });
+  //           }
+  //           return res.json();
+  //         })
+  //         .then((data) => {
+  //           const expensesArray = Array.isArray(data) ? data : [];
+  //           setExpenses(expensesArray);
+  //         });
+
+  //       const fetchBudgets = fetch(`/api/budgets?${params.toString()}`)
+  //         .then((res) => {
+  //           if (!res.ok) {
+  //             return res.text().then((text) => {
+  //               console.error("❌ Budgets API Error response:", text);
+  //               throw new Error(
+  //                 `HTTP error! status: ${res.status}, body: ${text}`
+  //               );
+  //             });
+  //           }
+  //           return res.json();
+  //         })
+  //         .then((data) => {
+  //           const budgetsArray = Array.isArray(data) ? data : [];
+  //           setBudgets(budgetsArray);
+  //         });
+
+  //       Promise.allSettled([fetchExpenses, fetchBudgets]).finally(() => {
+  //         setLoading(false);
+  //       });
+  //     } else {
+  //       setLoading(false);
+  //     }
+  //   } else {
+  //     setLoading(false);
+  //   }
+  // }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const initializeTelegram = () => {
+    const initializeApp = async () => {
       const webApp = window.Telegram?.WebApp as TelegramWebApp;
       if (webApp && webApp.initData) {
         try {
-          init();
+          init(); // Your WebApp init
 
           settingsButton.mount();
           settingsButton.show();
@@ -39,93 +142,64 @@ const Dashboard = () => {
             router.push("/settings");
           });
 
-          if (backButton.isMounted()) {
-            backButton.hide();
-          }
-          if (mainButton.isMounted()) {
-            mainButton.setParams({
-              isVisible: false,
-            });
-          }
+          if (backButton.isMounted()) backButton.hide();
+          if (mainButton.isMounted())
+            mainButton.setParams({ isVisible: false });
 
-          console.log("✅ Telegram WebApp initialized successfully");
-        } catch (error) {
-          console.error("❌ Error initializing Telegram WebApp:", error);
+          const user = webApp.initDataUnsafe?.user;
+          const hash = webApp.initDataUnsafe?.hash;
+          const initData = webApp.initData;
+
+          if (user && hash && initData) {
+            const params = new URLSearchParams({
+              telegram_id: user.id,
+              initData,
+            });
+
+            // Fetch both expenses and budgets
+            const fetchExpenses = fetch(`/api/expenses?${params.toString()}`)
+              .then((res) => {
+                if (!res.ok) {
+                  return res.text().then((text) => {
+                    console.error("❌ Expenses API Error:", text);
+                    throw new Error(`Expenses error ${res.status}: ${text}`);
+                  });
+                }
+                return res.json();
+              })
+              .then((data) => {
+                setExpenses(Array.isArray(data) ? data : []);
+              });
+
+            const fetchBudgets = fetch(`/api/budgets?${params.toString()}`)
+              .then((res) => {
+                if (!res.ok) {
+                  return res.text().then((text) => {
+                    console.error("❌ Budgets API Error:", text);
+                    throw new Error(`Budgets error ${res.status}: ${text}`);
+                  });
+                }
+                return res.json();
+              })
+              .then((data) => {
+                setBudgets(Array.isArray(data) ? data : []);
+              });
+
+            await Promise.allSettled([fetchExpenses, fetchBudgets]);
+          }
+        } catch (err) {
+          console.error("❌ Telegram Init Failed:", err);
+        } finally {
+          setLoading(false); // ✅ Only stop loading after everything above is complete
         }
       } else {
         console.log("⏳ Waiting for Telegram WebApp to initialize...");
-        // Retry after a short delay
-        setTimeout(initializeTelegram, 100);
+        setTimeout(initializeApp, 100);
       }
     };
 
-    initializeTelegram();
+    initializeApp();
   }, [router]);
-
-  useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      window.Telegram &&
-      typeof window.Telegram.WebApp !== "undefined"
-    ) {
-      const tg = window.Telegram.WebApp as {
-        initDataUnsafe?: { user?: { id: string }; hash?: string };
-        initData?: string;
-      };
-      const user = tg.initDataUnsafe?.user;
-      const hash = tg.initDataUnsafe?.hash;
-      const initData = tg.initData;
-
-      if (user && hash && initData) {
-        const params = new URLSearchParams({
-          telegram_id: user.id,
-          initData,
-        });
-
-        const fetchExpenses = fetch(`/api/expenses?${params.toString()}`)
-          .then((res) => {
-            if (!res.ok) {
-              return res.text().then((text) => {
-                console.error("❌ API Error response:", text);
-                throw new Error(
-                  `HTTP error! status: ${res.status}, body: ${text}`
-                );
-              });
-            }
-            return res.json();
-          })
-          .then((data) => {
-            const expensesArray = Array.isArray(data) ? data : [];
-            setExpenses(expensesArray);
-          });
-
-        const fetchBudgets = fetch(`/api/budgets?${params.toString()}`)
-          .then((res) => {
-            if (!res.ok) {
-              return res.text().then((text) => {
-                console.error("❌ Budgets API Error response:", text);
-                throw new Error(
-                  `HTTP error! status: ${res.status}, body: ${text}`
-                );
-              });
-            }
-            return res.json();
-          })
-          .then((data) => {
-            const budgetsArray = Array.isArray(data) ? data : [];
-            setBudgets(budgetsArray);
-          });
-
-        Promise.allSettled([fetchExpenses, fetchBudgets]).finally(() => {
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
-      }
-    } else {
-      setLoading(false);
-    }
-  }, []);
 
   // Calculate summary data from real expenses
   const totalIncome = expenses
@@ -142,12 +216,10 @@ const Dashboard = () => {
   // Calculate remaining balance as total budget minus expenses
   const totalBalance = totalBudget - totalExpenses;
 
-  const [internalViewMode, setInternalViewMode] = useState<
-    "daily" | "weekly" | "monthly"
-  >("weekly");
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>("weekly");
 
   // Generate real data based on expenses
-  const getRealData = (period: "daily" | "weekly" | "monthly") => {
+  const getRealData = (period: ViewMode) => {
     const filteredExpenses = getFilteredExpenses(expenses, period);
     const totalExpenses = filteredExpenses.reduce(
       (sum, exp) => sum + Math.abs(exp.amount),

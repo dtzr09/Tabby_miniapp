@@ -1,7 +1,6 @@
 import { Card, Box, Divider, alpha } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import IncomeExpenseCard from "./IncomeExpenseCard";
-
 interface ExpenseSummaryCardProps {
   totalIncome: number;
   totalExpenses: number;

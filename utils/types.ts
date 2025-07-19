@@ -1,8 +1,9 @@
 export interface TelegramWebApp {
   initDataUnsafe?: {
     user?: {
-      id: number;
+      id: string;
     };
+    hash?: string;
   };
   initData?: string;
   themeParams?: Record<string, string>;
@@ -31,3 +32,32 @@ export interface Expense {
     emoji?: string;
   };
 }
+
+export interface DBData {
+  totalExpenses: number;
+  dateRange: string;
+  dailyExpenses: { day: string; amount: number }[];
+  categories: {
+    id: string;
+    name: string;
+    icon: React.JSX.Element;
+    budget: number;
+    spent: number;
+    color: string;
+  }[];
+}
+
+export interface PieChartData {
+  name: string;
+  value: number;
+  fill: string;
+}
+
+export interface BarChartData {
+  name: string;
+  amount: number;
+  lineValue: number;
+  fill: string;
+}
+
+export type ViewMode = "daily" | "weekly" | "monthly";

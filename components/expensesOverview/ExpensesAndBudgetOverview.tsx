@@ -1,6 +1,6 @@
 import { Card } from "@mui/material";
 import React from "react";
-import BudgetOverviewCard from "./BudgetOverviewCard";
+import BudgetOverviewCard from "../budget/BudgetOverviewCard";
 import ExpensesOverviewCard from "./ExpensesOverviewCard";
 import { useTheme } from "@/contexts/ThemeContext";
 
