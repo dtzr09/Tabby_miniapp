@@ -1,4 +1,11 @@
-import { Card, CardContent, Typography, Box, alpha } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  alpha,
+  LinearProgress,
+} from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 
 interface BalanceCardProps {
@@ -18,6 +25,19 @@ export default function BalanceCard({
 
   // Check if there's a budget set
   const hasBudget = totalBudget > 0;
+
+  // Calculate budget usage percentage
+  const budgetUsed = totalBudget - availableBalance;
+  const usagePercentage =
+    totalBudget > 0 ? (budgetUsed / totalBudget) * 100 : 0;
+
+  // Determine progress bar color based on usage percentage
+  const getProgressColor = (percentage: number) => {
+    if (percentage < 25) return "#4CAF50"; // Green
+    if (percentage < 50) return "#FFC107"; // Yellow
+    if (percentage < 75) return "#FF9800"; // Orange
+    return "#F44336"; // Red
+  };
 
   return (
     <Card
@@ -93,27 +113,105 @@ export default function BalanceCard({
 
         {/* Budget Info Box - Only show if there's a budget */}
         {hasBudget && (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-            }}
-          >
-            <Typography
+          <>
+            <Box
               sx={{
-                fontSize: "0.85rem",
-                color: colors.textSecondary,
-                lineHeight: 1.3,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                mb: 2,
               }}
             >
-              {daysRemaining} more days -{" "}
-              <span style={{ fontWeight: 700, color: alpha(colors.text, 0.7) }}>
-                ${dailyBudget.toFixed(2)} per day
-              </span>
-              .
-            </Typography>
-          </Box>
+              <Typography
+                sx={{
+                  fontSize: "0.85rem",
+                  color: colors.textSecondary,
+                  lineHeight: 1.3,
+                }}
+              >
+                {daysRemaining} more days -{" "}
+                <span
+                  style={{ fontWeight: 700, color: alpha(colors.text, 0.7) }}
+                >
+                  ${dailyBudget.toFixed(2)} per day
+                </span>
+                .
+              </Typography>
+            </Box>
+
+            {/* Progress Bar */}
+            <Box sx={{ mb: 1 }}>
+              <LinearProgress
+                variant="determinate"
+                value={Math.min(usagePercentage, 100)}
+                sx={{
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: alpha(colors.text, 0.1),
+                  "& .MuiLinearProgress-bar": {
+                    backgroundColor: getProgressColor(usagePercentage),
+                    borderRadius: 4,
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Percentage Labels */}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                px: 0.5,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "0.7rem",
+                  color: colors.textSecondary,
+                  fontWeight: 500,
+                }}
+              >
+                0%
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: "0.7rem",
+                  color: colors.textSecondary,
+                  fontWeight: 500,
+                }}
+              >
+                25%
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: "0.7rem",
+                  color: colors.textSecondary,
+                  fontWeight: 500,
+                }}
+              >
+                50%
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: "0.7rem",
+                  color: colors.textSecondary,
+                  fontWeight: 500,
+                }}
+              >
+                75%
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: "0.7rem",
+                  color: colors.textSecondary,
+                  fontWeight: 500,
+                }}
+              >
+                100%
+              </Typography>
+            </Box>
+          </>
         )}
       </CardContent>
     </Card>
