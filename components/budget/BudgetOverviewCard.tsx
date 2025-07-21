@@ -1,6 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import React, { useMemo } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { getProgressColor } from "../balance/BalanceCard";
 
 interface BudgetOverviewCardProps {
   viewMode?: "daily" | "weekly" | "monthly";
@@ -150,7 +151,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
               return null;
             }
             const progress = (category.spent / category.budget) * 100;
-
+            const progressColor = getProgressColor(progress);
             return (
               <Box
                 key={category.id}
@@ -167,7 +168,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
                     width: 60,
                     height: 60,
                     borderRadius: "50%",
-                    background: `conic-gradient(${category.color} ${
+                    background: `conic-gradient(${progressColor} ${
                       progress * 3.6
                     }deg, ${colors.surface} 0deg)`,
                     display: "flex",

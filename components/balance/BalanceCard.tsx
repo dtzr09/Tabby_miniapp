@@ -15,6 +15,14 @@ interface BalanceCardProps {
   totalBudget: number;
 }
 
+// Determine progress bar color based on usage percentage
+export const getProgressColor = (percentage: number) => {
+  if (percentage < 25) return "#4CAF50"; // Green
+  if (percentage < 50) return "#FFC107"; // Yellow
+  if (percentage < 75) return "#FF9800"; // Orange
+  return "#F44336"; // Red
+};
+
 export default function BalanceCard({
   availableBalance,
   daysRemaining,
@@ -30,14 +38,6 @@ export default function BalanceCard({
   const budgetUsed = totalBudget - availableBalance;
   const usagePercentage =
     totalBudget > 0 ? (budgetUsed / totalBudget) * 100 : 0;
-
-  // Determine progress bar color based on usage percentage
-  const getProgressColor = (percentage: number) => {
-    if (percentage < 25) return "#4CAF50"; // Green
-    if (percentage < 50) return "#FFC107"; // Yellow
-    if (percentage < 75) return "#FF9800"; // Orange
-    return "#F44336"; // Red
-  };
 
   return (
     <Card
@@ -129,13 +129,14 @@ export default function BalanceCard({
                   lineHeight: 1.3,
                 }}
               >
-                {daysRemaining} more days -{" "}
-                <span
-                  style={{ fontWeight: 700, color: alpha(colors.text, 0.7) }}
-                >
-                  ${dailyBudget.toFixed(2)} per day
-                </span>
-                .
+                {daysRemaining} more days
+                {dailyBudget > 0 && (
+                  <span
+                    style={{ fontWeight: 700, color: alpha(colors.text, 0.7) }}
+                  >
+                    {""} - ${dailyBudget.toFixed(2)} per day
+                  </span>
+                )}
               </Typography>
             </Box>
 
