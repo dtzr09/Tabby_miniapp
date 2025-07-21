@@ -43,7 +43,10 @@ export default async function handler(
 
       const userId = userResult.rows[0].id;
 
-      // Get budgets for this user with category names
+      // Get current month budgets for this user with category names
+      const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
+      const currentYear = new Date().getFullYear();
+      
       const budgetsResult = await postgresClient.query(
         `SELECT 
           b.id, 
@@ -54,8 +57,8 @@ export default async function handler(
           json_build_object('id', c.id, 'name', c.name) as category
         FROM budgets b
         LEFT JOIN categories c ON b.category_id = c.id
-        WHERE b.user_id = $1`,
-        [userId]
+        WHERE b.user_id = $1 AND b.month = $2 AND b.year = $3`,
+        [userId, currentMonth, currentYear]
       );
 
       return res.status(200).json(budgetsResult.rows);
@@ -78,7 +81,10 @@ export default async function handler(
       }
       const userId = users[0].id;
 
-      // Get budgets for this user
+      // Get current month budgets for this user
+      const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
+      const currentYear = new Date().getFullYear();
+      
       const { data, error } = await supabaseAdmin
         .from("budgets")
         .select(
@@ -94,7 +100,9 @@ export default async function handler(
           )
         `
         )
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        .eq("month", currentMonth)
+        .eq("year", currentYear);
 
       if (error) {
         console.log("❌ Budgets database error:", error);
