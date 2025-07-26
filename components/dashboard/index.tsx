@@ -12,6 +12,7 @@ import {
   backButton,
   init,
   mainButton,
+  miniAppReady,
   settingsButton,
 } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
@@ -28,13 +29,10 @@ const Dashboard = () => {
   const router = useRouter();
 
   useEffect(() => {
-    setLoading(true);
-  }, []);
-
-  useEffect(() => {
     if (typeof window === "undefined") return;
 
     const initializeApp = async () => {
+      setLoading(true); // Set loading to true at the start of initialization
       const webApp = window.Telegram?.WebApp as TelegramWebApp;
       if (webApp && webApp.initData) {
         try {
