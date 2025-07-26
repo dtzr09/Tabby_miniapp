@@ -5,19 +5,15 @@ import {
   Card,
   CardContent,
   Avatar,
-  Button,
   alpha,
   IconButton,
-  TextField,
-  Collapse,
-  Tooltip,
 } from "@mui/material";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import SearchIcon from "@mui/icons-material/Search";
-import CloseIcon from "@mui/icons-material/Close";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useState } from "react";
-import { useRouter } from "next/router";
+import SearchTransactionsCard from "./SearchTransactionsCard";
+import ExpenseListCard from "./ExpenseListCard";
 
 interface Expense {
   id: number;
@@ -37,24 +33,14 @@ interface ExpenseListProps {
 
 export default function ExpenseList({ expenses }: ExpenseListProps) {
   const { colors } = useTheme();
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const router = useRouter();
+  const [showSearchCard, setShowSearchCard] = useState(false);
 
   // Use sample data if no expenses provided, otherwise use provided expenses
   const transactionsToUse = expenses.length > 0 ? expenses : [];
 
-  // Get recent transactions (last 4) and filter by search query
+  // Get recent transactions (last 5)
   const recentTransactions = transactionsToUse
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .filter((exp) => {
-      if (!searchQuery.trim()) return true;
-      const query = searchQuery.toLowerCase();
-      return (
-        exp.description.toLowerCase().includes(query) ||
-        (exp.category?.name || "Other").toLowerCase().includes(query)
-      );
-    })
     .slice(0, 5)
     .map((exp) => ({
       id: exp.id,
@@ -66,40 +52,22 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
     }));
 
   const handleSearchToggle = () => {
-    setIsSearchExpanded(!isSearchExpanded);
-    if (isSearchExpanded) {
-      setSearchQuery("");
-    }
+    setShowSearchCard(true);
   };
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
+  const handleBackFromSearch = () => {
+    setShowSearchCard(false);
   };
 
-  const displayDateTime = (entry: { date: string }) => {
-    const expenseDate = new Date(entry.date);
-    const today = new Date();
-
-    // Check if the expense is from today
-    if (expenseDate.toDateString() === today.toDateString()) {
-      const time = expenseDate.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      });
-      return time;
-    }
-
-    // For older expenses, show both date and time
-    const date = expenseDate.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-    const time = expenseDate.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    });
-    return `${date} • ${time}`;
-  };
+  // Show search card if search is active
+  if (showSearchCard) {
+    return (
+      <SearchTransactionsCard
+        expenses={expenses}
+        onBack={handleBackFromSearch}
+      />
+    );
+  }
 
   return (
     <Card
@@ -156,167 +124,13 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
               transition: "all 0.2s ease-in-out",
             }}
           >
-            {isSearchExpanded ? <CloseIcon /> : <SearchIcon />}
+            <SearchIcon />
           </IconButton>
         </Box>
 
-        {/* Search Input */}
-        <Collapse in={isSearchExpanded}>
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              fullWidth
-              placeholder="Search transactions..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              variant="outlined"
-              size="small"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  bgcolor: colors.surface,
-                  border: `1px solid ${colors.border}`,
-                  "& fieldset": {
-                    border: "none",
-                  },
-                  "&:hover fieldset": {
-                    border: `1px solid ${colors.primary}`,
-                  },
-                  "&.Mui-focused fieldset": {
-                    border: `2px solid ${colors.primary}`,
-                  },
-                },
-                "& .MuiInputBase-input": {
-                  color: colors.text,
-                  fontSize: "0.9rem",
-                  fontWeight: 500,
-                  "&::placeholder": {
-                    color: colors.textSecondary,
-                    opacity: 0.7,
-                  },
-                },
-              }}
-            />
-          </Box>
-        </Collapse>
-
         <List sx={{ width: "100%", p: 0 }}>
-          {recentTransactions.length > 0 ? (
-            recentTransactions.map((tx, idx) => {
-              const isIncome = tx.isIncome;
-              return (
-                <Box
-                  key={idx}
-                  sx={{
-                    bgcolor: colors.incomeExpenseCard,
-                    borderRadius: 3,
-                    mb: 1.5,
-                    px: 2,
-                    py: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease-in-out",
-                    "&:hover": {
-                      bgcolor: alpha(colors.primary, 0.08),
-                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                      border: `1px solid ${alpha(colors.primary, 0.3)}`,
-                    },
-                  }}
-                  onClick={() => {
-                    router.push(`/expenses/${tx.id}`);
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Box>
-                      <Typography
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: "0.8rem",
-                          color: colors.text,
-                          mb: 0.8,
-                        }}
-                      >
-                        {tx.description}
-                      </Typography>
-                      <Typography
-                        sx={{
-                          color: colors.textSecondary,
-                          fontSize: "0.7rem",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {tx.category} • {displayDateTime({ date: tx.date })}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Typography
-                    sx={{
-                      fontWeight: 700,
-                      color: isIncome ? colors.income : colors.expense,
-                      fontSize: "1rem",
-                    }}
-                  >
-                    {isIncome ? "+" : "-"}
-                    {Math.abs(tx.amount).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </Typography>
-                </Box>
-              );
-            })
-          ) : (
-            <Box
-              sx={{
-                textAlign: "center",
-                py: 6,
-                color: colors.textSecondary,
-              }}
-            >
-              <Typography
-                sx={{
-                  fontSize: "0.95rem",
-                  fontWeight: 500,
-                  opacity: 0.8,
-                }}
-              >
-                {searchQuery.trim()
-                  ? "No transactions found"
-                  : "No transactions yet"}
-              </Typography>
-            </Box>
-          )}
+          <ExpenseListCard expenses={recentTransactions} />
         </List>
-        <Tooltip title="Coming soon">
-          <span>
-            <Button
-              variant="contained"
-              href="/advanced-search"
-              disabled={true}
-              sx={{
-                mt: 3,
-                width: "100%",
-                bgcolor: colors.primary,
-                color: "#ffffff",
-                fontWeight: 600,
-                fontSize: "0.9rem",
-                borderRadius: 2,
-                textTransform: "none",
-                boxShadow: 0,
-                py: 1.2,
-                "&:hover": {
-                  bgcolor: colors.accent,
-                  transform: "translateY(-1px)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                },
-                transition: "all 0.2s ease-in-out",
-              }}
-            >
-              Advanced Search
-            </Button>
-          </span>
-        </Tooltip>
       </CardContent>
     </Card>
   );
