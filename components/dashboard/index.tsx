@@ -12,7 +12,6 @@ import {
   backButton,
   init,
   mainButton,
-  miniAppReady,
   settingsButton,
 } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
