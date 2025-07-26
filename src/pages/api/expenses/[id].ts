@@ -80,8 +80,10 @@ export default async function handler(
           `
           )
           .eq("id", id)
-          .eq("user_id", telegram_id)
+          .eq("chat_id", telegram_id)
           .single();
+
+        console.log("expense", expense);
 
         if (error) {
           console.error("Error fetching expense:", error);
@@ -160,7 +162,7 @@ export default async function handler(
           .from("expenses")
           .select("id")
           .eq("id", id)
-          .eq("user_id", telegram_id)
+          .eq("chat_id", telegram_id)
           .single();
 
         if (fetchError || !existingExpense) {
@@ -178,7 +180,7 @@ export default async function handler(
             updated_at: new Date().toISOString(),
           })
           .eq("id", id)
-          .eq("user_id", telegram_id)
+          .eq("chat_id", telegram_id)
           .select(
             `
             *,
