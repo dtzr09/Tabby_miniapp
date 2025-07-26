@@ -17,6 +17,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useState } from "react";
+import { useRouter } from "next/router";
 
 interface Expense {
   id: number;
@@ -38,6 +39,7 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
   const { colors } = useTheme();
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
 
   // Use sample data if no expenses provided, otherwise use provided expenses
   const transactionsToUse = expenses.length > 0 ? expenses : [];
@@ -55,12 +57,10 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
     })
     .slice(0, 5)
     .map((exp) => ({
+      id: exp.id,
       description: exp.description,
       category: exp.category?.name || "Other",
-      date: new Date(exp.date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
+      date: exp.date, // Keep the original date string
       amount: exp.amount,
       isIncome: exp.is_income,
     }));
@@ -74,6 +74,31 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
+  };
+
+  const displayDateTime = (entry: { date: string }) => {
+    const expenseDate = new Date(entry.date);
+    const today = new Date();
+
+    // Check if the expense is from today
+    if (expenseDate.toDateString() === today.toDateString()) {
+      const time = expenseDate.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+      return time;
+    }
+
+    // For older expenses, show both date and time
+    const date = expenseDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+    const time = expenseDate.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    return `${date} • ${time}`;
   };
 
   return (
@@ -190,6 +215,16 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      bgcolor: alpha(colors.primary, 0.08),
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                      border: `1px solid ${alpha(colors.primary, 0.3)}`,
+                    },
+                  }}
+                  onClick={() => {
+                    router.push(`/expenses/${tx.id}`);
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -211,7 +246,7 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
                           fontWeight: 500,
                         }}
                       >
-                        {tx.category} • {tx.date}
+                        {tx.category} • {displayDateTime({ date: tx.date })}
                       </Typography>
                     </Box>
                   </Box>

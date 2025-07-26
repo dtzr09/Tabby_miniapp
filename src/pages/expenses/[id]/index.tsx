@@ -14,87 +14,62 @@ import {
   MenuItem,
   FormControl,
   Skeleton,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import { useTheme } from "../contexts/ThemeContext";
-import { currencies } from "../../utils/preferencesData";
-import { Country, getAllCountries, getCountry } from "countries-and-timezones";
-import { TelegramWebApp } from "../../utils/types";
-import countryToCurrency from "country-to-currency";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { TelegramWebApp } from "../../../../utils/types";
 import { useForm, Controller } from "react-hook-form";
 
-// Define UserPreferences interface locally since it's not exported from the context
-interface UserPreferences {
-  currency: string;
-  timezone: string;
-  country: string;
+interface Category {
+  id: number;
+  name: string;
+  emoji?: string;
 }
 
-const Settings = () => {
+interface Expense {
+  id: number;
+  amount: number;
+  description: string;
+  date: string;
+  is_income: boolean;
+  category?: Category;
+}
+
+interface ExpenseFormData {
+  description: string;
+  amount: string;
+  category_id: number;
+  is_income: boolean;
+}
+
+const ExpenseDetail = () => {
   const router = useRouter();
+  const { id } = router.query;
   const { colors } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
+  const [expense, setExpense] = useState<Expense | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
 
-  const defaultValues: UserPreferences = {
-    currency: "SGD",
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    country: "SG",
+  const defaultValues: ExpenseFormData = {
+    description: "",
+    amount: "",
+    category_id: 0,
+    is_income: false,
   };
 
   const {
     control,
     handleSubmit,
-    setValue,
     formState: { isDirty, isSubmitting },
     reset,
-  } = useForm<UserPreferences>({
+  } = useForm<ExpenseFormData>({
     defaultValues,
     mode: "onChange",
   });
 
-  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
-
-  // Get all countries and sort them by name
-  const countries = getAllCountries();
-  const sortedCountries = Object.values(countries).sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
-
-  const [filterDataLoaded, setFilterDataLoaded] = useState(false);
-  const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
-  const [filteredCurrencies, setFilteredCurrencies] = useState<
-    typeof currencies
-  >([]);
-
-  useEffect(() => {
-    const allCountries = getAllCountries();
-
-    const supportedCurrencyCodes = new Set(
-      currencies.map((c) => c.code as keyof typeof countryToCurrency)
-    );
-
-    const validCountries = Object.values(allCountries).filter((country) => {
-      const currency =
-        countryToCurrency[country.id as keyof typeof countryToCurrency];
-      return (
-        currency &&
-        supportedCurrencyCodes.has(currency as keyof typeof countryToCurrency)
-      );
-    });
-
-    const pairedCurrencyCodes = new Set<string>(
-      Object.values(countryToCurrency)
-    );
-
-    const validCurrencies = currencies.filter((c) =>
-      pairedCurrencyCodes.has(c.code)
-    );
-
-    setFilteredCountries(validCountries);
-    setFilteredCurrencies(validCurrencies);
-    setFilterDataLoaded(true);
-  }, []);
-
-  const loadPreferencesFromBackend = useCallback(
+  // Load categories from backend (commented out for mock data testing)
+  const loadCategories = useCallback(
     async (telegram_id: string, initData: string): Promise<boolean> => {
       try {
         const params = new URLSearchParams({
@@ -102,35 +77,70 @@ const Settings = () => {
           initData,
         });
 
-        const response = await fetch(`/api/preferences?${params.toString()}`);
+        const response = await fetch(`/api/categories?${params.toString()}`);
 
         if (!response.ok) {
-          console.error("Failed to load preferences:", response.statusText);
+          console.error("Failed to load categories:", response.statusText);
           return false;
         }
 
         const data = await response.json();
+        setCategories(data.categories || []);
+        return true;
+      } catch (error) {
+        console.error("❌ Error loading categories:", error);
+        return false;
+      }
+    },
+    []
+  );
 
-        // Update form with backend data
+  // Load expense detail from backend (commented out for mock data testing)
+  const loadExpenseDetail = useCallback(
+    async (
+      expenseId: string,
+      telegram_id: string,
+      initData: string
+    ): Promise<boolean> => {
+      try {
+        const params = new URLSearchParams({
+          telegram_id,
+          initData,
+        });
+
+        const response = await fetch(
+          `/api/expenses/${expenseId}?${params.toString()}`
+        );
+
+        if (!response.ok) {
+          console.error("Failed to load expense:", response.statusText);
+          return false;
+        }
+
+        const data = await response.json();
+        setExpense(data.expense);
+
+        // Update form with expense data
         const formData = {
-          currency: data.currency || defaultValues.currency,
-          timezone: data.timezone || defaultValues.timezone,
-          country: data.country || defaultValues.country,
+          description: data.expense.description || "",
+          amount: Math.abs(data.expense.amount).toString(),
+          category_id: data.expense.category?.id || 0,
+          is_income: data.expense.is_income || false,
         };
 
-        // Reset the form with the backend data as the new baseline
+        // Reset the form with the expense data as the new baseline
         reset(formData, { keepDirty: false });
 
         return true;
       } catch (error) {
-        console.error("❌ Error loading preferences:", error);
+        console.error("❌ Error loading expense:", error);
         return false;
       }
     },
-    [reset, defaultValues]
+    [reset]
   );
 
-  // Load preferences from backend only once on mount
+  // Initialize Telegram WebApp and load data
   useEffect(() => {
     if (typeof window !== "undefined") {
       init();
@@ -141,41 +151,38 @@ const Settings = () => {
           backButton.show();
 
           backButton.onClick(() => {
-            router.push("/");
+            router.back();
           });
 
           mainButton.mount();
 
-          // Load preferences from backend only once
+          // Uncomment this section when ready to use real API
           const webApp = window.Telegram?.WebApp as TelegramWebApp;
-          if (webApp && !isLoading && !preferencesLoaded) {
+          if (webApp && !isLoading) {
             const user = webApp.initDataUnsafe?.user;
             const initData = webApp.initData;
 
             if (user?.id && initData) {
-              // prevent overwrite if already loaded
-              if (!preferencesLoaded) {
-                setIsLoading(true);
-                try {
-                  await loadPreferencesFromBackend(
-                    user.id.toString(),
-                    initData
-                  );
-                  setPreferencesLoaded(true);
-                } catch (error) {
-                  console.error("Error loading preferences:", error);
-                } finally {
-                  setIsLoading(false);
-                }
+              setIsLoading(true);
+              try {
+                // Load categories and expense detail in parallel
+                await Promise.all([
+                  loadCategories(user.id.toString(), initData),
+                  loadExpenseDetail(id as string, user.id.toString(), initData),
+                ]);
+              } catch (error) {
+                console.error("Error loading data:", error);
+              } finally {
+                setIsLoading(false);
               }
             }
           }
         } catch (err) {
-          console.error("Error showing settings button:", err);
+          console.error("Error initializing expense detail:", err);
         }
       }, 0);
     }
-  }, [loadPreferencesFromBackend, router, isLoading, preferencesLoaded]);
+  }, []); // Empty dependency array to run only once
 
   // Update button parameters when theme colors change
   useEffect(() => {
@@ -198,7 +205,6 @@ const Settings = () => {
           ? colors.disabled
           : `#${colors.disabled}`;
 
-        // Make background darker when disabled
         const backgroundColor = isEnabled
           ? (baseColor as `#${string}`)
           : (enabledColor as `#${string}`);
@@ -230,35 +236,36 @@ const Settings = () => {
   ]);
 
   const onSubmit = useCallback(
-    async (data: UserPreferences) => {
+    async (data: ExpenseFormData) => {
       try {
         const webApp = window.Telegram?.WebApp as TelegramWebApp;
         const user = webApp.initDataUnsafe?.user;
         const initData = webApp.initData;
 
-        if (!user?.id || !initData) {
-          console.error("Missing Telegram user/init data");
+        if (!user?.id || !initData || !id) {
+          console.error("Missing Telegram user/init data or expense ID");
           return;
         }
 
-        const response = await fetch("/api/preferences", {
-          method: "POST",
+        const response = await fetch(`/api/expenses/${id}`, {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             telegram_id: user.id.toString(),
             initData,
             ...data,
+            ...data,
+            amount: parseFloat(data.amount),
           }),
         });
 
         if (!response.ok) {
-          console.error("Failed to save preferences:", await response.text());
+          console.error("Failed to update expense:", await response.text());
           return;
         }
-
         showPopup({
           title: "Success",
-          message: "Settings updated successfully",
+          message: "Expense updated successfully",
           buttons: [
             {
               type: "ok",
@@ -266,10 +273,9 @@ const Settings = () => {
           ],
         });
 
-        // Mark form as clean after save with the new baseline values
         reset(data, { keepDirty: false });
       } catch (err) {
-        console.error("Error saving preferences:", err);
+        console.error("Error updating expense:", err);
       }
     },
     [reset]
@@ -286,16 +292,18 @@ const Settings = () => {
     }
   }, [handleSubmit, onSubmit]);
 
-  if (
-    !countries ||
-    Object.keys(countries).length === 0 ||
-    !filterDataLoaded ||
-    !preferencesLoaded ||
-    isLoading
-  ) {
+  if (isLoading || !expense) {
     return (
       <Box sx={{ p: 2 }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Skeleton
+            variant="rectangular"
+            sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
+          />
+          <Skeleton
+            variant="rectangular"
+            sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
+          />
           <Skeleton
             variant="rectangular"
             sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
@@ -309,29 +317,15 @@ const Settings = () => {
     );
   }
 
-  const handleCountryChange = (newCountryCode: string) => {
-    const newCountry = getCountry(newCountryCode);
-
-    if (newCountry && newCountry.timezones && newCountry.timezones.length > 0) {
-      // Use the first timezone of the country
-      const newTimezone = newCountry.timezones[0];
-
-      setValue("country", newCountry.id, { shouldDirty: true });
-      setValue("timezone", newTimezone, { shouldDirty: true });
-
-      // Auto-update currency based on country
-      const countryCurrency =
-        countryToCurrency[newCountryCode as keyof typeof countryToCurrency];
-      if (countryCurrency) {
-        // Check if the currency is available in our supported currencies
-        const isCurrencySupported = currencies.some(
-          (c) => c.code === countryCurrency
-        );
-        if (isCurrencySupported) {
-          setValue("currency", countryCurrency, { shouldDirty: true });
-        }
-      }
-    }
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
   };
 
   return (
@@ -344,6 +338,7 @@ const Settings = () => {
       }}
     >
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {/* Date and Time (Read-only) */}
         <Box>
           <Typography
             variant="overline"
@@ -356,28 +351,162 @@ const Settings = () => {
               marginBottom: 1,
             }}
           >
-            COUNTRY
+            DATE & TIME
+          </Typography>
+          <Typography
+            sx={{
+              color: colors.textSecondary,
+              fontSize: "0.9rem",
+              padding: "12px 16px",
+              background: colors.surface,
+              borderRadius: 1,
+            }}
+          >
+            {formatDateTime(expense.date)}
+          </Typography>
+        </Box>
+
+        {/* Description */}
+        <Box>
+          <Typography
+            variant="overline"
+            sx={{
+              color: colors.primary,
+              fontWeight: 600,
+              fontSize: "0.75rem",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              marginBottom: 1,
+            }}
+          >
+            DESCRIPTION
+          </Typography>
+          <Controller
+            name="description"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                placeholder="Enter description"
+                disabled={isLoading}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    color: colors.text,
+                    background: colors.card,
+                    borderRadius: 1,
+                    "& fieldset": {
+                      border: "none",
+                    },
+                    "&:hover fieldset": {
+                      border: "none",
+                    },
+                    "&.Mui-focused fieldset": {
+                      border: "none",
+                    },
+                    "& .MuiInputBase-input": {
+                      padding: "12px 16px",
+                    },
+                  },
+                  "& .MuiInputBase-input::placeholder": {
+                    color: colors.textSecondary,
+                    opacity: 0.7,
+                  },
+                }}
+              />
+            )}
+          />
+        </Box>
+
+        {/* Amount */}
+        <Box>
+          <Typography
+            variant="overline"
+            sx={{
+              color: colors.primary,
+              fontWeight: 600,
+              fontSize: "0.75rem",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              marginBottom: 1,
+            }}
+          >
+            AMOUNT
+          </Typography>
+          <Controller
+            name="amount"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                type="number"
+                placeholder="0.00"
+                disabled={isLoading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">$</InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    color: colors.text,
+                    background: colors.card,
+                    borderRadius: 1,
+                    "& fieldset": {
+                      border: "none",
+                    },
+                    "&:hover fieldset": {
+                      border: "none",
+                    },
+                    "&.Mui-focused fieldset": {
+                      border: "none",
+                    },
+                    "& .MuiInputBase-input": {
+                      padding: "12px 16px",
+                    },
+                  },
+                  "& .MuiInputBase-input::placeholder": {
+                    color: colors.textSecondary,
+                    opacity: 0.7,
+                  },
+                }}
+              />
+            )}
+          />
+        </Box>
+
+        {/* Category */}
+        <Box>
+          <Typography
+            variant="overline"
+            sx={{
+              color: colors.primary,
+              fontWeight: 600,
+              fontSize: "0.75rem",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              marginBottom: 1,
+            }}
+          >
+            CATEGORY
           </Typography>
           <FormControl fullWidth>
             <Controller
-              name="country"
+              name="category_id"
               control={control}
               render={({ field }) => (
                 <Select
                   {...field}
-                  value={field.value || "SG"}
-                  onChange={(event) => {
-                    const newCountryCode = event.target.value.toUpperCase();
-                    field.onChange(newCountryCode);
-                    handleCountryChange(newCountryCode);
-                  }}
+                  value={field.value || 0}
+                  onChange={field.onChange}
                   disabled={isLoading}
                   displayEmpty
                   renderValue={(value) => {
-                    const country = filteredCountries.find(
-                      (c) => c.id === value
-                    );
-                    return country ? country.name : value;
+                    const category = categories.find((c) => c.id === value);
+                    return category
+                      ? `${category.emoji || ""} ${category.name}`
+                      : "Select category";
                   }}
                   sx={{
                     color: colors.text,
@@ -397,9 +526,6 @@ const Settings = () => {
                     },
                     "& .MuiSelect-select": {
                       padding: "12px 16px",
-                    },
-                    "& .MuiMenu-paper": {
-                      background: colors.card,
                     },
                   }}
                   MenuProps={{
@@ -423,10 +549,10 @@ const Settings = () => {
                     },
                   }}
                 >
-                  {sortedCountries.map((country) => (
-                    <MenuItem key={country.id} value={country.id}>
+                  {categories.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
                       <Typography sx={{ color: "inherit" }}>
-                        {country.name}
+                        {category.emoji || ""} {category.name}
                       </Typography>
                     </MenuItem>
                   ))}
@@ -436,7 +562,7 @@ const Settings = () => {
           </FormControl>
         </Box>
 
-        {/* Currency Section */}
+        {/* Transaction Type */}
         <Box>
           <Typography
             variant="overline"
@@ -449,19 +575,18 @@ const Settings = () => {
               marginBottom: 1,
             }}
           >
-            CURRENCY
+            TYPE
           </Typography>
           <FormControl fullWidth>
             <Controller
-              name="currency"
+              name="is_income"
               control={control}
               render={({ field }) => (
                 <Select
                   {...field}
-                  value={field.value || "SGD"}
-                  onChange={field.onChange}
+                  value={field.value ? "income" : "expense"}
+                  onChange={(e) => field.onChange(e.target.value === "income")}
                   disabled={isLoading}
-                  displayEmpty
                   sx={{
                     color: colors.text,
                     background: colors.card,
@@ -480,9 +605,6 @@ const Settings = () => {
                     },
                     "& .MuiSelect-select": {
                       padding: "12px 16px",
-                    },
-                    "& .MuiMenu-paper": {
-                      background: colors.card,
                     },
                   }}
                   MenuProps={{
@@ -506,13 +628,8 @@ const Settings = () => {
                     },
                   }}
                 >
-                  {filteredCurrencies.map((currency) => (
-                    <MenuItem key={currency.code} value={currency.code}>
-                      <Typography sx={{ color: "inherit" }}>
-                        {currency.code} - {currency.name}
-                      </Typography>
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="expense">Expense</MenuItem>
+                  <MenuItem value="income">Income</MenuItem>
                 </Select>
               )}
             />
@@ -523,4 +640,4 @@ const Settings = () => {
   );
 };
 
-export default Settings;
+export default ExpenseDetail;
