@@ -37,7 +37,7 @@ const SearchMenuCard = (props: SearchMenuCardProps) => {
     >
       <Paper
         sx={{
-          bgcolor: "#4a5e80",
+          bgcolor: colors.inputBg,
           border: `1px solid ${colors.border}`,
           width: props.anchorEl?.offsetWidth || "auto",
           borderRadius: 2,

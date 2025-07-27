@@ -1,6 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import React from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { chartColors } from "../../utils/chartColors";
 
 interface ChartLegendProps {
   data: {
@@ -11,17 +12,6 @@ interface ChartLegendProps {
 }
 const ChartLegend = (props: ChartLegendProps) => {
   const { colors } = useTheme();
-
-  const chartColors = [
-    colors.primary,
-    colors.income,
-    colors.expense,
-    colors.accent,
-    "#FF6B6B",
-    "#4ECDC4",
-    "#45B7D1",
-    "#96CEB4",
-  ];
 
   if (props.data.length === 0) return null;
 

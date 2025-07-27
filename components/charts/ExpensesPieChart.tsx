@@ -31,6 +31,7 @@ const ExpensesPieChart = (props: ExpensesPieChartProps) => {
               outerRadius={100}
               paddingAngle={2}
               dataKey="value"
+              stroke="none"
             >
               {props.chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />

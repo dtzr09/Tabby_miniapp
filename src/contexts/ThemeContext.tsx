@@ -42,6 +42,7 @@ interface ThemeContextType {
     incomeExpenseCard: string;
     cardBg: string;
     disabled: string;
+    inputBg: string;
   };
   fontFamily: string;
   toggleTheme: () => void;
@@ -72,6 +73,7 @@ export const useTheme = () => {
         incomeExpenseCard: "#f8fafc",
         cardBg: "#eaf2fe",
         disabled: "#334155",
+        inputBg: "#4a5e80",
       },
       fontFamily:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
@@ -171,6 +173,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
         incomeExpenseCard: "#283442",
         cardBg: "#1e2a38",
         disabled: "#334155",
+        inputBg: "#4a5e80",
       };
     }
     if (manualTheme === "light") {
@@ -190,6 +193,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
         incomeExpenseCard: "#f8fafc",
         cardBg: "#eaf2fe",
         disabled: "#334155",
+        inputBg: "#4a5e80",
       };
     }
     if (Object.keys(theme).length === 0) {
@@ -209,6 +213,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
         incomeExpenseCard: "#f8fafc",
         cardBg: "#eaf2fe",
         disabled: "#334155",
+        inputBg: "#4a5e80",
       };
     }
     return {
@@ -227,6 +232,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
       incomeExpenseCard: isDark ? "#283442" : "#f8fafc",
       cardBg: isDark ? "#1e2a38" : "#eaf2fe",
       disabled: isDark ? "#334155" : "#dde6f2",
+      inputBg: isDark ? "#4a5e80" : "#4a5e80",
     };
   };
 

@@ -393,8 +393,8 @@ const ExpenseDetail = () => {
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     color: colors.text,
-                    background: colors.card,
-                    borderRadius: 1,
+                    background: colors.inputBg,
+                    borderRadius: 2,
                     "& fieldset": {
                       border: "none",
                     },
@@ -451,8 +451,8 @@ const ExpenseDetail = () => {
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     color: colors.text,
-                    background: colors.card,
-                    borderRadius: 1,
+                    background: colors.inputBg,
+                    borderRadius: 2,
                     "& fieldset": {
                       border: "none",
                     },
@@ -510,8 +510,8 @@ const ExpenseDetail = () => {
                   }}
                   sx={{
                     color: colors.text,
-                    background: colors.card,
-                    borderRadius: 1,
+                    background: colors.inputBg,
+                    borderRadius: 2,
                     "& .MuiOutlinedInput-notchedOutline": {
                       border: "none",
                     },
@@ -589,8 +589,8 @@ const ExpenseDetail = () => {
                   disabled={isLoading}
                   sx={{
                     color: colors.text,
-                    background: colors.card,
-                    borderRadius: 1,
+                    background: colors.inputBg,
+                    borderRadius: 2,
                     "& .MuiOutlinedInput-notchedOutline": {
                       border: "none",
                     },

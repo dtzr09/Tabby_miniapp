@@ -381,8 +381,8 @@ const Settings = () => {
                   }}
                   sx={{
                     color: colors.text,
-                    background: colors.card,
-                    borderRadius: 1,
+                    background: colors.inputBg,
+                    borderRadius: 2,
                     "& .MuiOutlinedInput-notchedOutline": {
                       border: "none",
                     },
@@ -464,8 +464,8 @@ const Settings = () => {
                   displayEmpty
                   sx={{
                     color: colors.text,
-                    background: colors.card,
-                    borderRadius: 1,
+                    background: colors.inputBg,
+                    borderRadius: 2,
                     "& .MuiOutlinedInput-notchedOutline": {
                       border: "none",
                     },

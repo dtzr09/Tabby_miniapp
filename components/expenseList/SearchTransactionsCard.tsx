@@ -7,6 +7,8 @@ import {
   IconButton,
   TextField,
   alpha,
+  Divider,
+  Button,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SearchIcon from "@mui/icons-material/Search";
@@ -168,6 +170,11 @@ export default function SearchTransactionsCard({
   };
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const showClearAllFiltersButton =
+    categoryFilter !== "All Categories" ||
+    amountFilter !== "All Amounts" ||
+    dateFilter !== "All Dates" ||
+    searchQuery.trim() !== "";
 
   return (
     <Card
@@ -232,7 +239,7 @@ export default function SearchTransactionsCard({
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
-                bgcolor: "#4a5e80",
+                bgcolor: colors.inputBg,
                 "& fieldset": {
                   border: "none",
                 },
@@ -304,6 +311,38 @@ export default function SearchTransactionsCard({
         <List sx={{ width: "100%", p: 0 }}>
           <ExpenseListCard expenses={filteredTransactions} />
         </List>
+
+        {showClearAllFiltersButton && (
+          <>
+            <Divider
+              sx={{ my: 2, backgroundColor: colors.inputBg }}
+              orientation="horizontal"
+            />
+
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                textTransform: "none",
+                backgroundColor: colors.inputBg,
+              }}
+              onClick={() => {
+                setSearchQuery("");
+                setCategoryFilter("All Categories");
+                setAmountFilter("All Amounts");
+                setDateFilter("All Dates");
+                setCategoryAnchor(null);
+                setAmountAnchor(null);
+                setDateAnchor(null);
+              }}
+            >
+              Clear All Filters
+            </Button>
+          </>
+        )}
 
         {/* Filter Menus */}
         <SearchMenuCard

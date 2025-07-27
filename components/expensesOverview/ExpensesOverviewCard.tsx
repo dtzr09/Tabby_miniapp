@@ -5,6 +5,7 @@ import ExpensesPieChart from "../charts/ExpensesPieChart";
 import { DBData, ViewMode } from "../../utils/types";
 import ExpensesBarChart from "../charts/ExpensesBarChart";
 import TimeFrame from "./TimeFrame";
+import { chartColors } from "../../utils/chartColors";
 
 interface ExpensesOverviewCardProps {
   viewMode?: ViewMode;
@@ -18,24 +19,15 @@ export default function ExpensesOverviewCard({
   data,
 }: ExpensesOverviewCardProps) {
   const { colors } = useTheme();
-  // Color palette for charts
-  const chartColors = [
-    colors.primary,
-    colors.income,
-    colors.expense,
-    colors.accent,
-    "#FF6B6B",
-    "#4ECDC4",
-    "#45B7D1",
-    "#96CEB4",
-  ];
 
   // Prepare data for Recharts
-  const barChartData = data.dailyExpenses.map((day, index) => ({
+  const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
+
+  const barChartData = data.dailyExpenses.map((day) => ({
     name: day.day,
     amount: day.amount,
-    lineValue: day.amount * 1.1, // Line chart value (slightly higher for visibility)
-    fill: index === 1 ? colors.accent : colors.primary,
+    lineValue: day.amount * 1.1,
+    fill: day.day === today ? colors.primary : colors.accent,
   }));
 
   const pieChartData = data.categories
