@@ -2,7 +2,7 @@
 export const chartColors = [
   "#ff7f0e", // orange
   "#1f77b4", // blue
-  "#ff7f0e", // orange
+  "#00bcd4", // cyan
   "#2ca02c", // green
   "#d62728", // red
   "#9467bd", // purple
