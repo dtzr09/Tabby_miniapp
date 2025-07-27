@@ -3,7 +3,7 @@ import { ExpensesAndBudgets, TelegramWebApp } from "../utils/types";
 
 export const deleteExpense = async (
   id: number,
-  onRefetch: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>
+  onRefetch?: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>
 ) => {
   try {
     const webApp = window.Telegram?.WebApp as TelegramWebApp;
@@ -28,7 +28,7 @@ export const deleteExpense = async (
     if (!response.ok) {
       throw new Error("Failed to delete expense");
     }
-    await onRefetch();
+    await onRefetch?.();
   } catch (err) {
     console.error("Delete failed:", err);
   }
@@ -60,6 +60,41 @@ export const fetchExpenses = async (telegram_id: string, initData: string) => {
 
   const data = await response.json();
   return Array.isArray(data) ? data : [];
+};
+
+export const fetchExpenseDetail = async (
+  id: number,
+  telegram_id: string,
+  initData: string
+) => {
+  const params = new URLSearchParams({
+    telegram_id,
+    initData,
+  });
+
+  const response = await fetch(`/api/expenses/${id}?${params.toString()}`).then(
+    (res) => {
+      if (!res.ok) {
+        return res.text().then((text) => {
+          console.error("❌ Expense Detail API Error:", text);
+          throw new Error(`Expense Detail error ${res.status}: ${text}`);
+        });
+      }
+      return res.json();
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Expense Detail error ${response.status}: ${response.statusText}`
+    );
+  }
+
+  const data = await response.json();
+  if (data.expense) {
+    return data.expense;
+  }
+  return "test";
 };
 
 export const fetchExpensesAndBudgets = async (

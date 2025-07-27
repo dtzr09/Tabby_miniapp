@@ -17,7 +17,7 @@ export interface DeleteExpenseDialogProps {
   onSuccess: () => void;
   showConfirm: boolean;
   setShowConfirm: (show: boolean) => void;
-  onRefetch: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>;
+  onRefetch?: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>;
 }
 
 const DeleteExpenseDialog = ({
