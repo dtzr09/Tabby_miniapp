@@ -60,9 +60,9 @@ const ExpenseRow = ({
         )}
         <DeleteExpenseDialog
           id={tx.id}
-          onSuccess={() => {
+          onSuccess={async () => {
+            await onRefetch();
             setShowDelete(false);
-            onRefetch();
           }}
           showConfirm={showConfirm}
           setShowConfirm={setShowConfirm}
