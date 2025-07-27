@@ -83,8 +83,6 @@ export default async function handler(
           .eq("chat_id", telegram_id)
           .single();
 
-        console.log("expense", expense);
-
         if (error) {
           console.error("Error fetching expense:", error);
           return res.status(500).json({ error: "Failed to fetch expense" });
@@ -196,6 +194,32 @@ export default async function handler(
 
         return res.status(200).json({ expense: updatedExpense });
       }
+    } else if (req.method === "DELETE") {
+      // Delete expense
+      if (isLocal) {
+        await postgresClient.query(
+          "DELETE FROM expenses WHERE id = $1 AND chat_id = $2",
+          [id, telegram_id]
+        );
+      } else {
+        if (!supabaseAdmin) {
+          return res
+            .status(500)
+            .json({ error: "Supabase client not configured" });
+        }
+
+        const { error } = await supabaseAdmin
+          .from("expenses")
+          .delete()
+          .eq("id", id)
+          .eq("chat_id", telegram_id);
+
+        if (error) {
+          return res.status(500).json({ error: error.message });
+        }
+      }
+
+      return res.status(200).json({ success: true });
     } else {
       return res.status(405).json({ error: "Method not allowed" });
     }

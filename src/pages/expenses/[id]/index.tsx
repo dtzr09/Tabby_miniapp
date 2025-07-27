@@ -182,7 +182,7 @@ const ExpenseDetail = () => {
         }
       }, 0);
     }
-  }, []); // Empty dependency array to run only once
+  }, []);
 
   // Update button parameters when theme colors change
   useEffect(() => {
