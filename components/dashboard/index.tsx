@@ -9,7 +9,6 @@ import { Budget, Expense, TelegramWebApp, ViewMode } from "../../utils/types";
 import {
   backButton,
   init,
-  initData,
   mainButton,
   settingsButton,
 } from "@telegram-apps/sdk";
@@ -19,7 +18,7 @@ import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
 import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
 import { fetchExpensesAndBudgets } from "../../services/expenses";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 export interface TelegramUser {
   id: string;
