@@ -1,7 +1,6 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useRouter } from "next/router";
 import ExpenseRow from "./ExpenseRow";
 export interface ExpenseListCardProps {
   expenses: {
