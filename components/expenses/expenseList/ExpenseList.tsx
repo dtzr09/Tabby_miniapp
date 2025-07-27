@@ -14,6 +14,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useState } from "react";
 import SearchTransactionsCard from "./SearchTransactionsCard";
 import ExpenseListCard from "./ExpenseListCard";
+import { QueryObserverResult } from "@tanstack/react-query";
+import { ExpensesAndBudgets } from "../../../utils/types";
 
 interface Expense {
   id: number;
@@ -29,7 +31,7 @@ interface Expense {
 
 interface ExpenseListProps {
   expenses: Expense[];
-  onRefetch: () => void;
+  onRefetch: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>;
 }
 
 export default function ExpenseList({ expenses, onRefetch }: ExpenseListProps) {

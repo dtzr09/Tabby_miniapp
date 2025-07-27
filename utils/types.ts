@@ -61,3 +61,8 @@ export interface BarChartData {
 }
 
 export type ViewMode = "daily" | "weekly" | "monthly";
+
+export type ExpensesAndBudgets = {
+  expenses: Expense[];
+  budgets: Budget[];
+};

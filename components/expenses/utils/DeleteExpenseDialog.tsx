@@ -7,14 +7,17 @@ import {
   Button,
   Typography,
 } from "@mui/material";
-import { handleDelete } from "../../../services/expenses";
+import { deleteExpense } from "../../../services/expenses";
 import { useTheme } from "@/contexts/ThemeContext";
+import { QueryObserverResult } from "@tanstack/react-query";
+import { ExpensesAndBudgets } from "../../../utils/types";
 
 export interface DeleteExpenseDialogProps {
   id: number;
   onSuccess: () => void;
   showConfirm: boolean;
   setShowConfirm: (show: boolean) => void;
+  onRefetch: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>;
 }
 
 const DeleteExpenseDialog = ({
@@ -22,6 +25,7 @@ const DeleteExpenseDialog = ({
   onSuccess,
   showConfirm,
   setShowConfirm,
+  onRefetch,
 }: DeleteExpenseDialogProps) => {
   const { colors, fontFamily } = useTheme();
 
@@ -61,12 +65,11 @@ const DeleteExpenseDialog = ({
         <Button
           sx={{ color: colors.expense }}
           color="error"
-          onClick={() =>
-            handleDelete(id, () => {
-              setShowConfirm(false);
-              onSuccess();
-            })
-          }
+          onClick={() => {
+            deleteExpense(id, onRefetch);
+            setShowConfirm(false);
+            onSuccess();
+          }}
         >
           <Typography sx={{ fontSize: "0.8rem", fontWeight: 500 }}>
             Delete

@@ -7,13 +7,15 @@ import React, { useState } from "react";
 import { ExpenseListCardProps } from "./ExpenseListCard";
 import DeleteExpenseDialog from "../utils/DeleteExpenseDialog";
 import { displayDateTime } from "../../../utils/displayDateTime";
+import { QueryObserverResult } from "@tanstack/react-query";
+import { ExpensesAndBudgets } from "../../../utils/types";
 
 const ExpenseRow = ({
   tx,
   onRefetch,
 }: {
   tx: ExpenseListCardProps["expenses"][0];
-  onRefetch: () => void;
+  onRefetch: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>;
 }) => {
   const { colors } = useTheme();
   const router = useRouter();
@@ -60,10 +62,8 @@ const ExpenseRow = ({
         )}
         <DeleteExpenseDialog
           id={tx.id}
-          onSuccess={async () => {
-            await onRefetch();
-            setShowDelete(false);
-          }}
+          onRefetch={onRefetch}
+          onSuccess={() => setShowDelete(false)}
           showConfirm={showConfirm}
           setShowConfirm={setShowConfirm}
         />

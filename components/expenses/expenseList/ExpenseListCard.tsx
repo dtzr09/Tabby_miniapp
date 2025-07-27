@@ -2,6 +2,9 @@ import React from "react";
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "@/contexts/ThemeContext";
 import ExpenseRow from "./ExpenseRow";
+import { QueryObserverResult } from "@tanstack/react-query";
+import { ExpensesAndBudgets } from "../../../utils/types";
+
 export interface ExpenseListCardProps {
   expenses: {
     id: number;
@@ -12,7 +15,7 @@ export interface ExpenseListCardProps {
     amount: number;
     isIncome: boolean;
   }[];
-  onRefetch: () => void;
+  onRefetch: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>;
 }
 
 const ExpenseListCard = (props: ExpenseListCardProps) => {
@@ -43,11 +46,7 @@ const ExpenseListCard = (props: ExpenseListCardProps) => {
   return (
     <>
       {props.expenses.map((tx) => (
-        <ExpenseRow
-          key={tx.id}
-          tx={tx}
-          onRefetch={props.onRefetch}
-        />
+        <ExpenseRow key={tx.id} tx={tx} onRefetch={props.onRefetch} />
       ))}
     </>
   );

@@ -1,6 +1,10 @@
-import { TelegramWebApp } from "../utils/types";
+import { QueryObserverResult } from "@tanstack/react-query";
+import { ExpensesAndBudgets, TelegramWebApp } from "../utils/types";
 
-export const handleDelete = async (id: number, onSuccess: () => void) => {
+export const deleteExpense = async (
+  id: number,
+  onRefetch: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>
+) => {
   try {
     const webApp = window.Telegram?.WebApp as TelegramWebApp;
     const user = webApp.initDataUnsafe?.user;
@@ -24,7 +28,7 @@ export const handleDelete = async (id: number, onSuccess: () => void) => {
     if (!response.ok) {
       throw new Error("Failed to delete expense");
     }
-    onSuccess();
+    await onRefetch();
   } catch (err) {
     console.error("Delete failed:", err);
   }
