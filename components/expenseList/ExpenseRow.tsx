@@ -65,7 +65,6 @@ const ExpenseRow = ({ tx }: { tx: ExpenseListCardProps["expenses"][0] }) => {
         sx={{
           position: "relative",
           overflow: "hidden",
-          display: "flex",
         }}
       >
         {showDelete && (
