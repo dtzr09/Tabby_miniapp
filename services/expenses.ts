@@ -29,3 +29,72 @@ export const handleDelete = async (id: number, onSuccess: () => void) => {
     console.error("Delete failed:", err);
   }
 };
+
+export const fetchExpenses = async (telegram_id: string, initData: string) => {
+  const params = new URLSearchParams({
+    telegram_id,
+    initData,
+  });
+
+  const response = await fetch(`/api/expenses?${params.toString()}`).then(
+    (res) => {
+      if (!res.ok) {
+        return res.text().then((text) => {
+          console.error("❌ Expenses API Error:", text);
+          throw new Error(`Expenses error ${res.status}: ${text}`);
+        });
+      }
+      return res.json();
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Expenses error ${response.status}: ${response.statusText}`
+    );
+  }
+
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
+};
+
+export const fetchExpensesAndBudgets = async (
+  telegram_id: string,
+  initData: string
+) => {
+  const params = new URLSearchParams({
+    telegram_id,
+    initData,
+  });
+
+  const expensesResponse = fetch(`/api/expenses?${params.toString()}`).then(
+    (res) => {
+      if (!res.ok) {
+        return res.text().then((text) => {
+          console.error("❌ Expenses API Error:", text);
+          throw new Error(`Expenses error ${res.status}: ${text}`);
+        });
+      }
+      return res.json();
+    }
+  );
+
+  const budgetsResponse = fetch(`/api/budgets?${params.toString()}`).then(
+    (res) => {
+      if (!res.ok) {
+        return res.text().then((text) => {
+          console.error("❌ Budgets API Error:", text);
+          throw new Error(`Budgets error ${res.status}: ${text}`);
+        });
+      }
+      return res.json();
+    }
+  );
+
+  const [expenses, budgets] = await Promise.all([
+    expensesResponse,
+    budgetsResponse,
+  ]);
+
+  return { expenses: expenses || [], budgets: budgets || [] };
+};

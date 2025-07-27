@@ -593,6 +593,7 @@ const ExpenseDetail = () => {
           flexDirection: "row",
           gap: 1,
           p: 2,
+          mb: 2,
         }}
       >
         <Button

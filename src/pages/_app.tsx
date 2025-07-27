@@ -1,7 +1,9 @@
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { ThemeProvider } from "../contexts/ThemeContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+const queryClient = new QueryClient();
 // Extend the Window interface to include Telegram
 declare global {
   interface Window {
@@ -34,7 +36,9 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <ThemeProvider>
-        <Component {...pageProps} />
+        <QueryClientProvider client={queryClient}>
+          <Component {...pageProps} />
+        </QueryClientProvider>
       </ThemeProvider>
     </>
   );

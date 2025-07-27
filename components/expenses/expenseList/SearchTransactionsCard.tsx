@@ -34,11 +34,13 @@ interface Expense {
 interface SearchTransactionsCardProps {
   expenses: Expense[];
   onBack: () => void;
+  onRefetch: () => void;
 }
 
 export default function SearchTransactionsCard({
   expenses,
   onBack,
+  onRefetch,
 }: SearchTransactionsCardProps) {
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
@@ -343,7 +345,10 @@ export default function SearchTransactionsCard({
 
         {/* Transactions List */}
         <List sx={{ width: "100%", p: 0 }}>
-          <ExpenseListCard expenses={paginatedTransactions} />
+          <ExpenseListCard
+            expenses={paginatedTransactions}
+            onRefetch={onRefetch}
+          />
         </List>
         <Divider sx={{ mt: 2, backgroundColor: colors.inputBg }} />
         {totalPages > 1 && (
@@ -357,7 +362,7 @@ export default function SearchTransactionsCard({
               shape="rounded"
               sx={{
                 "& .MuiPaginationItem-root": {
-                  border: "none", // removes border
+                  border: "none",
                   color: colors.text,
                 },
               }}

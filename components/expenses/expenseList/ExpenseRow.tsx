@@ -8,7 +8,13 @@ import { ExpenseListCardProps } from "./ExpenseListCard";
 import DeleteExpenseDialog from "../utils/DeleteExpenseDialog";
 import { displayDateTime } from "../../../utils/displayDateTime";
 
-const ExpenseRow = ({ tx }: { tx: ExpenseListCardProps["expenses"][0] }) => {
+const ExpenseRow = ({
+  tx,
+  onRefetch,
+}: {
+  tx: ExpenseListCardProps["expenses"][0];
+  onRefetch: () => void;
+}) => {
   const { colors } = useTheme();
   const router = useRouter();
   const [showDelete, setShowDelete] = useState(false);
@@ -54,7 +60,10 @@ const ExpenseRow = ({ tx }: { tx: ExpenseListCardProps["expenses"][0] }) => {
         )}
         <DeleteExpenseDialog
           id={tx.id}
-          onSuccess={() => setShowDelete(false)}
+          onSuccess={() => {
+            setShowDelete(false);
+            onRefetch();
+          }}
           showConfirm={showConfirm}
           setShowConfirm={setShowConfirm}
         />

@@ -12,6 +12,7 @@ export interface ExpenseListCardProps {
     amount: number;
     isIncome: boolean;
   }[];
+  onRefetch: () => void;
 }
 
 const ExpenseListCard = (props: ExpenseListCardProps) => {
@@ -42,7 +43,11 @@ const ExpenseListCard = (props: ExpenseListCardProps) => {
   return (
     <>
       {props.expenses.map((tx) => (
-        <ExpenseRow key={tx.id} tx={tx} />
+        <ExpenseRow
+          key={tx.id}
+          tx={tx}
+          onRefetch={props.onRefetch}
+        />
       ))}
     </>
   );

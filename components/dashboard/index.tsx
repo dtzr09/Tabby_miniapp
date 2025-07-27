@@ -9,6 +9,7 @@ import { Budget, Expense, TelegramWebApp, ViewMode } from "../../utils/types";
 import {
   backButton,
   init,
+  initData,
   mainButton,
   settingsButton,
 } from "@telegram-apps/sdk";
@@ -17,25 +18,27 @@ import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
 import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
+import { fetchExpensesAndBudgets } from "../../services/expenses";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+export interface TelegramUser {
+  id: string;
+}
 
 const Dashboard = () => {
   const { colors, fontFamily } = useTheme();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [expensesLoaded, setExpensesLoaded] = useState(false);
-  const [budgetsLoaded, setBudgetsLoaded] = useState(false);
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
+  const [initData, setInitData] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const initializeApp = async () => {
-      setLoading(true); // Set loading to true at the start of initialization
       const webApp = window.Telegram?.WebApp as TelegramWebApp;
       if (webApp && webApp.initData) {
         try {
-          init(); // Your WebApp init
+          init();
 
           settingsButton.mount();
           settingsButton.show();
@@ -52,48 +55,11 @@ const Dashboard = () => {
           const initData = webApp.initData;
 
           if (user && hash && initData) {
-            const params = new URLSearchParams({
-              telegram_id: user.id,
-              initData,
-            });
-
-            // Fetch both expenses and budgets
-            const fetchExpenses = fetch(`/api/expenses?${params.toString()}`)
-              .then((res) => {
-                if (!res.ok) {
-                  return res.text().then((text) => {
-                    console.error("❌ Expenses API Error:", text);
-                    throw new Error(`Expenses error ${res.status}: ${text}`);
-                  });
-                }
-                return res.json();
-              })
-              .then((data) => {
-                setExpenses(Array.isArray(data) ? data : []);
-                setExpensesLoaded(true);
-              });
-
-            const fetchBudgets = fetch(`/api/budgets?${params.toString()}`)
-              .then((res) => {
-                if (!res.ok) {
-                  return res.text().then((text) => {
-                    console.error("❌ Budgets API Error:", text);
-                    throw new Error(`Budgets error ${res.status}: ${text}`);
-                  });
-                }
-                return res.json();
-              })
-              .then((data) => {
-                setBudgets(Array.isArray(data) ? data : []);
-                setBudgetsLoaded(true);
-              });
-
-            await Promise.allSettled([fetchExpenses, fetchBudgets]);
+            setTgUser(user);
+            setInitData(initData);
           }
         } catch (err) {
           console.error("❌ Telegram Init Failed:", err);
-        } finally {
-          setLoading(false); // ✅ Only stop loading after everything above is complete
         }
       } else {
         console.log("⏳ Waiting for Telegram WebApp to initialize...");
@@ -104,23 +70,35 @@ const Dashboard = () => {
     initializeApp();
   }, [router]);
 
-  useEffect(() => {
-    if (expensesLoaded && budgetsLoaded) {
-      setLoading(false);
-    }
-  }, [expensesLoaded, budgetsLoaded]);
+  const {
+    data: expensesAndBudgets,
+    isLoading,
+    refetch: refetchExpensesAndBudgets,
+  } = useQuery({
+    queryKey: ["expensesAndBudgets", tgUser?.id],
+    queryFn: () => {
+      if (tgUser && initData) {
+        return fetchExpensesAndBudgets(tgUser.id, initData);
+      }
+      return Promise.resolve({ expenses: [], budgets: [] });
+    },
+    enabled: !!tgUser && !!initData,
+  });
 
   // Calculate summary data from real expenses
-  const totalIncome = expenses
-    .filter((exp) => exp.is_income)
-    .reduce((sum, exp) => sum + exp.amount, 0);
+  const totalIncome = expensesAndBudgets?.expenses
+    .filter((exp: Expense) => exp.is_income)
+    .reduce((sum: number, exp: Expense) => sum + exp.amount, 0);
 
-  const totalExpenses = expenses
-    .filter((exp) => !exp.is_income)
-    .reduce((sum, exp) => sum + Math.abs(exp.amount), 0);
+  const totalExpenses = expensesAndBudgets?.expenses
+    .filter((exp: Expense) => !exp.is_income)
+    .reduce((sum: number, exp: Expense) => sum + Math.abs(exp.amount), 0);
 
   // Calculate total budget from budgets data
-  const totalBudget = budgets.reduce((sum, budget) => sum + budget.amount, 0);
+  const totalBudget = expensesAndBudgets?.budgets.reduce(
+    (sum: number, budget: Budget) => sum + budget.amount,
+    0
+  );
 
   // Calculate remaining balance as total budget minus expenses
   const totalBalance = totalBudget - totalExpenses;
@@ -129,13 +107,23 @@ const Dashboard = () => {
 
   // Generate real data based on expenses
   const getRealData = (period: ViewMode) => {
-    const filteredExpenses = getFilteredExpenses(expenses, period);
+    const filteredExpenses = getFilteredExpenses(
+      expensesAndBudgets?.expenses || [],
+      period
+    );
     const totalExpenses = filteredExpenses.reduce(
-      (sum, exp) => sum + Math.abs(exp.amount),
+      (sum: number, exp: Expense) => sum + Math.abs(exp.amount),
       0
     );
-    const categories = getCategoryData(expenses, budgets, period);
-    const dailyExpenses = getDailyBreakdown(expenses, period);
+    const categories = getCategoryData(
+      expensesAndBudgets?.expenses || [],
+      expensesAndBudgets?.budgets || [],
+      period
+    );
+    const dailyExpenses = getDailyBreakdown(
+      expensesAndBudgets?.expenses || [],
+      period
+    );
 
     return {
       totalExpenses,
@@ -147,15 +135,16 @@ const Dashboard = () => {
           : "This Month",
       dailyExpenses,
       categories,
-      num_of_budgets: budgets.filter(
-        (budget) => !budget.category.name.toLowerCase().includes("flexible")
+      num_of_budgets: expensesAndBudgets?.budgets.filter(
+        (budget: Budget) =>
+          !budget.category.name.toLowerCase().includes("flexible")
       ).length,
     };
   };
 
   const data = getRealData(internalViewMode);
 
-  if (loading) {
+  if (isLoading || !expensesAndBudgets) {
     return <LoadingSkeleton />;
   }
 
@@ -188,7 +177,7 @@ const Dashboard = () => {
           }}
         >
           {/* Balance Card */}
-          {budgets.length > 0 && totalBudget > 0 && (
+          {expensesAndBudgets?.budgets.length > 0 && totalBudget > 0 && (
             <Box sx={{ width: "100%" }}>
               <BalanceCard
                 availableBalance={totalBalance}
@@ -214,8 +203,11 @@ const Dashboard = () => {
           </Box>
 
           {/* Recent Transactions Card (now below summary) */}
-          <Box sx={{ width: "100%" }}>
-            <ExpenseList expenses={expenses} />
+          <Box sx={{ width: "100%", mb: 4 }}>
+            <ExpenseList
+              expenses={expensesAndBudgets?.expenses || []}
+              onRefetch={refetchExpensesAndBudgets}
+            />
           </Box>
         </Box>
       </Box>

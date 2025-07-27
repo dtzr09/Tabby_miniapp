@@ -29,9 +29,10 @@ interface Expense {
 
 interface ExpenseListProps {
   expenses: Expense[];
+  onRefetch: () => void;
 }
 
-export default function ExpenseList({ expenses }: ExpenseListProps) {
+export default function ExpenseList({ expenses, onRefetch }: ExpenseListProps) {
   const { colors } = useTheme();
   const [showSearchCard, setShowSearchCard] = useState(false);
 
@@ -65,6 +66,7 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
       <SearchTransactionsCard
         expenses={expenses}
         onBack={handleBackFromSearch}
+        onRefetch={onRefetch}
       />
     );
   }
@@ -129,7 +131,10 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
         </Box>
 
         <List sx={{ width: "100%", p: 0 }}>
-          <ExpenseListCard expenses={recentTransactions} />
+          <ExpenseListCard
+            expenses={recentTransactions}
+            onRefetch={onRefetch}
+          />
         </List>
       </CardContent>
     </Card>
