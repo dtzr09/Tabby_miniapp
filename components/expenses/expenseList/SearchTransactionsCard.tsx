@@ -352,24 +352,26 @@ export default function SearchTransactionsCard({
             onRefetch={onRefetch}
           />
         </List>
-        <Divider sx={{ mt: 2, backgroundColor: colors.inputBg }} />
         {totalPages > 1 && (
-          <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={(_, newPage) => setPage(newPage)}
-              variant="outlined"
-              color="primary"
-              shape="rounded"
-              sx={{
-                "& .MuiPaginationItem-root": {
-                  border: "none",
-                  color: colors.text,
-                },
-              }}
-            />
-          </Box>
+          <>
+            <Divider sx={{ mt: 2, backgroundColor: colors.inputBg }} />
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={(_, newPage) => setPage(newPage)}
+                variant="outlined"
+                color="primary"
+                shape="rounded"
+                sx={{
+                  "& .MuiPaginationItem-root": {
+                    border: "none",
+                    color: colors.text,
+                  },
+                }}
+              />
+            </Box>
+          </>
         )}
 
         {showClearAllFiltersButton && (
