@@ -12,11 +12,12 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SearchIcon from "@mui/icons-material/Search";
-import { useTheme } from "../../src/contexts/ThemeContext";
-import { useRef, useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useEffect, useRef, useState } from "react";
 import SearchMenuCard from "./SearchMenuCard";
 import FilterOptionCard from "./FilterOptionCard";
 import ExpenseListCard from "./ExpenseListCard";
+import Pagination from "@mui/material/Pagination";
 
 interface Expense {
   id: number;
@@ -50,6 +51,8 @@ export default function SearchTransactionsCard({
 
   const [amountAnchor, setAmountAnchor] = useState<null | HTMLElement>(null);
   const [dateAnchor, setDateAnchor] = useState<null | HTMLElement>(null);
+  const [page, setPage] = useState(1);
+  const transactionsPerPage = 10;
 
   // Get unique categories from expenses
   const categories = Array.from(
@@ -176,6 +179,25 @@ export default function SearchTransactionsCard({
     dateFilter !== "All Dates" ||
     searchQuery.trim() !== "";
 
+  const totalPages = Math.ceil(
+    filteredTransactions.length / transactionsPerPage
+  );
+  const paginatedTransactions = filteredTransactions
+    .slice((page - 1) * transactionsPerPage, page * transactionsPerPage)
+    .map((exp) => ({
+      id: exp.id,
+      description: exp.description,
+      category: exp.category,
+      emoji: exp.emoji,
+      date: exp.date,
+      amount: exp.amount,
+      isIncome: exp.isIncome,
+    }));
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, categoryFilter, amountFilter, dateFilter]);
+
   return (
     <Card
       sx={{
@@ -296,21 +318,52 @@ export default function SearchTransactionsCard({
         </Box>
 
         {/* Results Count */}
-        <Typography
-          sx={{
-            fontSize: "0.9rem",
-            color: colors.textSecondary,
-            mb: 2,
-            fontWeight: 500,
-          }}
-        >
-          {filteredTransactions.length} transactions found
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Typography
+            sx={{
+              fontSize: "0.9rem",
+              color: colors.textSecondary,
+              mb: 2,
+              fontWeight: 500,
+            }}
+          >
+            {filteredTransactions.length} transactions found
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: "0.9rem",
+              color: colors.textSecondary,
+              mb: 2,
+              fontWeight: 500,
+            }}
+          >
+            Page {page} of {totalPages}
+          </Typography>
+        </Box>
 
         {/* Transactions List */}
         <List sx={{ width: "100%", p: 0 }}>
-          <ExpenseListCard expenses={filteredTransactions} />
+          <ExpenseListCard expenses={paginatedTransactions} />
         </List>
+        <Divider sx={{ mt: 2, backgroundColor: colors.inputBg }} />
+        {totalPages > 1 && (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={(_, newPage) => setPage(newPage)}
+              variant="outlined"
+              color="primary"
+              shape="rounded"
+              sx={{
+                "& .MuiPaginationItem-root": {
+                  border: "none", // removes border
+                  color: colors.text,
+                },
+              }}
+            />
+          </Box>
+        )}
 
         {showClearAllFiltersButton && (
           <>

@@ -1,6 +1,6 @@
 import { Box, Typography } from "@mui/material";
-import { useTheme } from "../../src/contexts/ThemeContext";
-import { ViewMode } from "../../utils/types";
+import { useTheme } from "@/contexts/ThemeContext";
+import { ViewMode } from "../../../utils/types";
 
 interface TimeFrameProps {
   viewMode?: ViewMode;

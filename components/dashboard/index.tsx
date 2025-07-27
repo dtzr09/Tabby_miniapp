@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
-import ExpenseList from "../expenseList/ExpenseList";
 import BalanceCard from "../balance/BalanceCard";
 import { Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { getDailyBreakdown } from "../../utils/getDailyBreakdown";
 import { getFilteredExpenses } from "../../utils/getFilteredExpenses";
 import { getCategoryData } from "../../utils/getCategoryData";
-import ExpensesAndBudgetOverview from "../expensesOverview/ExpensesAndBudgetOverview";
 import { Budget, Expense, TelegramWebApp, ViewMode } from "../../utils/types";
 import {
   backButton,
@@ -17,6 +15,8 @@ import {
 import { useRouter } from "next/router";
 import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
+import ExpenseList from "../expenses/expenseList/ExpenseList";
+import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
 
 const Dashboard = () => {
   const { colors, fontFamily } = useTheme();

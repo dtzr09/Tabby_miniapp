@@ -1,24 +1,15 @@
 import { useSwipeable } from "react-swipeable";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { displayDateTime } from "../../utils/displayDateTime";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from "next/router";
-import {
-  Box,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  alpha,
-  Dialog,
-} from "@mui/material";
+import { Box, Typography, alpha } from "@mui/material";
 import React, { useState } from "react";
 import { ExpenseListCardProps } from "./ExpenseListCard";
-import { TelegramWebApp } from "../../utils/types";
+import DeleteExpenseDialog from "../utils/DeleteExpenseDialog";
+import { displayDateTime } from "../../../utils/displayDateTime";
 
 const ExpenseRow = ({ tx }: { tx: ExpenseListCardProps["expenses"][0] }) => {
-  const { colors, fontFamily } = useTheme();
+  const { colors } = useTheme();
   const router = useRouter();
   const [showDelete, setShowDelete] = useState(false);
 
@@ -28,36 +19,6 @@ const ExpenseRow = ({ tx }: { tx: ExpenseListCardProps["expenses"][0] }) => {
     trackTouch: true,
   });
   const [showConfirm, setShowConfirm] = useState(false);
-
-  const handleDelete = async () => {
-    try {
-      const webApp = window.Telegram?.WebApp as TelegramWebApp;
-      const user = webApp.initDataUnsafe?.user;
-      const initData = webApp.initData;
-
-      if (!user?.id || !initData) {
-        throw new Error("Missing Telegram user/init data");
-      }
-
-      const response = await fetch(`/api/expenses/${tx.id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          telegram_id: user.id.toString(),
-          initData,
-        }),
-      });
-
-      router.reload();
-      if (!response.ok) {
-        throw new Error("Failed to delete expense");
-      }
-    } catch (err) {
-      console.error("Delete failed:", err);
-    }
-  };
 
   return (
     <Box {...handlers}>
@@ -91,50 +52,12 @@ const ExpenseRow = ({ tx }: { tx: ExpenseListCardProps["expenses"][0] }) => {
             <DeleteIcon />
           </Box>
         )}
-        <Dialog
-          open={showConfirm}
-          onClose={() => setShowConfirm(false)}
-          disableScrollLock
-          sx={{
-            "& .MuiDialog-paper": {
-              borderRadius: 3,
-              backgroundColor: colors.incomeExpenseCard,
-              fontFamily: fontFamily,
-              maxWidth: "80%",
-            },
-          }}
-        >
-          <DialogTitle sx={{ color: colors.text }}>
-            <Typography sx={{ fontSize: "1.2rem", fontWeight: 700 }}>
-              Delete Expense
-            </Typography>
-          </DialogTitle>
-          <DialogContent sx={{ color: colors.text }}>
-            <Typography sx={{ fontSize: "1rem", fontWeight: 500 }}>
-              Are you sure you want to delete this expense?
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              sx={{ color: colors.text }}
-              onClick={() => setShowConfirm(false)}
-            >
-              <Typography sx={{ fontSize: "0.8rem", fontWeight: 500 }}>
-                Cancel
-              </Typography>
-            </Button>
-            <Button
-              sx={{ color: colors.expense }}
-              color="error"
-              onClick={handleDelete}
-            >
-              <Typography sx={{ fontSize: "0.8rem", fontWeight: 500 }}>
-                Delete
-              </Typography>
-            </Button>
-          </DialogActions>
-        </Dialog>
-
+        <DeleteExpenseDialog
+          id={tx.id}
+          onSuccess={() => setShowDelete(false)}
+          showConfirm={showConfirm}
+          setShowConfirm={setShowConfirm}
+        />
         {/* Main card */}
         <Box
           sx={{
@@ -147,6 +70,7 @@ const ExpenseRow = ({ tx }: { tx: ExpenseListCardProps["expenses"][0] }) => {
             mb: 1.5,
             px: 2,
             py: 2,
+            width: "100%",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -159,7 +83,7 @@ const ExpenseRow = ({ tx }: { tx: ExpenseListCardProps["expenses"][0] }) => {
           }}
           onClick={() => router.push(`/expenses/${tx.id}`)}
         >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box>
               <Typography
                 sx={{

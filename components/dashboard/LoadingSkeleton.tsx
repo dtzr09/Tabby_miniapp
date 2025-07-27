@@ -22,19 +22,19 @@ const LoadingSkeleton = () => {
         variant="rectangular"
         width={300}
         height={150}
-        sx={{ borderRadius: 2, backgroundColor: colors.card }}
+        sx={{ borderRadius: 2, backgroundColor: colors.inputBg }}
       />
       <Skeleton
         variant="rectangular"
         width={300}
         height={100}
-        sx={{ borderRadius: 2, backgroundColor: colors.card }}
+        sx={{ borderRadius: 2, backgroundColor: colors.inputBg }}
       />
       <Skeleton
         variant="rectangular"
         width={300}
         height={200}
-        sx={{ borderRadius: 2, backgroundColor: colors.card }}
+        sx={{ borderRadius: 2, backgroundColor: colors.inputBg }}
       />
     </Box>
   );

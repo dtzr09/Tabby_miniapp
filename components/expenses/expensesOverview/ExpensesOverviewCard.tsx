@@ -1,11 +1,11 @@
 import { Box } from "@mui/material";
-import { useTheme } from "../../src/contexts/ThemeContext";
-import ChartLegend from "../charts/ChartLegend";
-import ExpensesPieChart from "../charts/ExpensesPieChart";
-import { DBData, ViewMode } from "../../utils/types";
-import ExpensesBarChart from "../charts/ExpensesBarChart";
+import { useTheme } from "@/contexts/ThemeContext";
+import ChartLegend from "../../charts/ChartLegend";
+import ExpensesPieChart from "../../charts/ExpensesPieChart";
+import { DBData, ViewMode } from "../../../utils/types";
+import ExpensesBarChart from "../../charts/ExpensesBarChart";
 import TimeFrame from "./TimeFrame";
-import { chartColors } from "../../utils/chartColors";
+import { chartColors } from "../../../utils/chartColors";
 
 interface ExpensesOverviewCardProps {
   viewMode?: ViewMode;

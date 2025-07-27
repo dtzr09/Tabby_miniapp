@@ -1,10 +1,4 @@
-import {
-  backButton,
-  init,
-  mainButton,
-  setMainButtonParams,
-  showPopup,
-} from "@telegram-apps/sdk";
+import { backButton, init, mainButton, showPopup } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -16,10 +10,13 @@ import {
   Skeleton,
   TextField,
   InputAdornment,
+  Button,
 } from "@mui/material";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { TelegramWebApp } from "../../../../utils/types";
 import { useForm, Controller } from "react-hook-form";
+import { AttachMoney } from "@mui/icons-material";
+import DeleteExpenseDialog from "../../../../components/expenses/utils/DeleteExpenseDialog";
 
 interface Category {
   id: number;
@@ -50,6 +47,7 @@ const ExpenseDetail = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [expense, setExpense] = useState<Expense | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const defaultValues: ExpenseFormData = {
     description: "",
@@ -154,8 +152,6 @@ const ExpenseDetail = () => {
             router.back();
           });
 
-          mainButton.mount();
-
           // Uncomment this section when ready to use real API
           const webApp = window.Telegram?.WebApp as TelegramWebApp;
           if (webApp && !isLoading) {
@@ -183,57 +179,6 @@ const ExpenseDetail = () => {
       }, 0);
     }
   }, []);
-
-  // Update button parameters when theme colors change
-  useEffect(() => {
-    if (typeof window !== "undefined" && setMainButtonParams.isAvailable()) {
-      try {
-        const isEnabled = !isSubmitting && !isLoading && isDirty;
-        const baseColor = colors.primary.startsWith("#")
-          ? colors.primary
-          : `#${colors.primary}`;
-
-        const enabledColor = colors.surface.startsWith("#")
-          ? colors.surface
-          : `#${colors.surface}`;
-
-        const enabledTextColor = colors.text.startsWith("#")
-          ? colors.text
-          : `#${colors.text}`;
-
-        const disabledTextColor = colors.disabled.startsWith("#")
-          ? colors.disabled
-          : `#${colors.disabled}`;
-
-        const backgroundColor = isEnabled
-          ? (baseColor as `#${string}`)
-          : (enabledColor as `#${string}`);
-
-        const textColor = isEnabled
-          ? (enabledTextColor as `#${string}`)
-          : (disabledTextColor as `#${string}`);
-
-        setMainButtonParams({
-          backgroundColor,
-          isEnabled,
-          isLoaderVisible: isSubmitting,
-          isVisible: true,
-          text: isSubmitting ? "Saving..." : isLoading ? "Loading..." : "Save",
-          textColor,
-        });
-      } catch (err) {
-        console.error("Error updating button parameters:", err);
-      }
-    }
-  }, [
-    colors.primary,
-    colors.text,
-    colors.surface,
-    colors.disabled,
-    isSubmitting,
-    isLoading,
-    isDirty,
-  ]);
 
   const onSubmit = useCallback(
     async (data: ExpenseFormData) => {
@@ -298,19 +243,19 @@ const ExpenseDetail = () => {
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <Skeleton
             variant="rectangular"
-            sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
+            sx={{ height: 60, borderRadius: 1, bgcolor: colors.inputBg }}
           />
           <Skeleton
             variant="rectangular"
-            sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
+            sx={{ height: 60, borderRadius: 1, bgcolor: colors.inputBg }}
           />
           <Skeleton
             variant="rectangular"
-            sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
+            sx={{ height: 60, borderRadius: 1, bgcolor: colors.inputBg }}
           />
           <Skeleton
             variant="rectangular"
-            sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
+            sx={{ height: 60, borderRadius: 1, bgcolor: colors.inputBg }}
           />
         </Box>
       </Box>
@@ -445,7 +390,9 @@ const ExpenseDetail = () => {
                 disabled={isLoading}
                 InputProps={{
                   startAdornment: (
-                    <InputAdornment position="start">$</InputAdornment>
+                    <InputAdornment position="start">
+                      <AttachMoney sx={{ color: "white" }} fontSize="small" />
+                    </InputAdornment>
                   ),
                 }}
                 sx={{
@@ -636,6 +583,56 @@ const ExpenseDetail = () => {
           </FormControl>
         </Box>
       </Box>
+      <Box
+        sx={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          display: "flex",
+          flexDirection: "row",
+          gap: 1,
+          p: 2,
+        }}
+      >
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{
+            width: "100%",
+            color: colors.text,
+            background: colors.expense,
+            textTransform: "none",
+          }}
+          onClick={() => setShowDeleteDialog(true)}
+        >
+          Delete expenses
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{
+            width: "100%",
+            color: colors.text,
+            background: "#2662ec",
+            textTransform: "none",
+            "&:disabled": {
+              background: colors.disabled,
+              color: colors.textSecondary,
+            },
+          }}
+          disabled={!isDirty}
+          onClick={() => handleSubmit(onSubmit)}
+        >
+          {isSubmitting ? "Saving..." : "Save Changes"}
+        </Button>
+      </Box>
+      <DeleteExpenseDialog
+        id={expense.id}
+        onSuccess={() => router.back()}
+        showConfirm={showDeleteDialog}
+        setShowConfirm={setShowDeleteDialog}
+      />
     </Box>
   );
 };
