@@ -1,4 +1,4 @@
-import { backButton, init, mainButton, showPopup } from "@telegram-apps/sdk";
+import { backButton, init, showPopup } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -225,17 +225,6 @@ const ExpenseDetail = () => {
     },
     [reset]
   );
-
-  useEffect(() => {
-    if (mainButton && mainButton.onClick) {
-      const handleClick = handleSubmit(onSubmit);
-      mainButton.onClick(handleClick);
-
-      return () => {
-        mainButton.offClick(handleClick);
-      };
-    }
-  }, [handleSubmit, onSubmit]);
 
   if (isLoading || !expense) {
     return (
@@ -623,7 +612,7 @@ const ExpenseDetail = () => {
             },
           }}
           disabled={!isDirty}
-          onClick={() => handleSubmit(onSubmit)}
+          onClick={handleSubmit(onSubmit)}
         >
           {isSubmitting ? "Saving..." : "Save Changes"}
         </Button>
