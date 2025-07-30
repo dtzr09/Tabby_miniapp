@@ -10,8 +10,6 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 
 interface BalanceCardProps {
   availableBalance: number;
-  daysRemaining: number;
-  dailyBudget: number;
   totalBudget: number;
 }
 
@@ -25,11 +23,13 @@ export const getProgressColor = (percentage: number) => {
 
 export default function BalanceCard({
   availableBalance,
-  daysRemaining,
-  dailyBudget,
   totalBudget,
 }: BalanceCardProps) {
   const { colors } = useTheme();
+
+  const daysRemaining =
+    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() -
+    new Date().getDate();
 
   // Check if there's a budget set
   const hasBudget = totalBudget > 0;
@@ -38,6 +38,7 @@ export default function BalanceCard({
   const budgetUsed = totalBudget - availableBalance;
   const usagePercentage =
     totalBudget > 0 ? (budgetUsed / totalBudget) * 100 : 0;
+  const dailyBudget = totalBudget / daysRemaining;
 
   return (
     <Card

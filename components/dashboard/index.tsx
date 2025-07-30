@@ -180,8 +180,6 @@ const Dashboard = () => {
             <Box sx={{ width: "100%" }}>
               <BalanceCard
                 availableBalance={totalBalance}
-                daysRemaining={30 - new Date().getDate()}
-                dailyBudget={totalBalance / (30 - new Date().getDate())}
                 totalBudget={totalBudget}
               />
             </Box>
