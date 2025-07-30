@@ -38,7 +38,7 @@ export default function BalanceCard({
   const budgetUsed = totalBudget - availableBalance;
   const usagePercentage =
     totalBudget > 0 ? (budgetUsed / totalBudget) * 100 : 0;
-  const dailyBudget = totalBudget / daysRemaining;
+  const dailyBudget = availableBalance / daysRemaining;
 
   return (
     <Card
