@@ -24,6 +24,11 @@ export interface TelegramUser {
   id: string;
 }
 
+interface ExpensesAndBudgets {
+  expenses: Expense[];
+  budgets: Budget[];
+}
+
 const Dashboard = () => {
   const { colors, fontFamily } = useTheme();
   const router = useRouter();
@@ -33,9 +38,9 @@ const Dashboard = () => {
 
   const {
     data: expensesAndBudgets,
-    isLoading,
+    isLoading: isExpensesLoading,
     refetch: refetchExpensesAndBudgets,
-  } = useQuery({
+  } = useQuery<ExpensesAndBudgets>({
     queryKey: ["expensesAndBudgets", tgUser?.id],
     queryFn: () => {
       if (tgUser && initData) {
@@ -44,6 +49,9 @@ const Dashboard = () => {
       return Promise.resolve({ expenses: [], budgets: [] });
     },
     enabled: !!tgUser && !!initData,
+    staleTime: 30000, // Data stays fresh for 30 seconds
+    gcTime: 300000, // Cache for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
 
   useEffect(() => {
@@ -85,26 +93,39 @@ const Dashboard = () => {
     initializeApp();
   }, [router]);
 
+  // Only show loading when we have user data and are actually fetching
+  if (tgUser && initData && isExpensesLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  // Use empty arrays as fallbacks when data is undefined
+  const expenses = expensesAndBudgets?.expenses || [];
+  const budgets = expensesAndBudgets?.budgets || [];
+
+  // Calculate summary data from real expenses
+  const totalIncome = expenses
+    .filter((exp: Expense) => exp.is_income)
+    .reduce((sum: number, exp: Expense) => sum + (exp.amount || 0), 0);
+
+  const totalExpenses = expenses
+    .filter((exp: Expense) => !exp.is_income)
+    .reduce((sum: number, exp: Expense) => sum + Math.abs(exp.amount || 0), 0);
+
+  // Calculate total budget from budgets data
+  const totalBudget = budgets
+    .reduce((sum: number, budget: Budget) => sum + (budget.amount || 0), 0);
+
+  // Calculate remaining balance as total budget minus expenses
+  const totalBalance = totalBudget - totalExpenses;
+
   // Generate real data based on expenses
   const getRealData = (period: ViewMode) => {
-    const filteredExpenses = getFilteredExpenses(
-      expensesAndBudgets?.expenses || [],
-      period
-    );
-    const totalExpenses = filteredExpenses.reduce(
-      (sum: number, exp: Expense) => sum + Math.abs(exp.amount || 0),
-      0
-    );
+    const filteredExpenses = getFilteredExpenses(expenses, period);
+    const totalExpenses = filteredExpenses
+      .reduce((sum: number, exp: Expense) => sum + Math.abs(exp.amount || 0), 0);
 
-    const categories = getCategoryData(
-      expensesAndBudgets?.expenses || [],
-      expensesAndBudgets?.budgets || [],
-      period
-    );
-    const dailyExpenses = getDailyBreakdown(
-      expensesAndBudgets?.expenses || [],
-      period
-    );
+    const categories = getCategoryData(expenses, budgets, period);
+    const dailyExpenses = getDailyBreakdown(expenses, period);
 
     return {
       totalExpenses,
@@ -116,41 +137,12 @@ const Dashboard = () => {
           : "This Month",
       dailyExpenses,
       categories,
-      num_of_budgets:
-        expensesAndBudgets?.budgets?.filter(
-          (budget: Budget) =>
-            !budget.category.name.toLowerCase().includes("flexible")
-        )?.length || 0,
+      num_of_budgets: budgets
+        .filter((budget: Budget) =>
+          !budget.category.name.toLowerCase().includes("flexible")
+        ).length || 0,
     };
   };
-
-  if (isLoading) {
-    return <LoadingSkeleton />;
-  }
-
-  // Calculate summary data from real expenses
-  const totalIncome =
-    expensesAndBudgets?.expenses
-      ?.filter((exp: Expense) => exp.is_income)
-      ?.reduce((sum: number, exp: Expense) => sum + (exp.amount || 0), 0) || 0;
-
-  const totalExpenses =
-    expensesAndBudgets?.expenses
-      ?.filter((exp: Expense) => !exp.is_income)
-      ?.reduce(
-        (sum: number, exp: Expense) => sum + Math.abs(exp.amount || 0),
-        0
-      ) || 0;
-
-  // Calculate total budget from budgets data
-  const totalBudget =
-    expensesAndBudgets?.budgets?.reduce(
-      (sum: number, budget: Budget) => sum + (budget.amount || 0),
-      0
-    ) || 0;
-
-  // Calculate remaining balance as total budget minus expenses
-  const totalBalance = totalBudget - totalExpenses;
 
   const data = getRealData(internalViewMode);
 
@@ -183,7 +175,7 @@ const Dashboard = () => {
           }}
         >
           {/* Balance Card */}
-          {expensesAndBudgets?.budgets?.length > 0 && totalBudget > 0 && (
+          {budgets.length > 0 && totalBudget > 0 && (
             <Box sx={{ width: "100%" }}>
               <BalanceCard
                 availableBalance={totalBalance}
@@ -209,7 +201,7 @@ const Dashboard = () => {
           {/* Recent Transactions Card (now below summary) */}
           <Box sx={{ width: "100%", mb: 4 }}>
             <ExpenseList
-              expenses={expensesAndBudgets?.expenses || []}
+              expenses={expenses}
               onRefetch={refetchExpensesAndBudgets}
             />
           </Box>
