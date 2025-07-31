@@ -30,7 +30,7 @@ export default async function handler(
     if (isLocal) {
       // Get user by telegram_id
       const userResult = await postgresClient.query(
-        "SELECT id FROM users WHERE telegram_id = $1 AND chat_id = $1 LIMIT 1",
+        "SELECT id, timezone FROM users WHERE telegram_id = $1 AND chat_id = $1 LIMIT 1",
         [telegram_id]
       );
 
@@ -39,6 +39,22 @@ export default async function handler(
       }
 
       const userId = userResult.rows[0].id;
+      const timezone = userResult.rows[0].timezone;
+
+      const now = new Date();
+      const timeNow = new Date(
+        now.toLocaleString("en-US", { timeZone: timezone })
+      );
+      const startOfMonth = new Date(
+        timeNow.getFullYear(),
+        timeNow.getMonth(),
+        1
+      );
+      const startOfNextMonth = new Date(
+        timeNow.getFullYear(),
+        timeNow.getMonth() + 1,
+        1
+      );
 
       // Get all transactions for this user with category names
       const expensesResult = await postgresClient.query(
@@ -52,8 +68,10 @@ export default async function handler(
         FROM expenses e
         LEFT JOIN categories c ON e.category_id = c.id
         WHERE e.payer_id = $1
+        AND e.date >= $2
+        AND e.date < $3
         ORDER BY e.id DESC`,
-        [userId]
+        [userId, startOfMonth, startOfNextMonth]
       );
 
       return res.status(200).json(expensesResult.rows);
@@ -69,7 +87,7 @@ export default async function handler(
       // Get the user row by telegram_id
       const { data: users, error: userError } = await supabaseAdmin
         .from("users")
-        .select("id")
+        .select("id, timezone")
         .eq("telegram_id", telegram_id as string)
         .limit(1);
 
@@ -78,6 +96,23 @@ export default async function handler(
       }
 
       const userId = users[0].id;
+      const timezone = users[0].timezone;
+
+      // Get current month's start and end dates
+      const now = new Date();
+      const timeNow = new Date(
+        now.toLocaleString("en-US", { timeZone: timezone })
+      );
+      const startOfMonth = new Date(
+        timeNow.getFullYear(),
+        timeNow.getMonth(),
+        1
+      );
+      const startOfNextMonth = new Date(
+        timeNow.getFullYear(),
+        timeNow.getMonth() + 1,
+        1
+      );
 
       // Get ALL transactions (both expenses and income) for this user, join with categories
       const { data, error } = await supabaseAdmin
@@ -86,6 +121,8 @@ export default async function handler(
           "id, amount, description, date, is_income, category:category_id (name)"
         )
         .eq("payer_id", userId)
+        .gte("date", startOfMonth)
+        .lt("date", startOfNextMonth)
         .order("id", { ascending: false }); // Order by ID descending to get newest first
 
       if (error) {

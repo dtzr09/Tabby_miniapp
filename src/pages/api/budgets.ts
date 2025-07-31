@@ -32,7 +32,7 @@ export default async function handler(
       // TODO: If is group chat, then use chat_id cuz telegram_id and chat_id will be different
       // TODO: If is private chat, telegram_id = chat_id
       const userResult = await postgresClient.query(
-        "SELECT id FROM users WHERE telegram_id = $1 AND chat_id = $1 LIMIT 1",
+        "SELECT id, timezone FROM users WHERE telegram_id = $1 AND chat_id = $1 LIMIT 1",
         [telegram_id]
       );
 
@@ -42,11 +42,16 @@ export default async function handler(
       }
 
       const userId = userResult.rows[0].id;
+      const timezone = userResult.rows[0].timezone;
 
       // Get current month budgets for this user with category names
-      const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
-      const currentYear = new Date().getFullYear();
-      
+      const now = new Date();
+      const timeNow = new Date(
+        now.toLocaleString("en-US", { timeZone: timezone })
+      );
+      const currentMonth = timeNow.getMonth() + 1;
+      const currentYear = timeNow.getFullYear();
+
       const budgetsResult = await postgresClient.query(
         `SELECT 
           b.id, 
@@ -72,7 +77,7 @@ export default async function handler(
       // Get the user row by telegram_id
       const { data: users, error: userError } = await supabaseAdmin
         .from("users")
-        .select("id")
+        .select("id, timezone")
         .eq("telegram_id", telegram_id as string)
         .limit(1);
 
@@ -80,11 +85,16 @@ export default async function handler(
         return res.status(404).json({ error: "User not found" });
       }
       const userId = users[0].id;
+      const timezone = users[0].timezone;
 
       // Get current month budgets for this user
-      const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
-      const currentYear = new Date().getFullYear();
-      
+      const now = new Date();
+      const timeNow = new Date(
+        now.toLocaleString("en-US", { timeZone: timezone })
+      );
+      const currentMonth = timeNow.getMonth() + 1;
+      const currentYear = timeNow.getFullYear();
+
       const { data, error } = await supabaseAdmin
         .from("budgets")
         .select(

@@ -71,7 +71,7 @@ export default function BalanceCard({
         </Box>
 
         {/* Main Balance */}
-        <Box sx={{ mb: hasBudget ? 2 : 0 }}>
+        <Box sx={{ mb: hasBudget && daysRemaining > 0 ? 2 : 0 }}>
           <Typography
             sx={{
               fontSize: "2.5rem",
@@ -113,7 +113,7 @@ export default function BalanceCard({
         </Box>
 
         {/* Budget Info Box - Only show if there's a budget */}
-        {hasBudget && (
+        {hasBudget && daysRemaining > 0 && (
           <>
             <Box
               sx={{
