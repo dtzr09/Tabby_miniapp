@@ -117,21 +117,23 @@ export default async function handler(
         const userId = users[0].id;
         const timezone = users[0].timezone || 'Asia/Singapore';
 
-        // Get current month's start and end dates
         const now = new Date();
         const timeNow = new Date(
           now.toLocaleString("en-US", { timeZone: timezone })
         );
+
+        // Format dates for Supabase
         const startOfMonth = new Date(
           timeNow.getFullYear(),
           timeNow.getMonth(),
           1
-        );
+        ).toISOString();
+        
         const startOfNextMonth = new Date(
           timeNow.getFullYear(),
           timeNow.getMonth() + 1,
           1
-        );
+        ).toISOString();
 
         // Get ALL transactions (both expenses and income) for this user, join with categories
         const { data, error } = await supabaseAdmin
@@ -142,7 +144,7 @@ export default async function handler(
           .eq("payer_id", userId)
           .gte("date", startOfMonth)
           .lt("date", startOfNextMonth)
-          .order("id", { ascending: false }); // Order by ID descending to get newest first
+          .order("id", { ascending: false });
 
         if (error) {
           console.error('Supabase expenses query error:', error);
