@@ -29,6 +29,22 @@ const Dashboard = () => {
   const router = useRouter();
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | null>(null);
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>("weekly");
+
+  const {
+    data: expensesAndBudgets,
+    isLoading,
+    refetch: refetchExpensesAndBudgets,
+  } = useQuery({
+    queryKey: ["expensesAndBudgets", tgUser?.id],
+    queryFn: () => {
+      if (tgUser && initData) {
+        return fetchExpensesAndBudgets(tgUser.id, initData);
+      }
+      return Promise.resolve({ expenses: [], budgets: [] });
+    },
+    enabled: !!tgUser && !!initData,
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -69,41 +85,6 @@ const Dashboard = () => {
     initializeApp();
   }, [router]);
 
-  const {
-    data: expensesAndBudgets,
-    isLoading,
-    refetch: refetchExpensesAndBudgets,
-  } = useQuery({
-    queryKey: ["expensesAndBudgets", tgUser?.id],
-    queryFn: () => {
-      if (tgUser && initData) {
-        return fetchExpensesAndBudgets(tgUser.id, initData);
-      }
-      return Promise.resolve({ expenses: [], budgets: [] });
-    },
-    enabled: !!tgUser && !!initData,
-  });
-
-  // Calculate summary data from real expenses
-  const totalIncome = expensesAndBudgets?.expenses
-    .filter((exp: Expense) => exp.is_income)
-    .reduce((sum: number, exp: Expense) => sum + exp.amount, 0);
-
-  const totalExpenses = expensesAndBudgets?.expenses
-    .filter((exp: Expense) => !exp.is_income)
-    .reduce((sum: number, exp: Expense) => sum + Math.abs(exp.amount), 0);
-
-  // Calculate total budget from budgets data
-  const totalBudget = expensesAndBudgets?.budgets.reduce(
-    (sum: number, budget: Budget) => sum + budget.amount,
-    0
-  );
-
-  // Calculate remaining balance as total budget minus expenses
-  const totalBalance = totalBudget - totalExpenses;
-
-  const [internalViewMode, setInternalViewMode] = useState<ViewMode>("weekly");
-
   // Generate real data based on expenses
   const getRealData = (period: ViewMode) => {
     const filteredExpenses = getFilteredExpenses(
@@ -111,9 +92,10 @@ const Dashboard = () => {
       period
     );
     const totalExpenses = filteredExpenses.reduce(
-      (sum: number, exp: Expense) => sum + Math.abs(exp.amount),
+      (sum: number, exp: Expense) => sum + Math.abs(exp.amount || 0),
       0
     );
+
     const categories = getCategoryData(
       expensesAndBudgets?.expenses || [],
       expensesAndBudgets?.budgets || [],
@@ -134,18 +116,43 @@ const Dashboard = () => {
           : "This Month",
       dailyExpenses,
       categories,
-      num_of_budgets: expensesAndBudgets?.budgets.filter(
-        (budget: Budget) =>
-          !budget.category.name.toLowerCase().includes("flexible")
-      ).length,
+      num_of_budgets:
+        expensesAndBudgets?.budgets?.filter(
+          (budget: Budget) =>
+            !budget.category.name.toLowerCase().includes("flexible")
+        )?.length || 0,
     };
   };
 
-  const data = getRealData(internalViewMode);
-
-  if (isLoading || !expensesAndBudgets) {
+  if (isLoading) {
     return <LoadingSkeleton />;
   }
+
+  // Calculate summary data from real expenses
+  const totalIncome =
+    expensesAndBudgets?.expenses
+      ?.filter((exp: Expense) => exp.is_income)
+      ?.reduce((sum: number, exp: Expense) => sum + (exp.amount || 0), 0) || 0;
+
+  const totalExpenses =
+    expensesAndBudgets?.expenses
+      ?.filter((exp: Expense) => !exp.is_income)
+      ?.reduce(
+        (sum: number, exp: Expense) => sum + Math.abs(exp.amount || 0),
+        0
+      ) || 0;
+
+  // Calculate total budget from budgets data
+  const totalBudget =
+    expensesAndBudgets?.budgets?.reduce(
+      (sum: number, budget: Budget) => sum + (budget.amount || 0),
+      0
+    ) || 0;
+
+  // Calculate remaining balance as total budget minus expenses
+  const totalBalance = totalBudget - totalExpenses;
+
+  const data = getRealData(internalViewMode);
 
   return (
     <Box
@@ -176,7 +183,7 @@ const Dashboard = () => {
           }}
         >
           {/* Balance Card */}
-          {expensesAndBudgets?.budgets.length > 0 && totalBudget > 0 && (
+          {expensesAndBudgets?.budgets?.length > 0 && totalBudget > 0 && (
             <Box sx={{ width: "100%" }}>
               <BalanceCard
                 availableBalance={totalBalance}
