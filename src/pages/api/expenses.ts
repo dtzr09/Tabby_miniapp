@@ -13,14 +13,16 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === "GET") {
-    const { telegram_id, initData } = req.query;
+    const { telegram_id, initData, isPeriod } = req.query;
 
     // Validate required parameters
     if (!telegram_id || !initData) {
-      return res.status(400).json({ error: "Missing required parameters: telegram_id or initData" });
+      return res.status(400).json({
+        error: "Missing required parameters: telegram_id or initData",
+      });
     }
 
-    if (typeof telegram_id !== 'string' || typeof initData !== 'string') {
+    if (typeof telegram_id !== "string" || typeof initData !== "string") {
       return res.status(400).json({ error: "Invalid parameter types" });
     }
 
@@ -49,7 +51,7 @@ export default async function handler(
         }
 
         const userId = userResult.rows[0].id;
-        const timezone = userResult.rows[0].timezone || 'Asia/Singapore';
+        const timezone = userResult.rows[0].timezone || "Asia/Singapore";
 
         const now = new Date();
         const timeNow = new Date(
@@ -66,9 +68,25 @@ export default async function handler(
           1
         );
 
-        // Get all transactions for this user with category names
-        const expensesResult = await postgresClient.query(
-          `SELECT 
+        let query = `
+        SELECT 
+          e.id, 
+          e.amount, 
+          e.description, 
+          e.date, 
+          e.is_income,
+          json_build_object('name', c.name) as category
+        FROM expenses e
+        LEFT JOIN categories c ON e.category_id = c.id
+        WHERE e.payer_id = $1
+        ORDER BY e.id DESC
+      `;
+
+        let values = [userId];
+
+        if (isPeriod) {
+          query = `
+          SELECT 
             e.id, 
             e.amount, 
             e.description, 
@@ -78,15 +96,18 @@ export default async function handler(
           FROM expenses e
           LEFT JOIN categories c ON e.category_id = c.id
           WHERE e.payer_id = $1
-          AND e.date >= $2
-          AND e.date < $3
-          ORDER BY e.id DESC`,
-          [userId, startOfMonth, startOfNextMonth]
-        );
+            AND e.date >= $2
+            AND e.date < $3
+          ORDER BY e.id DESC
+        `;
+          values = [userId, startOfMonth, startOfNextMonth];
+        }
+
+        const expensesResult = await postgresClient.query(query, values);
 
         return res.status(200).json(expensesResult.rows);
       } catch (error) {
-        console.error('Database error:', error);
+        console.error("Database error:", error);
         return res.status(500).json({ error: "Database error occurred" });
       }
     } else {
@@ -106,7 +127,7 @@ export default async function handler(
           .limit(1);
 
         if (userError) {
-          console.error('Supabase user query error:', userError);
+          console.error("Supabase user query error:", userError);
           return res.status(500).json({ error: "Failed to fetch user data" });
         }
 
@@ -115,7 +136,7 @@ export default async function handler(
         }
 
         const userId = users[0].id;
-        const timezone = users[0].timezone || 'Asia/Singapore';
+        const timezone = users[0].timezone || "Asia/Singapore";
 
         const now = new Date();
         const timeNow = new Date(
@@ -128,32 +149,43 @@ export default async function handler(
           timeNow.getMonth(),
           1
         ).toISOString();
-        
+
         const startOfNextMonth = new Date(
           timeNow.getFullYear(),
           timeNow.getMonth() + 1,
           1
         ).toISOString();
 
-        // Get ALL transactions (both expenses and income) for this user, join with categories
-        const { data, error } = await supabaseAdmin
+        let query = supabaseAdmin
           .from("expenses")
           .select(
-            "id, amount, description, date, is_income, category:category_id (name)"
+            `
+            id,
+            amount,
+            description,
+            date,
+            is_income,
+            category:category_id (
+              name
+            )
+          `
           )
           .eq("payer_id", userId)
-          .gte("date", startOfMonth)
-          .lt("date", startOfNextMonth)
           .order("id", { ascending: false });
 
-        if (error) {
-          console.error('Supabase expenses query error:', error);
-          return res.status(500).json({ error: "Failed to fetch expenses" });
+        if (isPeriod) {
+          query = query.gte("date", startOfMonth).lt("date", startOfNextMonth);
         }
 
+        const { data, error } = await query;
+
+        if (error) {
+          console.error("Supabase expenses query error:", error);
+          return res.status(500).json({ error: "Failed to fetch expenses" });
+        }
         return res.status(200).json(data);
       } catch (error) {
-        console.error('Unexpected error:', error);
+        console.error("Unexpected error:", error);
         return res.status(500).json({ error: "An unexpected error occurred" });
       }
     }

@@ -10,14 +10,14 @@ import {
 import { deleteExpense } from "../../../services/expenses";
 import { useTheme } from "@/contexts/ThemeContext";
 import { QueryObserverResult } from "@tanstack/react-query";
-import { ExpensesAndBudgets } from "../../../utils/types";
+import { Expense } from "../../../utils/types";
 
 export interface DeleteExpenseDialogProps {
   id: number;
   onSuccess: () => void;
   showConfirm: boolean;
   setShowConfirm: (show: boolean) => void;
-  onRefetch?: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>;
+  onRefetch?: () => Promise<QueryObserverResult<Expense[], Error>>;
 }
 
 const DeleteExpenseDialog = ({

@@ -19,7 +19,6 @@ import FilterOptionCard from "./FilterOptionCard";
 import ExpenseListCard from "./ExpenseListCard";
 import Pagination from "@mui/material/Pagination";
 import { QueryObserverResult } from "@tanstack/react-query";
-import { ExpensesAndBudgets } from "../../../utils/types";
 
 interface Expense {
   id: number;
@@ -36,7 +35,7 @@ interface Expense {
 interface SearchTransactionsCardProps {
   expenses: Expense[];
   onBack: () => void;
-  onRefetch: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>;
+  onRefetch: () => Promise<QueryObserverResult<Expense[], Error>>;
 }
 
 export default function SearchTransactionsCard({

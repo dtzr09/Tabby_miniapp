@@ -8,14 +8,14 @@ import { ExpenseListCardProps } from "./ExpenseListCard";
 import DeleteExpenseDialog from "../utils/DeleteExpenseDialog";
 import { displayDateTime } from "../../../utils/displayDateTime";
 import { QueryObserverResult } from "@tanstack/react-query";
-import { ExpensesAndBudgets } from "../../../utils/types";
+import { Expense } from "../../../utils/types";
 
 const ExpenseRow = ({
   tx,
   onRefetch,
 }: {
   tx: ExpenseListCardProps["expenses"][0];
-  onRefetch: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>;
+  onRefetch: () => Promise<QueryObserverResult<Expense[], Error>>;
 }) => {
   const { colors } = useTheme();
   const router = useRouter();

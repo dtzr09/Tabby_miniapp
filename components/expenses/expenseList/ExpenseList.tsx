@@ -14,8 +14,9 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useState } from "react";
 import SearchTransactionsCard from "./SearchTransactionsCard";
 import ExpenseListCard from "./ExpenseListCard";
-import { QueryObserverResult } from "@tanstack/react-query";
-import { ExpensesAndBudgets } from "../../../utils/types";
+import { TelegramUser } from "../../dashboard";
+import { useQuery } from "@tanstack/react-query";
+import { fetchExpenses } from "../../../services/expenses";
 
 interface Expense {
   id: number;
@@ -30,29 +31,49 @@ interface Expense {
 }
 
 interface ExpenseListProps {
-  expenses: Expense[];
-  onRefetch: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>;
+  initData: string | null;
+  tgUser: TelegramUser | null;
 }
 
-export default function ExpenseList({ expenses, onRefetch }: ExpenseListProps) {
+export default function ExpenseList({ initData, tgUser }: ExpenseListProps) {
   const { colors } = useTheme();
   const [showSearchCard, setShowSearchCard] = useState(false);
 
-  // Use sample data if no expenses provided, otherwise use provided expenses
-  const transactionsToUse = expenses.length > 0 ? expenses : [];
+  const {
+    data: expenses,
+    // isLoading: isExpensesLoading,
+    refetch: refetchExpenses,
+  } = useQuery<Expense[]>({
+    queryKey: ["expenses", tgUser?.id],
+    queryFn: () => {
+      if (tgUser && initData) {
+        return fetchExpenses(tgUser.id, initData);
+      }
+      return Promise.resolve([]);
+    },
+    enabled: !!tgUser && !!initData,
+    staleTime: 30000, // Data stays fresh for 30 seconds
+    gcTime: 300000, // Cache for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+  });
+
+  // Use empty array if no expenses provided
+  const transactionsToUse = expenses ?? [];
 
   // Get recent transactions (last 5)
-  const recentTransactions = transactionsToUse
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5)
-    .map((exp) => ({
-      id: exp.id,
-      description: exp.description,
-      category: exp.category?.name || "Other",
-      date: exp.date, // Keep the original date string
-      amount: exp.amount,
-      isIncome: exp.is_income,
-    }));
+  const recentTransactions = Array.isArray(transactionsToUse)
+    ? transactionsToUse
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 5)
+        .map((exp) => ({
+          id: exp.id,
+          description: exp.description,
+          category: exp.category?.name || "Other",
+          date: exp.date, // Keep the original date string
+          amount: exp.amount,
+          isIncome: exp.is_income,
+        }))
+    : [];
 
   const handleSearchToggle = () => {
     setShowSearchCard(true);
@@ -66,9 +87,9 @@ export default function ExpenseList({ expenses, onRefetch }: ExpenseListProps) {
   if (showSearchCard) {
     return (
       <SearchTransactionsCard
-        expenses={expenses}
+        expenses={transactionsToUse}
         onBack={handleBackFromSearch}
-        onRefetch={onRefetch}
+        onRefetch={refetchExpenses}
       />
     );
   }
@@ -135,7 +156,7 @@ export default function ExpenseList({ expenses, onRefetch }: ExpenseListProps) {
         <List sx={{ width: "100%", p: 0 }}>
           <ExpenseListCard
             expenses={recentTransactions}
-            onRefetch={onRefetch}
+            onRefetch={refetchExpenses}
           />
         </List>
       </CardContent>

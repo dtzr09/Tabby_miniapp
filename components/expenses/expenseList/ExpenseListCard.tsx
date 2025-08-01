@@ -3,7 +3,7 @@ import { Box, Typography } from "@mui/material";
 import { useTheme } from "@/contexts/ThemeContext";
 import ExpenseRow from "./ExpenseRow";
 import { QueryObserverResult } from "@tanstack/react-query";
-import { ExpensesAndBudgets } from "../../../utils/types";
+import { Expense } from "../../../utils/types";
 
 export interface ExpenseListCardProps {
   expenses: {
@@ -15,7 +15,7 @@ export interface ExpenseListCardProps {
     amount: number;
     isIncome: boolean;
   }[];
-  onRefetch: () => Promise<QueryObserverResult<ExpensesAndBudgets, Error>>;
+  onRefetch: () => Promise<QueryObserverResult<Expense[], Error>>;
 }
 
 const ExpenseListCard = (props: ExpenseListCardProps) => {

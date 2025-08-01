@@ -36,23 +36,20 @@ const Dashboard = () => {
   const [initData, setInitData] = useState<string | null>(null);
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>("weekly");
 
-  const {
-    data: expensesAndBudgets,
-    isLoading: isExpensesLoading,
-    refetch: refetchExpensesAndBudgets,
-  } = useQuery<ExpensesAndBudgets>({
-    queryKey: ["expensesAndBudgets", tgUser?.id],
-    queryFn: () => {
-      if (tgUser && initData) {
-        return fetchExpensesAndBudgets(tgUser.id, initData);
-      }
-      return Promise.resolve({ expenses: [], budgets: [] });
-    },
-    enabled: !!tgUser && !!initData,
-    staleTime: 30000, // Data stays fresh for 30 seconds
-    gcTime: 300000, // Cache for 5 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-  });
+  const { data: expensesAndBudgets, isLoading: isExpensesLoading } =
+    useQuery<ExpensesAndBudgets>({
+      queryKey: ["expensesAndBudgets", tgUser?.id],
+      queryFn: () => {
+        if (tgUser && initData) {
+          return fetchExpensesAndBudgets(tgUser.id, initData);
+        }
+        return Promise.resolve({ expenses: [], budgets: [] });
+      },
+      enabled: !!tgUser && !!initData,
+      staleTime: 30000, // Data stays fresh for 30 seconds
+      gcTime: 300000, // Cache for 5 minutes
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -112,8 +109,10 @@ const Dashboard = () => {
     .reduce((sum: number, exp: Expense) => sum + Math.abs(exp.amount || 0), 0);
 
   // Calculate total budget from budgets data
-  const totalBudget = budgets
-    .reduce((sum: number, budget: Budget) => sum + (budget.amount || 0), 0);
+  const totalBudget = budgets.reduce(
+    (sum: number, budget: Budget) => sum + (budget.amount || 0),
+    0
+  );
 
   // Calculate remaining balance as total budget minus expenses
   const totalBalance = totalBudget - totalExpenses;
@@ -121,8 +120,10 @@ const Dashboard = () => {
   // Generate real data based on expenses
   const getRealData = (period: ViewMode) => {
     const filteredExpenses = getFilteredExpenses(expenses, period);
-    const totalExpenses = filteredExpenses
-      .reduce((sum: number, exp: Expense) => sum + Math.abs(exp.amount || 0), 0);
+    const totalExpenses = filteredExpenses.reduce(
+      (sum: number, exp: Expense) => sum + Math.abs(exp.amount || 0),
+      0
+    );
 
     const categories = getCategoryData(expenses, budgets, period);
     const dailyExpenses = getDailyBreakdown(expenses, period);
@@ -137,9 +138,10 @@ const Dashboard = () => {
           : "This Month",
       dailyExpenses,
       categories,
-      num_of_budgets: budgets
-        .filter((budget: Budget) =>
-          !budget.category.name.toLowerCase().includes("flexible")
+      num_of_budgets:
+        budgets.filter(
+          (budget: Budget) =>
+            !budget.category.name.toLowerCase().includes("flexible")
         ).length || 0,
     };
   };
@@ -200,10 +202,7 @@ const Dashboard = () => {
 
           {/* Recent Transactions Card (now below summary) */}
           <Box sx={{ width: "100%", mb: 4 }}>
-            <ExpenseList
-              expenses={expenses}
-              onRefetch={refetchExpensesAndBudgets}
-            />
+            <ExpenseList initData={initData} tgUser={tgUser} />
           </Box>
         </Box>
       </Box>
