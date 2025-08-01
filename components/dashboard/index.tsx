@@ -17,7 +17,10 @@ import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
 import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
-import { fetchExpensesAndBudgets } from "../../services/expenses";
+import {
+  fetchExpenses,
+  fetchExpensesAndBudgets,
+} from "../../services/expenses";
 import { useQuery } from "@tanstack/react-query";
 import WelcomeScreen from "./WelcomeScreen";
 
@@ -51,6 +54,24 @@ const Dashboard = () => {
       gcTime: 300000, // Cache for 5 minutes
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
     });
+
+  const {
+    data: allExpenses,
+    isLoading: isAllExpensesLoading,
+    refetch: refetchAllExpenses,
+  } = useQuery<Expense[]>({
+    queryKey: ["expenses", tgUser?.id],
+    queryFn: () => {
+      if (tgUser && initData) {
+        return fetchExpenses(tgUser.id, initData);
+      }
+      return Promise.resolve([]);
+    },
+    enabled: !!tgUser && !!initData,
+    staleTime: 30000, // Data stays fresh for 30 seconds
+    gcTime: 300000, // Cache for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -92,12 +113,19 @@ const Dashboard = () => {
   }, [router]);
 
   // Only show loading when we have user data and are actually fetching
-  if (!expensesAndBudgets || (tgUser && initData && isExpensesLoading)) {
+  if (
+    !expensesAndBudgets ||
+    (tgUser && initData && isExpensesLoading) ||
+    (tgUser && initData && isAllExpensesLoading)
+  ) {
     return <LoadingSkeleton />;
   }
 
   // Show welcome screen if no data
-  if (expensesAndBudgets.expenses.length === 0 && expensesAndBudgets.budgets.length === 0) {
+  if (
+    expensesAndBudgets.expenses.length === 0 &&
+    expensesAndBudgets.budgets.length === 0
+  ) {
     return <WelcomeScreen />;
   }
 
@@ -208,7 +236,10 @@ const Dashboard = () => {
 
           {/* Recent Transactions Card (now below summary) */}
           <Box sx={{ width: "100%", mb: 4 }}>
-            <ExpenseList initData={initData} tgUser={tgUser} />
+            <ExpenseList
+              allExpenses={allExpenses ?? []}
+              onRefetch={refetchAllExpenses}
+            />
           </Box>
         </Box>
       </Box>

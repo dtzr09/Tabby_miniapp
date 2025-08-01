@@ -14,9 +14,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useState } from "react";
 import SearchTransactionsCard from "./SearchTransactionsCard";
 import ExpenseListCard from "./ExpenseListCard";
-import { TelegramUser } from "../../dashboard";
-import { useQuery } from "@tanstack/react-query";
-import { fetchExpenses } from "../../../services/expenses";
+import { QueryObserverResult } from "@tanstack/react-query";
 
 interface Expense {
   id: number;
@@ -31,34 +29,19 @@ interface Expense {
 }
 
 interface ExpenseListProps {
-  initData: string | null;
-  tgUser: TelegramUser | null;
+  allExpenses: Expense[];
+  onRefetch: () => Promise<QueryObserverResult<Expense[], Error>>;
 }
 
-export default function ExpenseList({ initData, tgUser }: ExpenseListProps) {
+export default function ExpenseList({
+  allExpenses,
+  onRefetch,
+}: ExpenseListProps) {
   const { colors } = useTheme();
   const [showSearchCard, setShowSearchCard] = useState(false);
 
-  const {
-    data: expenses,
-    // isLoading: isExpensesLoading,
-    refetch: refetchExpenses,
-  } = useQuery<Expense[]>({
-    queryKey: ["expenses", tgUser?.id],
-    queryFn: () => {
-      if (tgUser && initData) {
-        return fetchExpenses(tgUser.id, initData);
-      }
-      return Promise.resolve([]);
-    },
-    enabled: !!tgUser && !!initData,
-    staleTime: 30000, // Data stays fresh for 30 seconds
-    gcTime: 300000, // Cache for 5 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-  });
-
   // Use empty array if no expenses provided
-  const transactionsToUse = expenses ?? [];
+  const transactionsToUse = allExpenses ?? [];
 
   // Get recent transactions (last 5)
   const recentTransactions = Array.isArray(transactionsToUse)
@@ -89,7 +72,7 @@ export default function ExpenseList({ initData, tgUser }: ExpenseListProps) {
       <SearchTransactionsCard
         expenses={transactionsToUse}
         onBack={handleBackFromSearch}
-        onRefetch={refetchExpenses}
+        onRefetch={onRefetch}
       />
     );
   }
@@ -156,7 +139,7 @@ export default function ExpenseList({ initData, tgUser }: ExpenseListProps) {
         <List sx={{ width: "100%", p: 0 }}>
           <ExpenseListCard
             expenses={recentTransactions}
-            onRefetch={refetchExpenses}
+            onRefetch={onRefetch}
           />
         </List>
       </CardContent>
