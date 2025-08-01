@@ -19,6 +19,7 @@ import ExpenseList from "../expenses/expenseList/ExpenseList";
 import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
 import { fetchExpensesAndBudgets } from "../../services/expenses";
 import { useQuery } from "@tanstack/react-query";
+import WelcomeScreen from "./WelcomeScreen";
 
 export interface TelegramUser {
   id: string;
@@ -91,13 +92,18 @@ const Dashboard = () => {
   }, [router]);
 
   // Only show loading when we have user data and are actually fetching
-  if (tgUser && initData && isExpensesLoading) {
+  if (!expensesAndBudgets || (tgUser && initData && isExpensesLoading)) {
     return <LoadingSkeleton />;
   }
 
+  // Show welcome screen if no data
+  if (expensesAndBudgets.expenses.length === 0 && expensesAndBudgets.budgets.length === 0) {
+    return <WelcomeScreen />;
+  }
+
   // Use empty arrays as fallbacks when data is undefined
-  const expenses = expensesAndBudgets?.expenses || [];
-  const budgets = expensesAndBudgets?.budgets || [];
+  const expenses = expensesAndBudgets.expenses;
+  const budgets = expensesAndBudgets.budgets;
 
   // Calculate summary data from real expenses
   const totalIncome = expenses
