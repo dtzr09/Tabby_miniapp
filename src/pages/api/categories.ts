@@ -5,7 +5,7 @@ import { postgresClient } from "../../../lib/postgresClient";
 
 const BOT_TOKEN =
   process.env.NODE_ENV === "development"
-    ? process.env.TELEGRAM_DEV_BOT_TOKEN!
+    ? process.env.TELEGRAM_LOCAL_BOT_TOKEN!
     : process.env.TELEGRAM_BOT_TOKEN!;
 
 export default async function handler(
