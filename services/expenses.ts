@@ -1,9 +1,9 @@
 import { QueryObserverResult } from "@tanstack/react-query";
-import { Expense, TelegramWebApp } from "../utils/types";
+import { AllEntriesResponse, Expense, TelegramWebApp } from "../utils/types";
 
 export const deleteExpense = async (
   id: number,
-  onRefetch?: () => Promise<QueryObserverResult<Expense[], Error>>
+  onRefetch?: () => Promise<QueryObserverResult<AllEntriesResponse, Error>>
 ) => {
   try {
     const webApp = window.Telegram?.WebApp as TelegramWebApp;
@@ -85,46 +85,4 @@ export const fetchExpenseDetail = async (
     return data.expense;
   }
   return "test";
-};
-
-export const fetchExpensesAndBudgets = async (
-  telegram_id: string,
-  initData: string
-) => {
-  const params = new URLSearchParams({
-    telegram_id,
-    initData,
-    isPeriod: "true",
-  });
-
-  const expensesResponse = fetch(`/api/expenses?${params.toString()}`).then(
-    (res) => {
-      if (!res.ok) {
-        return res.text().then((text) => {
-          console.error("❌ Expenses API Error:", text);
-          throw new Error(`Expenses error ${res.status}: ${text}`);
-        });
-      }
-      return res.json();
-    }
-  );
-
-  const budgetsResponse = fetch(`/api/budgets?${params.toString()}`).then(
-    (res) => {
-      if (!res.ok) {
-        return res.text().then((text) => {
-          console.error("❌ Budgets API Error:", text);
-          throw new Error(`Budgets error ${res.status}: ${text}`);
-        });
-      }
-      return res.json();
-    }
-  );
-
-  const [expenses, budgets] = await Promise.all([
-    expensesResponse,
-    budgetsResponse,
-  ]);
-
-  return { expenses: expenses || [], budgets: budgets || [] };
 };

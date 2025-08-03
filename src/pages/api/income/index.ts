@@ -1,12 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { supabaseAdmin } from "../../../lib/supabaseAdmin";
-import { postgresClient } from "../../../lib/postgresClient";
-import { validateTelegramWebApp } from "../../../lib/validateTelegram";
-
-const BOT_TOKEN =
-  process.env.NODE_ENV === "development"
-    ? process.env.TELEGRAM_LOCAL_BOT_TOKEN!
-    : process.env.TELEGRAM_BOT_TOKEN!;
+import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { postgresClient } from "../../../../lib/postgresClient";
+import { validateTelegramWebApp } from "../../../../lib/validateTelegram";
+import { BOT_TOKEN, isLocal } from "../../../../utils/utils";
 
 export default async function handler(
   req: NextApiRequest,
@@ -32,11 +28,6 @@ export default async function handler(
     if (!isValid) {
       return res.status(401).json({ error: "Invalid Telegram WebApp data" });
     }
-
-    // Use appropriate client based on environment
-    const isLocal =
-      process.env.NODE_ENV === "development" &&
-      process.env.DATABASE_URL?.includes("postgresql://");
 
     if (isLocal) {
       try {
@@ -70,16 +61,15 @@ export default async function handler(
 
         let query = `
         SELECT 
-          e.id, 
-          e.amount, 
-          e.description, 
-          e.date, 
-          e.is_income,
+          incomes.id, 
+          incomes.amount, 
+          incomes.description, 
+          incomes.date, 
           json_build_object('name', c.name) as category
-        FROM expenses e
-        LEFT JOIN categories c ON e.category_id = c.id
-        WHERE e.payer_id = $1
-        ORDER BY e.id DESC
+        FROM incomes
+        LEFT JOIN categories c ON incomes.category_id = c.id
+        WHERE incomes.user_id = $1
+        ORDER BY incomes.id DESC
       `;
 
         let values = [userId];
@@ -87,25 +77,24 @@ export default async function handler(
         if (isPeriod) {
           query = `
           SELECT 
-            e.id, 
-            e.amount, 
-            e.description, 
-            e.date, 
-            e.is_income,
+            incomes.id, 
+            incomes.amount, 
+            incomes.description, 
+            incomes.date, 
             json_build_object('name', c.name) as category
-          FROM expenses e
-          LEFT JOIN categories c ON e.category_id = c.id
-          WHERE e.payer_id = $1
-            AND e.date >= $2
-            AND e.date < $3
-          ORDER BY e.id DESC
+          FROM incomes
+          LEFT JOIN categories c ON incomes.category_id = c.id
+          WHERE incomes.user_id = $1
+            AND incomes.date >= $2
+            AND incomes.date < $3
+          ORDER BY incomes.id DESC
         `;
           values = [userId, startOfMonth, startOfNextMonth];
         }
 
-        const expensesResult = await postgresClient.query(query, values);
+        const incomeResult = await postgresClient.query(query, values);
 
-        return res.status(200).json(expensesResult.rows);
+        return res.status(200).json(incomeResult.rows);
       } catch (error) {
         console.error("Database error:", error);
         return res.status(500).json({ error: "Database error occurred" });
@@ -157,20 +146,19 @@ export default async function handler(
         ).toISOString();
 
         let query = supabaseAdmin
-          .from("expenses")
+          .from("incomes")
           .select(
             `
             id,
             amount,
             description,
             date,
-            is_income,
             category:category_id (
               name
             )
           `
           )
-          .eq("payer_id", userId)
+          .eq("user_id", userId)
           .order("id", { ascending: false });
 
         if (isPeriod) {

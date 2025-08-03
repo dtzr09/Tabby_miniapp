@@ -6,6 +6,12 @@ export const getCategoryData = (
   budgets: Budget[],
   period: "daily" | "weekly" | "monthly"
 ) => {
+  // If no budgets are set, return empty array
+  // Budget overview should only show when there are actual budgets
+  if (!budgets || budgets.length === 0) {
+    return [];
+  }
+
   const filteredExpenses = getFilteredExpenses(expenses, period);
   const categoryMap = new Map<
     string,
@@ -40,7 +46,7 @@ export const getCategoryData = (
     });
   });
 
-  // Then, add expenses to the map
+  // Then, add expenses to the map (only for categories that have budgets)
   filteredExpenses.forEach((exp) => {
     // Handle both nested category object and direct category name
     const categoryName = exp.category?.name || "Other";
@@ -59,16 +65,11 @@ export const getCategoryData = (
       )
       .trim();
 
+    // Only add spending to categories that already have budgets
     if (categoryMap.has(cleanName)) {
       categoryMap.get(cleanName)!.spent += Math.abs(exp.amount);
-    } else {
-      categoryMap.set(cleanName, {
-        name: cleanName,
-        spent: Math.abs(exp.amount),
-        emoji,
-        budget: 0, // No budget set for this category
-      });
     }
+    // Removed the else block that was creating categories with zero budgets
   });
 
   return Array.from(categoryMap.values()).map((cat, index) => ({

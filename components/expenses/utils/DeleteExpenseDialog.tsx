@@ -10,14 +10,14 @@ import {
 import { deleteExpense } from "../../../services/expenses";
 import { useTheme } from "@/contexts/ThemeContext";
 import { QueryObserverResult } from "@tanstack/react-query";
-import { Expense } from "../../../utils/types";
+import { AllEntriesResponse } from "../../../utils/types";
 
 export interface DeleteExpenseDialogProps {
   id: number;
   onSuccess: () => void;
   showConfirm: boolean;
   setShowConfirm: (show: boolean) => void;
-  onRefetch?: () => Promise<QueryObserverResult<Expense[], Error>>;
+  onRefetch?: () => Promise<QueryObserverResult<AllEntriesResponse, Error>>;
 }
 
 const DeleteExpenseDialog = ({
@@ -45,12 +45,12 @@ const DeleteExpenseDialog = ({
     >
       <DialogTitle sx={{ color: colors.text }}>
         <Typography sx={{ fontSize: "1.2rem", fontWeight: 700 }}>
-          Delete Expense
+          Delete Transaction
         </Typography>
       </DialogTitle>
       <DialogContent sx={{ color: colors.text }}>
         <Typography sx={{ fontSize: "1rem", fontWeight: 500 }}>
-          Are you sure you want to delete this expense?
+          Are you sure you want to delete this transaction?
         </Typography>
       </DialogContent>
       <DialogActions>

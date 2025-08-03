@@ -4,18 +4,17 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from "next/router";
 import { Box, Typography, alpha } from "@mui/material";
 import React, { useState } from "react";
-import { ExpenseListCardProps } from "./ExpenseListCard";
 import DeleteExpenseDialog from "../utils/DeleteExpenseDialog";
 import { displayDateTime } from "../../../utils/displayDateTime";
 import { QueryObserverResult } from "@tanstack/react-query";
-import { Expense } from "../../../utils/types";
+import { AllEntriesResponse, UnifiedEntry } from "../../../utils/types";
 
 const ExpenseRow = ({
   tx,
   onRefetch,
 }: {
-  tx: ExpenseListCardProps["expenses"][0];
-  onRefetch: () => Promise<QueryObserverResult<Expense[], Error>>;
+  tx: UnifiedEntry;
+  onRefetch: () => Promise<QueryObserverResult<AllEntriesResponse, Error>>;
 }) => {
   const { colors } = useTheme();
   const router = useRouter();

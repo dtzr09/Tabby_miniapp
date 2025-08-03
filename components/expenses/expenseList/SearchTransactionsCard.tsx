@@ -1,5 +1,4 @@
 import {
-  List,
   Typography,
   Box,
   Card,
@@ -13,33 +12,22 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SearchIcon from "@mui/icons-material/Search";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import SearchMenuCard from "./SearchMenuCard";
 import FilterOptionCard from "./FilterOptionCard";
 import ExpenseListCard from "./ExpenseListCard";
 import Pagination from "@mui/material/Pagination";
 import { QueryObserverResult } from "@tanstack/react-query";
-
-interface Expense {
-  id: number;
-  amount: number;
-  description: string;
-  date: string;
-  is_income: boolean;
-  category?: {
-    name: string;
-    emoji?: string;
-  };
-}
+import { AllEntriesResponse, UnifiedEntry } from "../../../utils/types";
 
 interface SearchTransactionsCardProps {
-  expenses: Expense[];
+  entries: UnifiedEntry[];
   onBack: () => void;
-  onRefetch: () => Promise<QueryObserverResult<Expense[], Error>>;
+  onRefetch: () => Promise<QueryObserverResult<AllEntriesResponse, Error>>;
 }
 
 export default function SearchTransactionsCard({
-  expenses,
+  entries,
   onBack,
   onRefetch,
 }: SearchTransactionsCardProps) {
@@ -57,11 +45,28 @@ export default function SearchTransactionsCard({
   const [page, setPage] = useState(1);
   const transactionsPerPage = 10;
 
-  // Get unique categories from expenses
+  // Add state to track filter changes and force recalculation
+  const [lastCategoryFilter, setLastCategoryFilter] = useState(categoryFilter);
+  const [filterKey, setFilterKey] = useState(0);
+
+  // Force recalculation when category filter changes
+  useEffect(() => {
+    if (lastCategoryFilter !== categoryFilter) {
+      setLastCategoryFilter(categoryFilter);
+      setFilterKey((prev) => prev + 1); // Force re-render
+      setPage(1); // Reset pagination
+    }
+  }, [categoryFilter, lastCategoryFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, categoryFilter, amountFilter, dateFilter]);
+
+  // Get unique categories from entries
   const categories = Array.from(
     new Set(
-      expenses.map((exp) => {
-        const categoryName = exp.category?.name || "Other";
+      entries.map((entry) => {
+        const categoryName = entry.category || "Other";
         // Remove emoji from category name and trim
         const cleanName = categoryName
           .replace(
@@ -74,102 +79,108 @@ export default function SearchTransactionsCard({
     )
   );
 
-  // Filter transactions based on search and filters
-  const filteredTransactions = expenses
-    .filter((exp) => {
-      // Search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const categoryName = exp.category?.name || "Other";
-        // Extract clean category name (without emoji) for search
-        const cleanCategoryName =
-          categoryName
-            .replace(
-              /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]\s*/u,
-              ""
-            )
-            .trim() || "Other";
-        const matchesSearch =
-          exp.description.toLowerCase().includes(query) ||
-          cleanCategoryName.toLowerCase().includes(query);
-        if (!matchesSearch) return false;
-      }
+  // Filter transactions based on search and filters - explicit recalculation
+  const filteredTransactions = useMemo(() => {
+    const result = entries
+      .filter((entry) => {
+        // Search filter
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase();
+          const categoryName = entry.category || "Other";
+          // Extract clean category name (without emoji) for search
+          const cleanCategoryName =
+            categoryName
+              .replace(
+                /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]\s*/u,
+                ""
+              )
+              .trim() || "Other";
 
-      // Category filter
-      if (categoryFilter !== "All Categories") {
-        const categoryName = exp.category?.name || "Other";
-        // Extract clean category name (without emoji)
-        const cleanCategoryName =
-          categoryName
-            .replace(
-              /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]\s*/u,
-              ""
-            )
-            .trim() || "Other";
-        if (cleanCategoryName !== categoryFilter) {
-          return false;
+          const matchesSearch =
+            entry.description.toLowerCase().includes(query) ||
+            cleanCategoryName.toLowerCase().includes(query);
+
+          if (!matchesSearch) return false;
         }
-      }
 
-      // Amount filter (simplified for now)
-      if (amountFilter !== "All Amounts") {
-        const amount = Math.abs(exp.amount);
-        switch (amountFilter) {
-          case "Under $10":
-            if (amount >= 10) return false;
-            break;
-          case "$10 - $50":
-            if (amount < 10 || amount > 50) return false;
-            break;
-          case "$50 - $100":
-            if (amount < 50 || amount > 100) return false;
-            break;
-          case "Over $100":
-            if (amount <= 100) return false;
-            break;
+        // Category filter
+        if (categoryFilter !== "All Categories") {
+          const categoryName = entry.category || "Other";
+          // Extract clean category name (without emoji)
+          const cleanCategoryName =
+            categoryName
+              .replace(
+                /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]\s*/u,
+                ""
+              )
+              .trim() || "Other";
+
+          if (cleanCategoryName !== categoryFilter) {
+            return false;
+          }
         }
-      }
 
-      // Date filter (simplified for now)
-      if (dateFilter !== "All Dates") {
-        const expDate = new Date(exp.date);
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-        const weekAgo = new Date(today);
-        weekAgo.setDate(today.getDate() - 7);
-        const monthAgo = new Date(today);
-        monthAgo.setMonth(today.getMonth() - 1);
-
-        switch (dateFilter) {
-          case "Today":
-            if (expDate.toDateString() !== today.toDateString()) return false;
-            break;
-          case "Yesterday":
-            if (expDate.toDateString() !== yesterday.toDateString())
-              return false;
-            break;
-          case "This Week":
-            if (expDate < weekAgo) return false;
-            break;
-          case "This Month":
-            if (expDate < monthAgo) return false;
-            break;
+        // Amount filter
+        if (amountFilter !== "All Amounts") {
+          const amount = Math.abs(entry.amount);
+          switch (amountFilter) {
+            case "Under $10":
+              if (amount >= 10) return false;
+              break;
+            case "$10 - $50":
+              if (amount < 10 || amount > 50) return false;
+              break;
+            case "$50 - $100":
+              if (amount < 50 || amount > 100) return false;
+              break;
+            case "Over $100":
+              if (amount <= 100) return false;
+              break;
+          }
         }
-      }
 
-      return true;
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .map((exp) => ({
-      id: exp.id,
-      description: exp.description,
-      category: exp.category?.name || "Other",
-      emoji: exp.category?.emoji || "⚪",
-      date: exp.date,
-      amount: exp.amount,
-      isIncome: exp.is_income,
-    }));
+        // Date filter
+        if (dateFilter !== "All Dates") {
+          const entryDate = new Date(entry.date);
+          const today = new Date();
+          const yesterday = new Date(today);
+          yesterday.setDate(today.getDate() - 1);
+          const weekAgo = new Date(today);
+          weekAgo.setDate(today.getDate() - 7);
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(today.getMonth() - 1);
+
+          switch (dateFilter) {
+            case "Today":
+              if (entryDate.toDateString() !== today.toDateString())
+                return false;
+              break;
+            case "Yesterday":
+              if (entryDate.toDateString() !== yesterday.toDateString())
+                return false;
+              break;
+            case "This Week":
+              if (entryDate < weekAgo) return false;
+              break;
+            case "This Month":
+              if (entryDate < monthAgo) return false;
+              break;
+          }
+        }
+
+        return true;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return result;
+  }, [
+    entries,
+    searchQuery,
+    categoryFilter,
+    amountFilter,
+    dateFilter,
+    filterKey,
+  ]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
@@ -185,21 +196,10 @@ export default function SearchTransactionsCard({
   const totalPages = Math.ceil(
     filteredTransactions.length / transactionsPerPage
   );
-  const paginatedTransactions = filteredTransactions
-    .slice((page - 1) * transactionsPerPage, page * transactionsPerPage)
-    .map((exp) => ({
-      id: exp.id,
-      description: exp.description,
-      category: exp.category,
-      emoji: exp.emoji,
-      date: exp.date,
-      amount: exp.amount,
-      isIncome: exp.isIncome,
-    }));
-
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery, categoryFilter, amountFilter, dateFilter]);
+  const paginatedTransactions = filteredTransactions.slice(
+    (page - 1) * transactionsPerPage,
+    page * transactionsPerPage
+  );
 
   return (
     <Card
@@ -345,12 +345,10 @@ export default function SearchTransactionsCard({
         </Box>
 
         {/* Transactions List */}
-        <List sx={{ width: "100%", p: 0 }}>
-          <ExpenseListCard
-            expenses={paginatedTransactions}
-            onRefetch={onRefetch}
-          />
-        </List>
+        <ExpenseListCard
+          entries={paginatedTransactions}
+          onRefetch={onRefetch}
+        />
         {totalPages > 1 && (
           <>
             <Divider sx={{ mt: 2, backgroundColor: colors.inputBg }} />

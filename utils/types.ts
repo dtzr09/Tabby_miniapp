@@ -21,6 +21,17 @@ export interface Budget {
   };
 }
 
+export interface Income {
+  id: number;
+  amount: number;
+  description: string;
+  date: string;
+  category: {
+    id?: number;
+    name: string;
+  };
+}
+
 export interface Expense {
   id: number;
   amount: number;
@@ -31,6 +42,24 @@ export interface Expense {
     name: string;
     emoji?: string;
   };
+}
+
+// New unified entry type for display components
+export interface UnifiedEntry {
+  id: number;
+  description: string;
+  category: string;
+  emoji?: string;
+  date: string;
+  amount: number;
+  isIncome: boolean;
+}
+
+// Service response types
+export interface AllEntriesResponse {
+  expenses: Expense[];
+  income: Income[];
+  budgets: Budget[];
 }
 
 export interface DBData {

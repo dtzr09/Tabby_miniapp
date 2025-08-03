@@ -5,7 +5,14 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 import { getDailyBreakdown } from "../../utils/getDailyBreakdown";
 import { getFilteredExpenses } from "../../utils/getFilteredExpenses";
 import { getCategoryData } from "../../utils/getCategoryData";
-import { Budget, Expense, TelegramWebApp, ViewMode } from "../../utils/types";
+import {
+  AllEntriesResponse,
+  Budget,
+  Expense,
+  Income,
+  TelegramWebApp,
+  ViewMode,
+} from "../../utils/types";
 import {
   backButton,
   init,
@@ -17,20 +24,12 @@ import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
 import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
-import {
-  fetchExpenses,
-  fetchExpensesAndBudgets,
-} from "../../services/expenses";
 import { useQuery } from "@tanstack/react-query";
 import WelcomeScreen from "./WelcomeScreen";
+import { fetchAllEntries } from "../../services/allEntries";
 
 export interface TelegramUser {
   id: string;
-}
-
-interface ExpensesAndBudgets {
-  expenses: Expense[];
-  budgets: Budget[];
 }
 
 const Dashboard = () => {
@@ -40,14 +39,14 @@ const Dashboard = () => {
   const [initData, setInitData] = useState<string | null>(null);
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>("weekly");
 
-  const { data: expensesAndBudgets, isLoading: isExpensesLoading } =
-    useQuery<ExpensesAndBudgets>({
-      queryKey: ["expensesAndBudgets", tgUser?.id],
+  const { data: monthlyEntries, isLoading: isMonthlyEntriesLoading } =
+    useQuery<AllEntriesResponse>({
+      queryKey: ["monthlyEntries", tgUser?.id],
       queryFn: () => {
         if (tgUser && initData) {
-          return fetchExpensesAndBudgets(tgUser.id, initData);
+          return fetchAllEntries(tgUser.id, initData, true);
         }
-        return Promise.resolve({ expenses: [], budgets: [] });
+        return Promise.resolve({ expenses: [], income: [], budgets: [] });
       },
       enabled: !!tgUser && !!initData,
       staleTime: 30000, // Data stays fresh for 30 seconds
@@ -56,16 +55,16 @@ const Dashboard = () => {
     });
 
   const {
-    data: allExpenses,
-    isLoading: isAllExpensesLoading,
-    refetch: refetchAllExpenses,
-  } = useQuery<Expense[]>({
-    queryKey: ["expenses", tgUser?.id],
+    data: allEntries,
+    isLoading: isAllEntriesLoading,
+    refetch: refetchAllEntries,
+  } = useQuery<AllEntriesResponse>({
+    queryKey: ["allEntries", tgUser?.id],
     queryFn: () => {
       if (tgUser && initData) {
-        return fetchExpenses(tgUser.id, initData);
+        return fetchAllEntries(tgUser.id, initData, false);
       }
-      return Promise.resolve([]);
+      return Promise.resolve({ expenses: [], income: [], budgets: [] });
     },
     enabled: !!tgUser && !!initData,
     staleTime: 30000, // Data stays fresh for 30 seconds
@@ -114,29 +113,31 @@ const Dashboard = () => {
 
   // Only show loading when we have user data and are actually fetching
   if (
-    !expensesAndBudgets ||
-    (tgUser && initData && isExpensesLoading) ||
-    (tgUser && initData && isAllExpensesLoading)
+    !monthlyEntries ||
+    (tgUser && initData && isMonthlyEntriesLoading) ||
+    (tgUser && initData && isAllEntriesLoading)
   ) {
     return <LoadingSkeleton />;
   }
 
   // Show welcome screen if no data
   if (
-    expensesAndBudgets.expenses.length === 0 &&
-    expensesAndBudgets.budgets.length === 0
+    monthlyEntries.expenses.length === 0 &&
+    monthlyEntries.budgets.length === 0
   ) {
     return <WelcomeScreen />;
   }
 
-  // Use empty arrays as fallbacks when data is undefined
-  const expenses = expensesAndBudgets.expenses;
-  const budgets = expensesAndBudgets.budgets;
+  // Use data from monthlyEntries for calculations
+  const expenses = monthlyEntries.expenses || [];
+  const income = monthlyEntries.income || [];
+  const budgets = monthlyEntries.budgets || [];
 
   // Calculate summary data from real expenses
-  const totalIncome = expenses
-    .filter((exp: Expense) => exp.is_income)
-    .reduce((sum: number, exp: Expense) => sum + (exp.amount || 0), 0);
+  const totalIncome = income.reduce(
+    (sum: number, income: Income) => sum + (income.amount || 0),
+    0
+  );
 
   const totalExpenses = expenses
     .filter((exp: Expense) => !exp.is_income)
@@ -160,6 +161,7 @@ const Dashboard = () => {
     );
 
     const categories = getCategoryData(expenses, budgets, period);
+
     const dailyExpenses = getDailyBreakdown(expenses, period);
 
     return {
@@ -219,7 +221,6 @@ const Dashboard = () => {
               />
             </Box>
           )}
-
           <ExpenseSummaryCard
             totalIncome={totalIncome}
             totalExpenses={totalExpenses}
@@ -237,8 +238,10 @@ const Dashboard = () => {
           {/* Recent Transactions Card (now below summary) */}
           <Box sx={{ width: "100%", mb: 4 }}>
             <ExpenseList
-              allExpenses={allExpenses ?? []}
-              onRefetch={refetchAllExpenses}
+              allEntries={
+                allEntries || { expenses: [], income: [], budgets: [] }
+              }
+              onRefetch={refetchAllEntries}
             />
           </Box>
         </Box>

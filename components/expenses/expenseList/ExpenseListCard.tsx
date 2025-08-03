@@ -1,27 +1,19 @@
 import React from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, List, Typography } from "@mui/material";
 import { useTheme } from "@/contexts/ThemeContext";
 import ExpenseRow from "./ExpenseRow";
 import { QueryObserverResult } from "@tanstack/react-query";
-import { Expense } from "../../../utils/types";
+import { AllEntriesResponse, UnifiedEntry } from "../../../utils/types";
 
 export interface ExpenseListCardProps {
-  expenses: {
-    id: number;
-    description: string;
-    category: string;
-    emoji?: string;
-    date: string;
-    amount: number;
-    isIncome: boolean;
-  }[];
-  onRefetch: () => Promise<QueryObserverResult<Expense[], Error>>;
+  entries: UnifiedEntry[];
+  onRefetch: () => Promise<QueryObserverResult<AllEntriesResponse, Error>>;
 }
 
 const ExpenseListCard = (props: ExpenseListCardProps) => {
   const { colors } = useTheme();
 
-  if (props.expenses.length === 0) {
+  if (props.entries.length === 0) {
     return (
       <Box
         sx={{
@@ -45,9 +37,11 @@ const ExpenseListCard = (props: ExpenseListCardProps) => {
 
   return (
     <>
-      {props.expenses.map((tx) => (
-        <ExpenseRow key={tx.id} tx={tx} onRefetch={props.onRefetch} />
-      ))}
+      <List sx={{ width: "100%", p: 0 }}>
+        {props.entries.map((tx) => (
+          <ExpenseRow key={tx.id} tx={tx} onRefetch={props.onRefetch} />
+        ))}
+      </List>
     </>
   );
 };

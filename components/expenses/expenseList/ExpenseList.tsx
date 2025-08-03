@@ -15,48 +15,64 @@ import { useState } from "react";
 import SearchTransactionsCard from "./SearchTransactionsCard";
 import ExpenseListCard from "./ExpenseListCard";
 import { QueryObserverResult } from "@tanstack/react-query";
-
-interface Expense {
-  id: number;
-  amount: number;
-  description: string;
-  date: string;
-  is_income: boolean;
-  category?: {
-    name: string;
-    emoji?: string;
-  };
-}
+import { AllEntriesResponse, UnifiedEntry } from "../../../utils/types";
 
 interface ExpenseListProps {
-  allExpenses: Expense[];
-  onRefetch: () => Promise<QueryObserverResult<Expense[], Error>>;
+  allEntries: AllEntriesResponse;
+  onRefetch: () => Promise<QueryObserverResult<AllEntriesResponse, Error>>;
 }
 
 export default function ExpenseList({
-  allExpenses,
+  allEntries,
   onRefetch,
 }: ExpenseListProps) {
   const { colors } = useTheme();
   const [showSearchCard, setShowSearchCard] = useState(false);
 
-  // Use empty array if no expenses provided
-  const transactionsToUse = allExpenses ?? [];
+  // Combine income and expenses into unified entries
+  const combineEntries = (): UnifiedEntry[] => {
+    const combined: UnifiedEntry[] = [];
+
+    // Add expenses
+    if (allEntries?.expenses) {
+      allEntries.expenses.forEach((expense) => {
+        combined.push({
+          id: expense.id,
+          description: expense.description,
+          category: expense.category?.name || "Other",
+          emoji: expense.category?.emoji,
+          date: expense.date,
+          amount: expense.amount,
+          isIncome: expense.is_income,
+        });
+      });
+    }
+
+    // Add income entries
+    if (allEntries?.income) {
+      allEntries.income.forEach((income) => {
+        combined.push({
+          id: income.id,
+          description: income.description,
+          category: income.category?.name || "Income",
+          emoji: undefined, // Income doesn't have emoji in the current structure
+          date: income.date,
+          amount: income.amount,
+          isIncome: true,
+        });
+      });
+    }
+
+    // Sort by date (newest first)
+    return combined.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  };
+
+  const unifiedEntries = combineEntries();
 
   // Get recent transactions (last 5)
-  const recentTransactions = Array.isArray(transactionsToUse)
-    ? transactionsToUse
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 5)
-        .map((exp) => ({
-          id: exp.id,
-          description: exp.description,
-          category: exp.category?.name || "Other",
-          date: exp.date, // Keep the original date string
-          amount: exp.amount,
-          isIncome: exp.is_income,
-        }))
-    : [];
+  const recentTransactions = unifiedEntries.slice(0, 5);
 
   const handleSearchToggle = () => {
     setShowSearchCard(true);
@@ -70,7 +86,7 @@ export default function ExpenseList({
   if (showSearchCard) {
     return (
       <SearchTransactionsCard
-        expenses={transactionsToUse}
+        entries={unifiedEntries}
         onBack={handleBackFromSearch}
         onRefetch={onRefetch}
       />
@@ -117,7 +133,7 @@ export default function ExpenseList({
                 letterSpacing: "-.025em",
               }}
             >
-              Recent Spendings
+              Recent Transactions
             </Typography>
           </Box>
           <IconButton
@@ -137,10 +153,7 @@ export default function ExpenseList({
         </Box>
 
         <List sx={{ width: "100%", p: 0 }}>
-          <ExpenseListCard
-            expenses={recentTransactions}
-            onRefetch={onRefetch}
-          />
+          <ExpenseListCard entries={recentTransactions} onRefetch={onRefetch} />
         </List>
       </CardContent>
     </Card>

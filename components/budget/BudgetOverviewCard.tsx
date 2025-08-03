@@ -54,12 +54,12 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
 
   // Calculate adjusted budgets based on view mode
   const adjustedCategories = useMemo(() => {
+    const monthInfo = getCurrentMonthInfo();
+
     if (!props.viewMode)
       return props.data.categories.filter(
         (category) => !category.name.toLowerCase().includes("flexible")
       );
-
-    const monthInfo = getCurrentMonthInfo();
 
     return props.data.categories
       .filter((category) => !category.name.toLowerCase().includes("flexible"))
@@ -97,7 +97,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          mb: 2,
+          mb: props.data.num_of_budgets > 0 ? 2 : 0,
         }}
       >
         <Box>
@@ -110,17 +110,18 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
           >
             Budget {props.viewMode && `(${props.viewMode})`}
           </Typography>
-          <Typography
-            sx={{
-              fontSize: "0.9rem",
-              color: colors.textSecondary,
-            }}
-          >
-            {props.data.num_of_budgets} in total
-          </Typography>
+          {props.data.num_of_budgets > 0 && (
+            <Typography
+              sx={{
+                fontSize: "0.9rem",
+                color: colors.textSecondary,
+              }}
+            >
+              {props.data.num_of_budgets} in total
+            </Typography>
+          )}
         </Box>
       </Box>
-
       {adjustedCategories.length === 0 && (
         <Box
           sx={{
@@ -138,98 +139,197 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
 
       {/* Budget Categories */}
       {adjustedCategories.length > 0 && (
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            overflowX: "scroll",
-            "&::-webkit-scrollbar": { display: "none" },
-          }}
-        >
-          {adjustedCategories.map((category) => {
-            if (category.budget === 0 || category.spent === undefined) {
-              return null;
-            }
-            const progress = (category.spent / category.budget) * 100;
-            const progressColor = getProgressColor(progress);
-            return (
-              <Box
-                key={category.id}
-                sx={{
-                  minWidth: 120,
-                  p: 2,
-                  borderRadius: 3,
-                  backgroundColor: colors.surface,
-                  position: "relative",
-                }}
-              >
+        <>
+          {/* Debug Info - Final Rendering */}
+          <Box
+            sx={{
+              mb: 2,
+              p: 1,
+              bgcolor: "#f3e5f5",
+              border: "1px solid #9c27b0",
+              borderRadius: 1,
+              fontSize: "0.6rem",
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                mb: 1,
+                color: "#7b1fa2",
+              }}
+            >
+              🎨 Final Rendering Logic Check
+            </Typography>
+            <div
+              style={{
+                marginBottom: "8px",
+                padding: "4px",
+                backgroundColor: "#fff3e0",
+              }}
+            >
+              <strong>Categories that will be rendered:</strong>{" "}
+              {
+                adjustedCategories.filter(
+                  (cat) => cat.budget !== 0 && cat.spent !== undefined
+                ).length
+              }
+            </div>
+            <div
+              style={{
+                marginBottom: "8px",
+                padding: "4px",
+                backgroundColor: "#ffebee",
+              }}
+            >
+              <strong>Categories with zero budget:</strong>{" "}
+              {adjustedCategories.filter((cat) => cat.budget === 0).length}
+            </div>
+            <div
+              style={{
+                marginBottom: "8px",
+                padding: "4px",
+                backgroundColor: "#f3e5f5",
+              }}
+            >
+              <strong>Categories with undefined spent:</strong>{" "}
+              {
+                adjustedCategories.filter((cat) => cat.spent === undefined)
+                  .length
+              }
+            </div>
+            {adjustedCategories.length > 0 &&
+              adjustedCategories.filter(
+                (cat) => cat.budget !== 0 && cat.spent !== undefined
+              ).length === 0 && (
+                <div
+                  style={{
+                    padding: "4px",
+                    backgroundColor: "#ffcdd2",
+                    fontWeight: "bold",
+                  }}
+                >
+                  🚨 ISSUE: adjustedCategories has {adjustedCategories.length}{" "}
+                  items but none will render!
+                </div>
+              )}
+            {adjustedCategories.map((cat) => {
+              const willRender = cat.budget !== 0 && cat.spent !== undefined;
+              const progress = willRender ? (cat.spent / cat.budget) * 100 : 0;
+              return (
+                <div
+                  key={cat.id}
+                  style={{
+                    padding: "2px",
+                    margin: "1px 0",
+                    backgroundColor: willRender ? "#e8f5e8" : "#ffebee",
+                    fontSize: "0.6rem",
+                  }}
+                >
+                  {cat.name} | Budget: ${cat.budget.toFixed(2)} | Spent: $
+                  {cat.spent?.toFixed(2) || "undefined"} | Progress:{" "}
+                  {progress.toFixed(1)}% |
+                  {willRender ? "✅ WILL RENDER" : "❌ WILL BE HIDDEN"}
+                  {!willRender &&
+                    `(${cat.budget === 0 ? "zero budget" : "no spent data"})`}
+                </div>
+              );
+            })}
+          </Box>
+
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              overflowX: "scroll",
+              "&::-webkit-scrollbar": { display: "none" },
+            }}
+          >
+            {adjustedCategories.map((category) => {
+              if (category.budget === 0 || category.spent === undefined) {
+                return null;
+              }
+              const progress = (category.spent / category.budget) * 100;
+              const progressColor = getProgressColor(progress);
+              return (
                 <Box
+                  key={category.id}
                   sx={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: "50%",
-                    background: `conic-gradient(${progressColor} ${
-                      progress * 3.6
-                    }deg, ${colors.surface} 0deg)`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    mx: "auto",
-                    mb: 1,
+                    minWidth: 120,
+                    p: 2,
+                    borderRadius: 3,
+                    backgroundColor: colors.surface,
+                    position: "relative",
                   }}
                 >
                   <Box
                     sx={{
-                      width: 45,
-                      height: 45,
+                      width: 60,
+                      height: 60,
                       borderRadius: "50%",
-                      backgroundColor: colors.card,
+                      background: `conic-gradient(${progressColor} ${
+                        progress * 3.6
+                      }deg, ${colors.surface} 0deg)`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      mx: "auto",
+                      mb: 1,
                     }}
                   >
-                    <Box sx={{ color: category.color, fontSize: 20 }}>
-                      {category.icon}
+                    <Box
+                      sx={{
+                        width: 45,
+                        height: 45,
+                        borderRadius: "50%",
+                        backgroundColor: colors.card,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Box sx={{ color: category.color, fontSize: 20 }}>
+                        {category.icon}
+                      </Box>
                     </Box>
                   </Box>
+
+                  <Typography
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: "1rem",
+                      color: colors.text,
+                      textAlign: "center",
+                    }}
+                  >
+                    ${category.spent.toFixed(2)}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: "0.7rem",
+                      color: colors.textSecondary,
+                      textAlign: "center",
+                      opacity: 0.7,
+                      mb: 1,
+                    }}
+                  >
+                    {`of $${category.budget.toFixed(2)}`}
+                  </Typography>
+
+                  <Typography
+                    sx={{
+                      fontSize: "0.8rem",
+                      color: colors.textSecondary,
+                      textAlign: "center",
+                    }}
+                  >
+                    {category.name}
+                  </Typography>
                 </Box>
-
-                <Typography
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: "1rem",
-                    color: colors.text,
-                    textAlign: "center",
-                  }}
-                >
-                  ${category.spent.toFixed(2)}
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: "0.7rem",
-                    color: colors.textSecondary,
-                    textAlign: "center",
-                    opacity: 0.7,
-                    mb: 1,
-                  }}
-                >
-                  {`of $${category.budget.toFixed(2)}`}
-                </Typography>
-
-                <Typography
-                  sx={{
-                    fontSize: "0.8rem",
-                    color: colors.textSecondary,
-                    textAlign: "center",
-                  }}
-                >
-                  {category.name}
-                </Typography>
-              </Box>
-            );
-          })}
-        </Box>
+              );
+            })}
+          </Box>
+        </>
       )}
     </>
   );
