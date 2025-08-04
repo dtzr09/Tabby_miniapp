@@ -44,12 +44,20 @@ export default async function handler(
       return res.status(500).json({ error: "Supabase client not configured" });
     }
 
+    const { data: static_categories } = await supabaseAdmin
+      .from("all_categories")
+      .select("*")
+      .is("user_id", null)
+    .is("chat_id", null);
+
     const { data: categories } = await supabaseAdmin
       .from("all_categories")
       .select("*")
       .eq("chat_id", telegram_id)
       .order("name");
 
-    return res.status(200).json({ categories: categories || [] });
+    return res.status(200).json({
+      categories: [...(static_categories || []), ...(categories || [])],
+    });
   }
 }
