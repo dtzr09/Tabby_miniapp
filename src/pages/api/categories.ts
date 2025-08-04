@@ -29,18 +29,23 @@ export default async function handler(
     process.env.DATABASE_URL?.includes("postgresql://");
 
   if (isLocal) {
-    const categories = await postgresClient.query(
-      "SELECT * FROM categories WHERE chat_id = $1",
+    const static_categories = await postgresClient.query(
+      "SELECT * FROM all_categories WHERE user_id IS NULL AND chat_id IS NULL"
+    );
+    const user_categories = await postgresClient.query(
+      "SELECT * FROM all_categories WHERE chat_id = $1",
       [telegram_id]
     );
-    return res.status(200).json({ categories: categories.rows });
+    return res.status(200).json({
+      categories: [...static_categories.rows, ...user_categories.rows],
+    });
   } else {
     if (!supabaseAdmin) {
       return res.status(500).json({ error: "Supabase client not configured" });
     }
 
     const { data: categories } = await supabaseAdmin
-      .from("categories")
+      .from("all_categories")
       .select("*")
       .eq("chat_id", telegram_id)
       .order("name");

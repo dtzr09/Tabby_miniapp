@@ -61,7 +61,7 @@ export default async function handler(
           b.category_id,
           json_build_object('id', c.id, 'name', c.name) as category
         FROM budgets b
-        LEFT JOIN categories c ON b.category_id = c.id
+        LEFT JOIN all_categories c ON b.category_id = c.id
         WHERE b.user_id = $1 AND b.month = $2 AND b.year = $3`,
         [userId, currentMonth, currentYear]
       );
@@ -104,7 +104,7 @@ export default async function handler(
           created_at, 
           updated_at,
           category_id,
-          category:categories!budgets_category_id_fkey (
+          category:all_categories!budgets_category_id_fkey (
             id,
             name
           )
