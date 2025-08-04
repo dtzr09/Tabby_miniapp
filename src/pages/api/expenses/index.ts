@@ -68,7 +68,7 @@ export default async function handler(
           e.is_income,
           json_build_object('name', c.name) as category
         FROM expenses e
-        LEFT JOIN categories c ON e.category_id = c.id
+        LEFT JOIN all_categories c ON e.category_id = c.id
         WHERE e.payer_id = $1
         ORDER BY e.id DESC
       `;
@@ -85,7 +85,7 @@ export default async function handler(
             e.is_income,
             json_build_object('name', c.name) as category
           FROM expenses e
-          LEFT JOIN categories c ON e.category_id = c.id
+          LEFT JOIN all_categories c ON e.category_id = c.id
           WHERE e.payer_id = $1
             AND e.date >= $2
             AND e.date < $3
@@ -156,7 +156,7 @@ export default async function handler(
             description,
             date,
             is_income,
-            category:category_id (
+            category:all_categories!category_id (
               name
             )
           `

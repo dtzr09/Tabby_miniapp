@@ -38,7 +38,7 @@ export default async function handler(
         const expenseResult = await postgresClient.query(
           `SELECT e.*, c.id as category_id, c.name as category_name
            FROM expenses e
-           LEFT JOIN categories c ON e.category_id = c.id
+           LEFT JOIN all_categories c ON e.category_id = c.id
            WHERE e.id = $1 AND e.chat_id = $2`,
           [id, telegram_id]
         );
@@ -72,7 +72,7 @@ export default async function handler(
           .select(
             `
             *,
-            category:categories(*)
+            category:all_categories(*)
           `
           )
           .eq("id", id)
@@ -126,7 +126,7 @@ export default async function handler(
         const updatedExpenseResult = await postgresClient.query(
           `SELECT e.*, c.id as category_id, c.name as category_name
            FROM expenses e
-           LEFT JOIN categories c ON e.category_id = c.id
+           LEFT JOIN all_categories c ON e.category_id = c.id
            WHERE e.id = $1 AND e.chat_id = $2`,
           [id, telegram_id]
         );
@@ -178,7 +178,7 @@ export default async function handler(
           .select(
             `
             *,
-            category:categories(*)
+            category:all_categories(*)
           `
           )
           .single();
