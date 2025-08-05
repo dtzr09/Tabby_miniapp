@@ -137,10 +137,18 @@ export default async function handler(
           1
         ).toISOString();
 
+        const categoryIds = budgetCategoriesIds
+          ? budgetCategoriesIds.toString().split(",").map(Number)
+          : [];
+
+        if (!categoryIds.length) {
+          return res.status(200).json([]);
+        }
+
         const { data, error } = await supabaseAdmin
           .from("expenses")
           .select(
-            `
+            ` 
               id,
               amount,
               description,
@@ -152,7 +160,7 @@ export default async function handler(
             `
           )
           .eq("payer_id", userId)
-          .in("category_id", budgetCategoriesIds as string[])
+          .in("category_id", categoryIds)
           .gte("date", startOfMonth)
           .lt("date", startOfNextMonth)
           .order("id", { ascending: false });
