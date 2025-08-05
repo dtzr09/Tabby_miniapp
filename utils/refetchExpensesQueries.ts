@@ -11,9 +11,6 @@ export const refetchExpensesQueries = async (
   ];
 
   await Promise.all(
-    keys.map(async (key) => {
-      await queryClient.invalidateQueries({ queryKey: key });
-      await queryClient.refetchQueries({ queryKey: key, type: "all" });
-    })
+    keys.map((key) => queryClient.refetchQueries({ queryKey: key }))
   );
 };
