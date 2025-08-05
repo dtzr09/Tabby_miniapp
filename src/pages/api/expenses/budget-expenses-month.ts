@@ -1,15 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { supabaseAdmin } from "../../../lib/supabaseAdmin";
-import { postgresClient } from "../../../lib/postgresClient";
-import { validateTelegramWebApp } from "../../../lib/validateTelegram";
-import { isLocal, BOT_TOKEN } from "../../../utils/static";
+import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { postgresClient } from "../../../../lib/postgresClient";
+import { validateTelegramWebApp } from "../../../../lib/validateTelegram";
+import { isLocal, BOT_TOKEN } from "../../../../utils/static";
 
+//This endpoint is to retrieve all expenses for the budgets
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   if (req.method === "GET") {
-    const { telegram_id, initData, isPeriod } = req.query;
+    const { telegram_id, initData, budgetCategoriesIds } = req.query;
 
     // Validate required parameters
     if (!telegram_id || !initData) {
@@ -59,42 +60,31 @@ export default async function handler(
           1
         );
 
-        let query = `
-        SELECT 
-          e.id, 
-          e.amount, 
-          e.description, 
-          e.date, 
-          e.is_income,
-          json_build_object('name', c.name) as category
-        FROM expenses e
-        LEFT JOIN all_categories c ON e.category_id = c.id
-        WHERE e.payer_id = $1
-        ORDER BY e.id DESC
-      `;
+        const categoryIds = budgetCategoriesIds?.toString().split(","); // [1, 2, 3, 4]
 
-        let values = [userId];
+        const query = `
+            SELECT 
+              e.id, 
+              e.amount, 
+              e.description, 
+              e.date, 
+              e.is_income,
+              json_build_object('name', c.name) as category
+            FROM expenses e
+            LEFT JOIN all_categories c ON e.category_id = c.id
+            WHERE e.payer_id = $1
+              AND e.date >= $2
+              AND e.date < $3
+              AND e.category_id = ANY($4)
+            ORDER BY e.id DESC
+          `;
 
-        if (isPeriod) {
-          query = `
-          SELECT 
-            e.id, 
-            e.amount, 
-            e.description, 
-            e.date, 
-            e.is_income,
-            json_build_object('name', c.name) as category
-          FROM expenses e
-          LEFT JOIN all_categories c ON e.category_id = c.id
-          WHERE e.payer_id = $1
-            AND e.date >= $2
-            AND e.date < $3
-          ORDER BY e.id DESC
-        `;
-          values = [userId, startOfMonth, startOfNextMonth];
-        }
-
-        const expensesResult = await postgresClient.query(query, values);
+        const expensesResult = await postgresClient.query(query, [
+          userId,
+          startOfMonth,
+          startOfNextMonth,
+          categoryIds,
+        ]);
 
         return res.status(200).json(expensesResult.rows);
       } catch (error) {
@@ -147,28 +137,25 @@ export default async function handler(
           1
         ).toISOString();
 
-        let query = supabaseAdmin
+        const { data, error } = await supabaseAdmin
           .from("expenses")
           .select(
             `
-            id,
-            amount,
-            description,
-            date,
-            is_income,
-            category:all_categories!category_id (
-              name
-            )
-          `
+              id,
+              amount,
+              description,
+              date,
+              is_income,
+              category:all_categories!category_id (
+                name
+              )
+            `
           )
           .eq("payer_id", userId)
+          .in("category_id", budgetCategoriesIds as string[])
+          .gte("date", startOfMonth)
+          .lt("date", startOfNextMonth)
           .order("id", { ascending: false });
-
-        if (isPeriod) {
-          query = query.gte("date", startOfMonth).lt("date", startOfNextMonth);
-        }
-
-        const { data, error } = await query;
 
         if (error) {
           console.error("Supabase expenses query error:", error);

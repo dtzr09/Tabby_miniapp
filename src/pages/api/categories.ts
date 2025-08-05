@@ -2,11 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { validateTelegramWebApp } from "../../../lib/validateTelegram";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { postgresClient } from "../../../lib/postgresClient";
-
-const BOT_TOKEN =
-  process.env.NODE_ENV === "development"
-    ? process.env.TELEGRAM_LOCAL_BOT_TOKEN!
-    : process.env.TELEGRAM_BOT_TOKEN!;
+import { BOT_TOKEN, isLocal } from "../../../utils/static";
 
 export default async function handler(
   req: NextApiRequest,
@@ -22,11 +18,6 @@ export default async function handler(
   if (!isValid) {
     return res.status(400).json({ error: "Missing telegram_id or initData" });
   }
-
-  // Use appropriate client based on environment
-  const isLocal =
-    process.env.NODE_ENV === "development" &&
-    process.env.DATABASE_URL?.includes("postgresql://");
 
   if (isLocal) {
     const static_categories = await postgresClient.query(
@@ -48,7 +39,7 @@ export default async function handler(
       .from("all_categories")
       .select("*")
       .is("user_id", null)
-    .is("chat_id", null);
+      .is("chat_id", null);
 
     const { data: categories } = await supabaseAdmin
       .from("all_categories")

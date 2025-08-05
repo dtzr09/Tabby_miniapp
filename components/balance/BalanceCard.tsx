@@ -7,9 +7,10 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { Expense } from "../../utils/types";
 
 interface BalanceCardProps {
-  availableBalance: number;
+  expensesWithBudget: Expense[];
   totalBudget: number;
 }
 
@@ -22,7 +23,7 @@ export const getProgressColor = (percentage: number) => {
 };
 
 export default function BalanceCard({
-  availableBalance,
+  expensesWithBudget,
   totalBudget,
 }: BalanceCardProps) {
   const { colors } = useTheme();
@@ -31,13 +32,16 @@ export default function BalanceCard({
     new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() -
     new Date().getDate();
 
-  // Check if there's a budget set
   const hasBudget = totalBudget > 0;
+  const totalExpenses = expensesWithBudget.reduce(
+    (sum: number, exp: Expense) => sum + (exp.amount || 0),
+    0
+  );
+
+  const availableBalance = totalBudget - totalExpenses;
 
   // Calculate budget usage percentage
-  const budgetUsed = totalBudget - availableBalance;
-  const usagePercentage =
-    totalBudget > 0 ? (budgetUsed / totalBudget) * 100 : 0;
+  const usagePercentage = hasBudget ? (totalExpenses / totalBudget) * 100 : 0;
   const dailyBudget = availableBalance / daysRemaining;
 
   return (

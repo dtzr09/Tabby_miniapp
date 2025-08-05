@@ -9,6 +9,7 @@ import {
   AllEntriesResponse,
   Budget,
   Expense,
+  ExpensesAndBudgets,
   Income,
   TelegramWebApp,
   ViewMode,
@@ -24,6 +25,11 @@ import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
 import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
+import {
+  fetchExpenses,
+  fetchExpensesAndBudgets,
+  fetchExpensesForBudgets,
+} from "../../services/expenses";
 import { useQuery } from "@tanstack/react-query";
 import WelcomeScreen from "./WelcomeScreen";
 import { fetchAllEntries } from "../../services/allEntries";
@@ -47,6 +53,21 @@ const Dashboard = () => {
           return fetchAllEntries(tgUser.id, initData, true);
         }
         return Promise.resolve({ expenses: [], income: [], budgets: [] });
+      },
+      enabled: !!tgUser && !!initData,
+      staleTime: 30000, // Data stays fresh for 30 seconds
+      gcTime: 300000, // Cache for 5 minutes
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    });
+
+  const { data: expensesWithBudget, isLoading: isExpensesWithBudgetLoading } =
+    useQuery<ExpensesAndBudgets>({
+      queryKey: ["expensesWithBudget"],
+      queryFn: () => {
+        if (tgUser && initData) {
+          return fetchExpensesForBudgets(tgUser.id, initData);
+        }
+        return Promise.resolve({ expenses: [], budgets: [] });
       },
       enabled: !!tgUser && !!initData,
       staleTime: 30000, // Data stays fresh for 30 seconds
@@ -114,8 +135,10 @@ const Dashboard = () => {
   // Only show loading when we have user data and are actually fetching
   if (
     !monthlyEntries ||
+    !expensesWithBudget ||
     (tgUser && initData && isMonthlyEntriesLoading) ||
-    (tgUser && initData && isAllEntriesLoading)
+    (tgUser && initData && isAllEntriesLoading) ||
+    (tgUser && initData && isExpensesWithBudgetLoading)
   ) {
     return <LoadingSkeleton />;
   }
@@ -123,7 +146,9 @@ const Dashboard = () => {
   // Show welcome screen if no data
   if (
     monthlyEntries.expenses.length === 0 &&
-    monthlyEntries.budgets.length === 0
+    monthlyEntries.budgets.length === 0 &&
+    expensesWithBudget.expenses.length === 0 &&
+    expensesWithBudget.budgets.length === 0
   ) {
     return <WelcomeScreen />;
   }
@@ -148,9 +173,6 @@ const Dashboard = () => {
     (sum: number, budget: Budget) => sum + (budget.amount || 0),
     0
   );
-
-  // Calculate remaining balance as total budget minus expenses
-  const totalBalance = totalBudget - totalExpenses;
 
   // Generate real data based on expenses
   const getRealData = (period: ViewMode) => {
@@ -216,7 +238,7 @@ const Dashboard = () => {
           {budgets.length > 0 && totalBudget > 0 && (
             <Box sx={{ width: "100%" }}>
               <BalanceCard
-                availableBalance={totalBalance}
+                expensesWithBudget={expensesWithBudget.expenses}
                 totalBudget={totalBudget}
               />
             </Box>
