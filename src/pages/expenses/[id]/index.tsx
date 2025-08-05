@@ -215,7 +215,7 @@ const ExpenseDetail = () => {
           return;
         }
 
-        refetchExpensesQueries(queryClient, user.id.toString());
+        await refetchExpensesQueries(queryClient, user.id.toString());
 
         showPopup({
           title: "Success",

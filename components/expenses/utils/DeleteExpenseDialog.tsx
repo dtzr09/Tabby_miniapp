@@ -69,18 +69,20 @@ const DeleteExpenseDialog = ({
         <Button
           sx={{ color: colors.expense }}
           color="error"
-          onClick={() => {
-            deleteExpense(id)
-              .then(() => {
-                if (tgUser) {
-                  refetchExpensesQueries(queryClient, tgUser.id.toString());
-                }
-                onSuccess();
-              })
-              .catch((err) => {
-                console.error("Error deleting expense:", err);
-              });
-            setShowConfirm(false);
+          onClick={async () => {
+            try {
+              await deleteExpense(id);
+
+              if (tgUser) {
+                await refetchExpensesQueries(queryClient, tgUser.id.toString());
+              }
+
+              onSuccess();
+            } catch (err) {
+              console.error("Error deleting expense:", err);
+            } finally {
+              setShowConfirm(false); // Always close the confirmation, even if error
+            }
           }}
         >
           <Typography sx={{ fontSize: "0.8rem", fontWeight: 500 }}>
