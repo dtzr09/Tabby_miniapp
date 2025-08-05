@@ -1,6 +1,5 @@
-import { Box, Tooltip, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { InfoOutlineRounded } from "@mui/icons-material";
 
 interface IncomeExpenseCardProps {
   amount: number;
@@ -45,42 +44,17 @@ const IncomeExpenseCard = ({ amount, type }: IncomeExpenseCardProps) => {
             maximumFractionDigits: 2,
           })}
         </Typography>
-        <Box
+        <Typography
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 0.5,
-            mb: 1,
+            color: colors.textSecondary,
+            fontWeight: 550,
+            fontSize: "0.8rem",
+            lineHeight: "1rem",
+            mb: 0.5,
           }}
         >
-          <Typography
-            sx={{
-              color: colors.textSecondary,
-              fontWeight: 550,
-              fontSize: "0.8rem",
-              lineHeight: "1rem",
-            }}
-          >
-            {type === "income" ? "Income" : "Expense"}
-          </Typography>
-          {type === "expense" && (
-            <Tooltip
-              title="This is your total expenses for the current month."
-              arrow
-              placement="right"
-            >
-              <InfoOutlineRounded
-                fontSize="small"
-                sx={{
-                  color: colors.textSecondary,
-                  cursor: "pointer",
-                  fontSize: "0.9rem",
-                }}
-              />
-            </Tooltip>
-          )}
-        </Box>
+          {type === "income" ? "Income" : "Expense"}
+        </Typography>
       </Box>
     </Box>
   );
