@@ -5,9 +5,11 @@ import {
   Box,
   alpha,
   LinearProgress,
+  Tooltip,
 } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Expense } from "../../utils/types";
+import { InfoOutlineRounded } from "@mui/icons-material";
 
 interface BalanceCardProps {
   expensesWithBudget: Expense[];
@@ -72,6 +74,21 @@ export default function BalanceCard({
           >
             Remaining Balance
           </Typography>
+          <Tooltip
+            title="Remaining budget this month, calculated from only the categories you have set budgets for."
+            arrow
+            placement="right"
+          >
+            <InfoOutlineRounded
+              fontSize="small"
+              sx={{
+                ml: 1,
+                color: colors.textSecondary,
+                cursor: "pointer",
+                fontSize: "0.9rem",
+              }}
+            />
+          </Tooltip>
         </Box>
 
         {/* Main Balance */}
