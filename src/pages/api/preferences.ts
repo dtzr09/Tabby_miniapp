@@ -2,11 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { postgresClient } from "../../../lib/postgresClient";
 import { validateTelegramWebApp } from "../../../lib/validateTelegram";
-
-const BOT_TOKEN =
-  process.env.NODE_ENV === "development"
-    ? process.env.TELEGRAM_LOCAL_BOT_TOKEN!
-    : process.env.TELEGRAM_BOT_TOKEN!;
+import { BOT_TOKEN, isLocal } from "../../../utils/static";
 
 export default async function handler(
   req: NextApiRequest,
@@ -22,13 +18,10 @@ export default async function handler(
       return res.status(401).json({ error: "Invalid Telegram WebApp data" });
     }
 
-    // Use appropriate client based on environment
-    const isLocal = process.env.NODE_ENV === "development" && process.env.DATABASE_URL?.includes("postgresql://");
-
     if (isLocal) {
       // Use local PostgreSQL for development
       console.log("🔧 Using local PostgreSQL connection for preferences");
-      
+
       try {
         // Get the user preferences by telegram_id
         const result = await postgresClient.query(
@@ -49,11 +42,13 @@ export default async function handler(
     } else {
       // Use Supabase for production
       console.log("🔧 Using Supabase connection for preferences");
-      
+
       if (!supabaseAdmin) {
-        return res.status(500).json({ error: "Supabase client not configured" });
+        return res
+          .status(500)
+          .json({ error: "Supabase client not configured" });
       }
-      
+
       try {
         // Get the user preferences by telegram_id
         const { data, error } = await supabaseAdmin
@@ -92,12 +87,14 @@ export default async function handler(
     }
 
     // Use appropriate client based on environment
-    const isLocal = process.env.NODE_ENV === "development" && process.env.DATABASE_URL?.includes("postgresql://");
+    const isLocal =
+      process.env.NODE_ENV === "development" &&
+      process.env.DATABASE_URL?.includes("postgresql://");
 
     if (isLocal) {
       // Use local PostgreSQL for development
       console.log("🔧 Using local PostgreSQL connection for preferences");
-      
+
       try {
         // Get the user row by telegram_id
         const userResult = await postgresClient.query(
@@ -157,11 +154,13 @@ export default async function handler(
     } else {
       // Use Supabase for production
       console.log("🔧 Using Supabase connection for preferences");
-      
+
       if (!supabaseAdmin) {
-        return res.status(500).json({ error: "Supabase client not configured" });
+        return res
+          .status(500)
+          .json({ error: "Supabase client not configured" });
       }
-      
+
       try {
         // Get the user row by telegram_id
         const { data: users, error: userError } = await supabaseAdmin
@@ -211,4 +210,4 @@ export default async function handler(
 
   res.setHeader("Allow", ["GET", "POST"]);
   res.status(405).end(`Method ${req.method} Not Allowed`);
-} 
+}

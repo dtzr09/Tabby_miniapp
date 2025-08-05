@@ -20,6 +20,7 @@ import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndB
 import {
   fetchExpenses,
   fetchExpensesAndBudgets,
+  fetchExpensesForBudgets,
 } from "../../services/expenses";
 import { useQuery } from "@tanstack/react-query";
 import WelcomeScreen from "./WelcomeScreen";
@@ -46,6 +47,21 @@ const Dashboard = () => {
       queryFn: () => {
         if (tgUser && initData) {
           return fetchExpensesAndBudgets(tgUser.id, initData);
+        }
+        return Promise.resolve({ expenses: [], budgets: [] });
+      },
+      enabled: !!tgUser && !!initData,
+      staleTime: 30000, // Data stays fresh for 30 seconds
+      gcTime: 300000, // Cache for 5 minutes
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    });
+
+  const { data: expensesWithBudget, isLoading: isExpensesWithBudgetLoading } =
+    useQuery<ExpensesAndBudgets>({
+      queryKey: ["expensesWithBudget"],
+      queryFn: () => {
+        if (tgUser && initData) {
+          return fetchExpensesForBudgets(tgUser.id, initData);
         }
         return Promise.resolve({ expenses: [], budgets: [] });
       },
@@ -115,8 +131,10 @@ const Dashboard = () => {
   // Only show loading when we have user data and are actually fetching
   if (
     !expensesAndBudgets ||
+    !expensesWithBudget ||
     (tgUser && initData && isExpensesLoading) ||
-    (tgUser && initData && isAllExpensesLoading)
+    (tgUser && initData && isAllExpensesLoading) ||
+    (tgUser && initData && isExpensesWithBudgetLoading)
   ) {
     return <LoadingSkeleton />;
   }
@@ -124,7 +142,9 @@ const Dashboard = () => {
   // Show welcome screen if no data
   if (
     expensesAndBudgets.expenses.length === 0 &&
-    expensesAndBudgets.budgets.length === 0
+    expensesAndBudgets.budgets.length === 0 &&
+    expensesWithBudget.expenses.length === 0 &&
+    expensesWithBudget.budgets.length === 0
   ) {
     return <WelcomeScreen />;
   }
@@ -147,9 +167,6 @@ const Dashboard = () => {
     (sum: number, budget: Budget) => sum + (budget.amount || 0),
     0
   );
-
-  // Calculate remaining balance as total budget minus expenses
-  const totalBalance = totalBudget - totalExpenses;
 
   // Generate real data based on expenses
   const getRealData = (period: ViewMode) => {
@@ -214,7 +231,7 @@ const Dashboard = () => {
           {budgets.length > 0 && totalBudget > 0 && (
             <Box sx={{ width: "100%" }}>
               <BalanceCard
-                availableBalance={totalBalance}
+                expensesWithBudget={expensesWithBudget.expenses}
                 totalBudget={totalBudget}
               />
             </Box>

@@ -2,11 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { validateTelegramWebApp } from "../../../../lib/validateTelegram";
 import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { postgresClient } from "../../../../lib/postgresClient";
-
-const BOT_TOKEN =
-  process.env.NODE_ENV === "development"
-    ? process.env.TELEGRAM_LOCAL_BOT_TOKEN!
-    : process.env.TELEGRAM_BOT_TOKEN!;
+import { BOT_TOKEN, isLocal } from "../../../../utils/static";
 
 export default async function handler(
   req: NextApiRequest,
@@ -29,11 +25,6 @@ export default async function handler(
   if (!isValid) {
     return res.status(400).json({ error: "Invalid Telegram request" });
   }
-
-  // Use appropriate client based on environment
-  const isLocal =
-    process.env.NODE_ENV === "development" &&
-    process.env.DATABASE_URL?.includes("postgresql://");
 
   try {
     if (req.method === "GET") {

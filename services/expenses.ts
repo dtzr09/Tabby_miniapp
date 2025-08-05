@@ -128,3 +128,52 @@ export const fetchExpensesAndBudgets = async (
 
   return { expenses: expenses || [], budgets: budgets || [] };
 };
+
+export const fetchExpensesForBudgets = async (
+  telegram_id: string,
+  initData: string
+) => {
+  const params = new URLSearchParams({
+    telegram_id,
+    initData,
+    isPeriod: "true",
+  });
+
+  const budgetsResponse = await fetch(`/api/budgets?${params.toString()}`).then(
+    (res) => {
+      if (!res.ok) {
+        return res.text().then((text) => {
+          console.error("❌ Budgets API Error:", text);
+          throw new Error(`Budgets error ${res.status}: ${text}`);
+        });
+      }
+      return res.json();
+    }
+  );
+
+  const budgetCategoriesIds = budgetsResponse.map(
+    (budget: any) => budget.category_id
+  );
+
+  const expensesParams = new URLSearchParams({
+    telegram_id,
+    initData,
+    budgetCategoriesIds: budgetCategoriesIds.join(","),
+  });
+
+  const expensesResponse = await fetch(
+    `/api/expenses/budget-expenses-month?${expensesParams.toString()}`
+  ).then((res) => {
+    if (!res.ok) {
+      return res.text().then((text) => {
+        console.error("❌ Expenses API Error:", text);
+        throw new Error(`Expenses error ${res.status}: ${text}`);
+      });
+    }
+    return res.json();
+  });
+
+  const expenses = await expensesResponse;
+
+  return { expenses: expenses || [], budgets: budgetsResponse || [] };
+};
