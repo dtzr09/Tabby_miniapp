@@ -14,18 +14,15 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useState } from "react";
 import SearchTransactionsCard from "./SearchTransactionsCard";
 import ExpenseListCard from "./ExpenseListCard";
-import { QueryObserverResult } from "@tanstack/react-query";
+import { TelegramUser } from "../../dashboard";
 import { AllEntriesResponse, UnifiedEntry } from "../../../utils/types";
 
 interface ExpenseListProps {
+  tgUser: TelegramUser | null;
   allEntries: AllEntriesResponse;
-  onRefetch: () => Promise<QueryObserverResult<AllEntriesResponse, Error>>;
 }
 
-export default function ExpenseList({
-  allEntries,
-  onRefetch,
-}: ExpenseListProps) {
+export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
   const { colors } = useTheme();
   const [showSearchCard, setShowSearchCard] = useState(false);
 
@@ -88,7 +85,7 @@ export default function ExpenseList({
       <SearchTransactionsCard
         entries={unifiedEntries}
         onBack={handleBackFromSearch}
-        onRefetch={onRefetch}
+        tgUser={tgUser}
       />
     );
   }
@@ -153,7 +150,7 @@ export default function ExpenseList({
         </Box>
 
         <List sx={{ width: "100%", p: 0 }}>
-          <ExpenseListCard entries={recentTransactions} onRefetch={onRefetch} />
+          <ExpenseListCard entries={recentTransactions} tgUser={tgUser} />
         </List>
       </CardContent>
     </Card>

@@ -17,6 +17,9 @@ import { TelegramWebApp } from "../../../../utils/types";
 import { useForm, Controller } from "react-hook-form";
 import { AttachMoney } from "@mui/icons-material";
 import DeleteExpenseDialog from "../../../../components/expenses/utils/DeleteExpenseDialog";
+import { useQueryClient } from "@tanstack/react-query";
+import { refetchExpensesQueries } from "../../../../utils/refetchExpensesQueries";
+import { TelegramUser } from "../../../../components/dashboard";
 
 interface Category {
   id: number;
@@ -48,6 +51,8 @@ const ExpenseDetail = () => {
   const [expense, setExpense] = useState<Expense | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
+  const queryClient = useQueryClient();
 
   const defaultValues: ExpenseFormData = {
     description: "",
@@ -157,6 +162,7 @@ const ExpenseDetail = () => {
           if (webApp && !isLoading) {
             const user = webApp.initDataUnsafe?.user;
             const initData = webApp.initData;
+            setTgUser(user as TelegramUser);
 
             if (user?.id && initData) {
               setIsLoading(true);
@@ -208,6 +214,9 @@ const ExpenseDetail = () => {
           console.error("Failed to update expense:", await response.text());
           return;
         }
+
+        refetchExpensesQueries(queryClient, user.id.toString());
+
         showPopup({
           title: "Success",
           message: "Expense updated successfully",
@@ -622,6 +631,7 @@ const ExpenseDetail = () => {
         onSuccess={() => router.back()}
         showConfirm={showDeleteDialog}
         setShowConfirm={setShowDeleteDialog}
+        tgUser={tgUser}
       />
     </Box>
   );

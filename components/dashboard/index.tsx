@@ -55,14 +55,13 @@ const Dashboard = () => {
         return Promise.resolve({ expenses: [], income: [], budgets: [] });
       },
       enabled: !!tgUser && !!initData,
-      staleTime: 30000, // Data stays fresh for 30 seconds
       gcTime: 300000, // Cache for 5 minutes
-      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+      refetchOnWindowFocus: true, // refetch when window regains focus
     });
 
   const { data: expensesWithBudget, isLoading: isExpensesWithBudgetLoading } =
     useQuery<ExpensesAndBudgets>({
-      queryKey: ["expensesWithBudget"],
+      queryKey: ["expensesWithBudget", tgUser?.id],
       queryFn: () => {
         if (tgUser && initData) {
           return fetchExpensesForBudgets(tgUser.id, initData);
@@ -70,9 +69,8 @@ const Dashboard = () => {
         return Promise.resolve({ expenses: [], budgets: [] });
       },
       enabled: !!tgUser && !!initData,
-      staleTime: 30000, // Data stays fresh for 30 seconds
       gcTime: 300000, // Cache for 5 minutes
-      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+      refetchOnWindowFocus: true, // Refetch when window regains focus
     });
 
   const {
@@ -88,9 +86,8 @@ const Dashboard = () => {
       return Promise.resolve({ expenses: [], income: [], budgets: [] });
     },
     enabled: !!tgUser && !!initData,
-    staleTime: 30000, // Data stays fresh for 30 seconds
     gcTime: 300000, // Cache for 5 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 
   useEffect(() => {

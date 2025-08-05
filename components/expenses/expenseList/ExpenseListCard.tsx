@@ -2,12 +2,13 @@ import React from "react";
 import { Box, List, Typography } from "@mui/material";
 import { useTheme } from "@/contexts/ThemeContext";
 import ExpenseRow from "./ExpenseRow";
+import { TelegramUser } from "../../dashboard";
 import { QueryObserverResult } from "@tanstack/react-query";
 import { AllEntriesResponse, UnifiedEntry } from "../../../utils/types";
 
 export interface ExpenseListCardProps {
+  tgUser: TelegramUser | null;
   entries: UnifiedEntry[];
-  onRefetch: () => Promise<QueryObserverResult<AllEntriesResponse, Error>>;
 }
 
 const ExpenseListCard = (props: ExpenseListCardProps) => {
@@ -39,7 +40,7 @@ const ExpenseListCard = (props: ExpenseListCardProps) => {
     <>
       <List sx={{ width: "100%", p: 0 }}>
         {props.entries.map((tx) => (
-          <ExpenseRow key={tx.id} tx={tx} onRefetch={props.onRefetch} />
+          <ExpenseRow key={tx.id} tx={tx} tgUser={props.tgUser} />
         ))}
       </List>
     </>

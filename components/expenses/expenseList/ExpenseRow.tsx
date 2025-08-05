@@ -6,15 +6,15 @@ import { Box, Typography, alpha } from "@mui/material";
 import React, { useState } from "react";
 import DeleteExpenseDialog from "../utils/DeleteExpenseDialog";
 import { displayDateTime } from "../../../utils/displayDateTime";
-import { QueryObserverResult } from "@tanstack/react-query";
-import { AllEntriesResponse, UnifiedEntry } from "../../../utils/types";
+import { TelegramUser } from "../../dashboard";
+import { UnifiedEntry } from "../../../utils/types";
 
 const ExpenseRow = ({
   tx,
-  onRefetch,
+  tgUser,
 }: {
   tx: UnifiedEntry;
-  onRefetch: () => Promise<QueryObserverResult<AllEntriesResponse, Error>>;
+  tgUser: TelegramUser | null;
 }) => {
   const { colors } = useTheme();
   const router = useRouter();
@@ -61,10 +61,10 @@ const ExpenseRow = ({
         )}
         <DeleteExpenseDialog
           id={tx.id}
-          onRefetch={onRefetch}
           onSuccess={() => setShowDelete(false)}
           showConfirm={showConfirm}
           setShowConfirm={setShowConfirm}
+          tgUser={tgUser}
         />
         {/* Main card */}
         <Box

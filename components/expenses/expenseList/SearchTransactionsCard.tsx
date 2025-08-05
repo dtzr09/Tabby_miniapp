@@ -8,6 +8,7 @@ import {
   alpha,
   Divider,
   Button,
+  List,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SearchIcon from "@mui/icons-material/Search";
@@ -17,19 +18,19 @@ import SearchMenuCard from "./SearchMenuCard";
 import FilterOptionCard from "./FilterOptionCard";
 import ExpenseListCard from "./ExpenseListCard";
 import Pagination from "@mui/material/Pagination";
-import { QueryObserverResult } from "@tanstack/react-query";
+import { TelegramUser } from "../../dashboard";
 import { AllEntriesResponse, UnifiedEntry } from "../../../utils/types";
 
 interface SearchTransactionsCardProps {
   entries: UnifiedEntry[];
   onBack: () => void;
-  onRefetch: () => Promise<QueryObserverResult<AllEntriesResponse, Error>>;
+  tgUser: TelegramUser | null;
 }
 
 export default function SearchTransactionsCard({
   entries,
   onBack,
-  onRefetch,
+  tgUser,
 }: SearchTransactionsCardProps) {
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
@@ -345,10 +346,9 @@ export default function SearchTransactionsCard({
         </Box>
 
         {/* Transactions List */}
-        <ExpenseListCard
-          entries={paginatedTransactions}
-          onRefetch={onRefetch}
-        />
+        <List sx={{ width: "100%", p: 0 }}>
+          <ExpenseListCard entries={paginatedTransactions} tgUser={tgUser} />
+        </List>
         {totalPages > 1 && (
           <>
             <Divider sx={{ mt: 2, backgroundColor: colors.inputBg }} />
