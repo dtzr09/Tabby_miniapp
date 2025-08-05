@@ -1,10 +1,7 @@
 import { QueryObserverResult } from "@tanstack/react-query";
 import { Expense, TelegramWebApp } from "../utils/types";
 
-export const deleteExpense = async (
-  id: number,
-  onRefetch?: () => Promise<QueryObserverResult<Expense[], Error>>
-) => {
+export const deleteExpense = async (id: number) => {
   try {
     const webApp = window.Telegram?.WebApp as TelegramWebApp;
     const user = webApp.initDataUnsafe?.user;
@@ -28,7 +25,6 @@ export const deleteExpense = async (
     if (!response.ok) {
       throw new Error("Failed to delete expense");
     }
-    await onRefetch?.();
   } catch (err) {
     console.error("Delete failed:", err);
   }

@@ -9,15 +9,16 @@ import {
 } from "@mui/material";
 import { deleteExpense } from "../../../services/expenses";
 import { useTheme } from "@/contexts/ThemeContext";
-import { QueryObserverResult } from "@tanstack/react-query";
-import { Expense } from "../../../utils/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { refetchExpensesQueries } from "../../../utils/refetchExpensesQueries";
+import { TelegramUser } from "../../dashboard";
 
 export interface DeleteExpenseDialogProps {
   id: number;
   onSuccess: () => void;
   showConfirm: boolean;
   setShowConfirm: (show: boolean) => void;
-  onRefetch?: () => Promise<QueryObserverResult<Expense[], Error>>;
+  tgUser: TelegramUser | null;
 }
 
 const DeleteExpenseDialog = ({
@@ -25,9 +26,10 @@ const DeleteExpenseDialog = ({
   onSuccess,
   showConfirm,
   setShowConfirm,
-  onRefetch,
+  tgUser,
 }: DeleteExpenseDialogProps) => {
   const { colors, fontFamily } = useTheme();
+  const queryClient = useQueryClient();
 
   return (
     <Dialog
@@ -66,9 +68,17 @@ const DeleteExpenseDialog = ({
           sx={{ color: colors.expense }}
           color="error"
           onClick={() => {
-            deleteExpense(id, onRefetch);
+            deleteExpense(id)
+              .then(() => {
+                if (tgUser) {
+                  refetchExpensesQueries(queryClient, tgUser.id.toString());
+                }
+                onSuccess();
+              })
+              .catch((err) => {
+                console.error("Error deleting expense:", err);
+              });
             setShowConfirm(false);
-            onSuccess();
           }}
         >
           <Typography sx={{ fontSize: "0.8rem", fontWeight: 500 }}>

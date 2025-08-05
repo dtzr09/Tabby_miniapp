@@ -18,7 +18,7 @@ import SearchMenuCard from "./SearchMenuCard";
 import FilterOptionCard from "./FilterOptionCard";
 import ExpenseListCard from "./ExpenseListCard";
 import Pagination from "@mui/material/Pagination";
-import { QueryObserverResult } from "@tanstack/react-query";
+import { TelegramUser } from "../../dashboard";
 
 interface Expense {
   id: number;
@@ -35,13 +35,13 @@ interface Expense {
 interface SearchTransactionsCardProps {
   expenses: Expense[];
   onBack: () => void;
-  onRefetch: () => Promise<QueryObserverResult<Expense[], Error>>;
+  tgUser: TelegramUser | null;
 }
 
 export default function SearchTransactionsCard({
   expenses,
   onBack,
-  onRefetch,
+  tgUser,
 }: SearchTransactionsCardProps) {
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
@@ -346,10 +346,7 @@ export default function SearchTransactionsCard({
 
         {/* Transactions List */}
         <List sx={{ width: "100%", p: 0 }}>
-          <ExpenseListCard
-            expenses={paginatedTransactions}
-            onRefetch={onRefetch}
-          />
+          <ExpenseListCard expenses={paginatedTransactions} tgUser={tgUser} />
         </List>
         {totalPages > 1 && (
           <>

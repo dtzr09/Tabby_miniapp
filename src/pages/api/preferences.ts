@@ -199,7 +199,6 @@ export default async function handler(
           return res.status(400).json({ error: error.message });
         }
 
-        console.log("✅ Preferences updated in Supabase:", data);
         return res.status(200).json(data);
       } catch (error) {
         console.error("❌ Supabase error:", error);

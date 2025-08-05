@@ -14,7 +14,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useState } from "react";
 import SearchTransactionsCard from "./SearchTransactionsCard";
 import ExpenseListCard from "./ExpenseListCard";
-import { QueryObserverResult } from "@tanstack/react-query";
+import { TelegramUser } from "../../dashboard";
 
 interface Expense {
   id: number;
@@ -30,13 +30,10 @@ interface Expense {
 
 interface ExpenseListProps {
   allExpenses: Expense[];
-  onRefetch: () => Promise<QueryObserverResult<Expense[], Error>>;
+  tgUser: TelegramUser | null;
 }
 
-export default function ExpenseList({
-  allExpenses,
-  onRefetch,
-}: ExpenseListProps) {
+export default function ExpenseList({ allExpenses, tgUser }: ExpenseListProps) {
   const { colors } = useTheme();
   const [showSearchCard, setShowSearchCard] = useState(false);
 
@@ -72,7 +69,7 @@ export default function ExpenseList({
       <SearchTransactionsCard
         expenses={transactionsToUse}
         onBack={handleBackFromSearch}
-        onRefetch={onRefetch}
+        tgUser={tgUser}
       />
     );
   }
@@ -137,10 +134,7 @@ export default function ExpenseList({
         </Box>
 
         <List sx={{ width: "100%", p: 0 }}>
-          <ExpenseListCard
-            expenses={recentTransactions}
-            onRefetch={onRefetch}
-          />
+          <ExpenseListCard expenses={recentTransactions} tgUser={tgUser} />
         </List>
       </CardContent>
     </Card>
