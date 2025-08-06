@@ -8,6 +8,7 @@ export interface SearchMenuCardProps {
   menuItems: string[];
   setValue: (value: string) => void;
   value: string;
+  displayValue?: string;
   setAnchor: (anchor: HTMLElement | null) => void;
 }
 
@@ -54,7 +55,7 @@ const SearchMenuCard = (props: SearchMenuCardProps) => {
             }}
             sx={{
               color: colors.text,
-              bgcolor: props.value === item ? "#374a69" : "transparent",
+              bgcolor: props.displayValue === item ? "#374a69" : "transparent",
               borderRadius: 2,
             }}
           >

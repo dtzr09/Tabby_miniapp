@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { validateTelegramWebApp } from "../../../../lib/validateTelegram";
-import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
-import { postgresClient } from "../../../../lib/postgresClient";
-import { BOT_TOKEN, isLocal } from "../../../../utils/static";
+import { validateTelegramWebApp } from "../../../../../lib/validateTelegram";
+import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
+import { postgresClient } from "../../../../../lib/postgresClient";
+import { BOT_TOKEN } from "../../../../../utils/utils";
 
 export default async function handler(
   req: NextApiRequest,

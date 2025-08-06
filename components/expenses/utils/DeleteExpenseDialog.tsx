@@ -47,12 +47,12 @@ const DeleteExpenseDialog = ({
     >
       <DialogTitle sx={{ color: colors.text }}>
         <Typography sx={{ fontSize: "1.2rem", fontWeight: 700 }}>
-          Delete Expense
+          Delete Transaction
         </Typography>
       </DialogTitle>
       <DialogContent sx={{ color: colors.text }}>
         <Typography sx={{ fontSize: "1rem", fontWeight: 500 }}>
-          Are you sure you want to delete this expense?
+          Are you sure you want to delete this transaction?
         </Typography>
       </DialogContent>
       <DialogActions>

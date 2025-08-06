@@ -1,5 +1,4 @@
-import { QueryObserverResult } from "@tanstack/react-query";
-import { Expense, TelegramWebApp } from "../utils/types";
+import { TelegramWebApp } from "../utils/types";
 
 export const deleteExpense = async (id: number) => {
   try {
@@ -171,5 +170,5 @@ export const fetchExpensesForBudgets = async (
 
   const expenses = await expensesResponse;
 
-  return { expenses: expenses || [], budgets: budgetsResponse || [] };
+  return expenses;
 };
