@@ -25,11 +25,7 @@ import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
 import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
-import {
-  fetchExpenses,
-  fetchExpensesAndBudgets,
-  fetchExpensesForBudgets,
-} from "../../services/expenses";
+import { fetchExpensesForBudgets } from "../../services/expenses";
 import { useQuery } from "@tanstack/react-query";
 import WelcomeScreen from "./WelcomeScreen";
 import { fetchAllEntries } from "../../services/allEntries";
@@ -73,22 +69,19 @@ const Dashboard = () => {
       refetchOnWindowFocus: true, // Refetch when window regains focus
     });
 
-  const {
-    data: allEntries,
-    isLoading: isAllEntriesLoading,
-    refetch: refetchAllEntries,
-  } = useQuery<AllEntriesResponse>({
-    queryKey: ["allEntries", tgUser?.id],
-    queryFn: () => {
-      if (tgUser && initData) {
-        return fetchAllEntries(tgUser.id, initData, false);
-      }
-      return Promise.resolve({ expenses: [], income: [], budgets: [] });
-    },
-    enabled: !!tgUser && !!initData,
-    gcTime: 300000, // Cache for 5 minutes
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-  });
+  const { data: allEntries, isLoading: isAllEntriesLoading } =
+    useQuery<AllEntriesResponse>({
+      queryKey: ["allEntries", tgUser?.id],
+      queryFn: () => {
+        if (tgUser && initData) {
+          return fetchAllEntries(tgUser.id, initData, false);
+        }
+        return Promise.resolve({ expenses: [], income: [], budgets: [] });
+      },
+      enabled: !!tgUser && !!initData,
+      gcTime: 300000, // Cache for 5 minutes
+      refetchOnWindowFocus: true, // Refetch when window regains focus
+    });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -260,7 +253,7 @@ const Dashboard = () => {
               allEntries={
                 allEntries || { expenses: [], income: [], budgets: [] }
               }
-              onRefetch={refetchAllEntries}
+              tgUser={tgUser}
             />
           </Box>
         </Box>

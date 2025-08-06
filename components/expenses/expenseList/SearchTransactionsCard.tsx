@@ -19,7 +19,7 @@ import FilterOptionCard from "./FilterOptionCard";
 import ExpenseListCard from "./ExpenseListCard";
 import Pagination from "@mui/material/Pagination";
 import { TelegramUser } from "../../dashboard";
-import { AllEntriesResponse, UnifiedEntry } from "../../../utils/types";
+import { UnifiedEntry } from "../../../utils/types";
 
 interface SearchTransactionsCardProps {
   entries: UnifiedEntry[];

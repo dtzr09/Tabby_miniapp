@@ -12,8 +12,6 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { refetchExpensesQueries } from "../../../utils/refetchExpensesQueries";
 import { TelegramUser } from "../../dashboard";
-import { QueryObserverResult } from "@tanstack/react-query";
-import { AllEntriesResponse } from "../../../utils/types";
 
 export interface DeleteExpenseDialogProps {
   id: number;

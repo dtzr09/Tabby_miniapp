@@ -3,8 +3,7 @@ import { Box, List, Typography } from "@mui/material";
 import { useTheme } from "@/contexts/ThemeContext";
 import ExpenseRow from "./ExpenseRow";
 import { TelegramUser } from "../../dashboard";
-import { QueryObserverResult } from "@tanstack/react-query";
-import { AllEntriesResponse, UnifiedEntry } from "../../../utils/types";
+import { UnifiedEntry } from "../../../utils/types";
 
 export interface ExpenseListCardProps {
   tgUser: TelegramUser | null;
