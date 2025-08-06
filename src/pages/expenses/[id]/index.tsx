@@ -13,7 +13,7 @@ import {
   Button,
 } from "@mui/material";
 import { useTheme } from "../../../contexts/ThemeContext";
-import { TelegramWebApp } from "../../../../utils/types";
+import { TelegramWebApp, UnifiedEntry } from "../../../../utils/types";
 import { useForm, Controller } from "react-hook-form";
 import { AttachMoney } from "@mui/icons-material";
 import DeleteExpenseDialog from "../../../../components/expenses/utils/DeleteExpenseDialog";
@@ -25,30 +25,21 @@ interface Category {
   id: number;
   name: string;
   emoji?: string;
-}
-
-interface Expense {
-  id: number;
-  amount: number;
-  description: string;
-  date: string;
   is_income: boolean;
-  category?: Category;
 }
 
 interface ExpenseFormData {
   description: string;
   amount: string;
   category_id: number;
-  is_income: boolean;
 }
 
 const ExpenseDetail = () => {
   const router = useRouter();
-  const { id } = router.query;
+  const { id: entryId, isIncome } = router.query;
   const { colors } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
-  const [expense, setExpense] = useState<Expense | null>(null);
+  const [entry, setEntry] = useState<UnifiedEntry | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
@@ -58,7 +49,6 @@ const ExpenseDetail = () => {
     description: "",
     amount: "",
     category_id: 0,
-    is_income: false,
   };
 
   const {
@@ -121,7 +111,7 @@ const ExpenseDetail = () => {
         }
 
         const data = await response.json();
-        setExpense(data.expense);
+        setEntry(data.expense);
 
         // Update form with expense data
         const formData = {
@@ -137,6 +127,50 @@ const ExpenseDetail = () => {
         return true;
       } catch (error) {
         console.error("❌ Error loading expense:", error);
+        return false;
+      }
+    },
+    [reset]
+  );
+
+  const loadIncomeDetail = useCallback(
+    async (
+      entryId: string,
+      telegram_id: string,
+      initData: string
+    ): Promise<boolean> => {
+      try {
+        const params = new URLSearchParams({
+          telegram_id,
+          initData,
+        });
+
+        const response = await fetch(
+          `/api/income/${entryId}?${params.toString()}`
+        );
+
+        if (!response.ok) {
+          console.error("Failed to load income:", response.statusText);
+          return false;
+        }
+
+        const data = await response.json();
+        setEntry(data.income);
+
+        // Update form with income data
+        const formData = {
+          description: data.income.description || "",
+          amount: Math.abs(data.income.amount).toString(),
+          category_id: data.income.category?.id || 0,
+          is_income: data.income.is_income || true,
+        };
+
+        // Reset the form with the income data as the new baseline
+        reset(formData, { keepDirty: false });
+
+        return true;
+      } catch (error) {
+        console.error("❌ Error loading income:", error);
         return false;
       }
     },
@@ -167,11 +201,26 @@ const ExpenseDetail = () => {
             if (user?.id && initData) {
               setIsLoading(true);
               try {
+                const queries = [loadCategories(user.id.toString(), initData)];
+                if (isIncome === "true") {
+                  queries.push(
+                    loadIncomeDetail(
+                      entryId as string,
+                      user.id.toString(),
+                      initData
+                    )
+                  );
+                } else {
+                  queries.push(
+                    loadExpenseDetail(
+                      entryId as string,
+                      user.id.toString(),
+                      initData
+                    )
+                  );
+                }
                 // Load categories and expense detail in parallel
-                await Promise.all([
-                  loadCategories(user.id.toString(), initData),
-                  loadExpenseDetail(id as string, user.id.toString(), initData),
-                ]);
+                await Promise.all(queries);
               } catch (error) {
                 console.error("Error loading data:", error);
               } finally {
@@ -193,12 +242,12 @@ const ExpenseDetail = () => {
         const user = webApp.initDataUnsafe?.user;
         const initData = webApp.initData;
 
-        if (!user?.id || !initData || !id) {
+        if (!user?.id || !initData || !entryId) {
           console.error("Missing Telegram user/init data or expense ID");
           return;
         }
 
-        const response = await fetch(`/api/expenses/${id}`, {
+        const response = await fetch(`/api/expenses/${entryId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -235,7 +284,7 @@ const ExpenseDetail = () => {
     [reset]
   );
 
-  if (isLoading || !expense) {
+  if (isLoading || !entry) {
     return (
       <Box sx={{ p: 2 }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -305,7 +354,34 @@ const ExpenseDetail = () => {
               borderRadius: 1,
             }}
           >
-            {formatDateTime(expense.date)}
+            {formatDateTime(entry.date)}
+          </Typography>
+        </Box>
+        {/* Transaction Type */}
+        <Box>
+          <Typography
+            variant="overline"
+            sx={{
+              color: colors.primary,
+              fontWeight: 600,
+              fontSize: "0.75rem",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              marginBottom: 1,
+            }}
+          >
+            TYPE
+          </Typography>
+          <Typography
+            sx={{
+              color: colors.textSecondary,
+              fontSize: "0.9rem",
+              background: colors.surface,
+              padding: "12px 16px",
+              borderRadius: 1,
+            }}
+          >
+            {isIncome === "true" ? "Income" : "Expense"}
           </Typography>
         </Box>
 
@@ -449,6 +525,7 @@ const ExpenseDetail = () => {
                   displayEmpty
                   renderValue={(value) => {
                     const category = categories.find((c) => c.id === value);
+
                     return category
                       ? `${category.emoji || ""} ${category.name}`
                       : "Select category";
@@ -494,87 +571,18 @@ const ExpenseDetail = () => {
                     },
                   }}
                 >
-                  {categories.map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      <Typography sx={{ color: "inherit" }}>
-                        {category.emoji || ""} {category.name}
-                      </Typography>
-                    </MenuItem>
-                  ))}
-                </Select>
-              )}
-            />
-          </FormControl>
-        </Box>
-
-        {/* Transaction Type */}
-        <Box>
-          <Typography
-            variant="overline"
-            sx={{
-              color: colors.primary,
-              fontWeight: 600,
-              fontSize: "0.75rem",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              marginBottom: 1,
-            }}
-          >
-            TYPE
-          </Typography>
-          <FormControl fullWidth>
-            <Controller
-              name="is_income"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  value={field.value ? "income" : "expense"}
-                  onChange={(e) => field.onChange(e.target.value === "income")}
-                  disabled={isLoading}
-                  sx={{
-                    color: colors.text,
-                    background: colors.inputBg,
-                    borderRadius: 2,
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      border: "none",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      border: "none",
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      border: "none",
-                    },
-                    "& .MuiSelect-icon": {
-                      color: colors.textSecondary,
-                    },
-                    "& .MuiSelect-select": {
-                      padding: "12px 16px",
-                    },
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        background: colors.card,
-                        "& .MuiMenuItem-root": {
-                          color: colors.text,
-                          "&:hover": {
-                            background: colors.surface,
-                          },
-                          "&.Mui-selected": {
-                            background: colors.primary,
-                            color: colors.text,
-                            "&:hover": {
-                              background: colors.primary,
-                            },
-                          },
-                        },
-                      },
-                    },
-                  }}
-                >
-                  <MenuItem value="expense">Expense</MenuItem>
-                  <MenuItem value="income">Income</MenuItem>
+                  {categories
+                    .filter(
+                      (c) =>
+                        c.is_income === (isIncome === "true" ? true : false)
+                    )
+                    .map((category) => (
+                      <MenuItem key={category.id} value={category.id}>
+                        <Typography sx={{ color: "inherit" }}>
+                          {category.emoji || ""} {category.name}
+                        </Typography>
+                      </MenuItem>
+                    ))}
                 </Select>
               )}
             />
@@ -627,7 +635,7 @@ const ExpenseDetail = () => {
         </Button>
       </Box>
       <DeleteExpenseDialog
-        id={expense.id}
+        id={Number(entryId)}
         onSuccess={() => router.back()}
         showConfirm={showDeleteDialog}
         setShowConfirm={setShowDeleteDialog}
