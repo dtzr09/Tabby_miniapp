@@ -89,7 +89,9 @@ const ExpenseRow = ({
               border: `1px solid ${alpha(colors.primary, 0.3)}`,
             },
           }}
-          onClick={() => router.push(`/expenses/${tx.id}`)}
+          onClick={() =>
+            router.push(`/expenses/${tx.id}?isIncome=${tx.isIncome}`)
+          }
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box>

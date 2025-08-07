@@ -26,10 +26,7 @@ export interface Income {
   amount: number;
   description: string;
   date: string;
-  category: {
-    id?: number;
-    name: string;
-  };
+  category: Category;
 }
 
 export interface Expense {
@@ -38,10 +35,7 @@ export interface Expense {
   description: string;
   date: string;
   is_income: boolean;
-  category?: {
-    name: string;
-    emoji?: string;
-  };
+  category: Category;
 }
 
 // New unified entry type for display components
@@ -96,3 +90,10 @@ export type ExpensesAndBudgets = {
   expenses: Expense[];
   budgets: Budget[];
 };
+
+export interface Category {
+  id: number;
+  name: string;
+  emoji?: string;
+  is_income: boolean;
+}
