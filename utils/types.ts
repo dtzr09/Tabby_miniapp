@@ -21,16 +21,39 @@ export interface Budget {
   };
 }
 
+export interface Income {
+  id: number;
+  amount: number;
+  description: string;
+  date: string;
+  category: Category;
+}
+
 export interface Expense {
   id: number;
   amount: number;
   description: string;
   date: string;
   is_income: boolean;
-  category?: {
-    name: string;
-    emoji?: string;
-  };
+  category: Category;
+}
+
+// New unified entry type for display components
+export interface UnifiedEntry {
+  id: number;
+  description: string;
+  category: string;
+  emoji?: string;
+  date: string;
+  amount: number;
+  isIncome: boolean;
+}
+
+// Service response types
+export interface AllEntriesResponse {
+  expenses: Expense[];
+  income: Income[];
+  budgets: Budget[];
 }
 
 export interface DBData {
@@ -45,6 +68,7 @@ export interface DBData {
     spent: number;
     color: string;
   }[];
+  num_of_budgets: number;
 }
 
 export interface PieChartData {
@@ -66,3 +90,10 @@ export type ExpensesAndBudgets = {
   expenses: Expense[];
   budgets: Budget[];
 };
+
+export interface Category {
+  id: number;
+  name: string;
+  emoji?: string;
+  is_income: boolean;
+}

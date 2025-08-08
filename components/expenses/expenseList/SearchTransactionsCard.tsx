@@ -1,5 +1,4 @@
 import {
-  List,
   Typography,
   Box,
   Card,
@@ -13,33 +12,29 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SearchIcon from "@mui/icons-material/Search";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import SearchMenuCard from "./SearchMenuCard";
 import FilterOptionCard from "./FilterOptionCard";
 import ExpenseListCard from "./ExpenseListCard";
 import Pagination from "@mui/material/Pagination";
 import { TelegramUser } from "../../dashboard";
-
-interface Expense {
-  id: number;
-  amount: number;
-  description: string;
-  date: string;
-  is_income: boolean;
-  category?: {
-    name: string;
-    emoji?: string;
-  };
-}
+import { UnifiedEntry } from "../../../utils/types";
+import { getUniqueCategories } from "../../../utils/categoryUtils";
+import {
+  filterTransactions,
+  AmountFilterOption,
+  DateFilterOption,
+  CategoryFilterOption,
+} from "../../../utils/filterUtils";
 
 interface SearchTransactionsCardProps {
-  expenses: Expense[];
+  entries: UnifiedEntry[];
   onBack: () => void;
   tgUser: TelegramUser | null;
 }
 
 export default function SearchTransactionsCard({
-  expenses,
+  entries,
   onBack,
   tgUser,
 }: SearchTransactionsCardProps) {
@@ -57,119 +52,31 @@ export default function SearchTransactionsCard({
   const [page, setPage] = useState(1);
   const transactionsPerPage = 10;
 
-  // Get unique categories from expenses
-  const categories = Array.from(
-    new Set(
-      expenses.map((exp) => {
-        const categoryName = exp.category?.name || "Other";
-        // Remove emoji from category name and trim
-        const cleanName = categoryName
-          .replace(
-            /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]\s*/u,
-            ""
-          )
-          .trim();
-        return cleanName || "Other";
-      })
-    )
-  );
+  const [lastCategoryFilter, setLastCategoryFilter] = useState(categoryFilter);
+
+  useEffect(() => {
+    if (lastCategoryFilter !== categoryFilter) {
+      setLastCategoryFilter(categoryFilter);
+      setPage(1);
+    }
+  }, [categoryFilter, lastCategoryFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, categoryFilter, amountFilter, dateFilter]);
+
+  // Get unique categories from entries
+  const categories = getUniqueCategories(entries);
 
   // Filter transactions based on search and filters
-  const filteredTransactions = expenses
-    .filter((exp) => {
-      // Search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const categoryName = exp.category?.name || "Other";
-        // Extract clean category name (without emoji) for search
-        const cleanCategoryName =
-          categoryName
-            .replace(
-              /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]\s*/u,
-              ""
-            )
-            .trim() || "Other";
-        const matchesSearch =
-          exp.description.toLowerCase().includes(query) ||
-          cleanCategoryName.toLowerCase().includes(query);
-        if (!matchesSearch) return false;
-      }
-
-      // Category filter
-      if (categoryFilter !== "All Categories") {
-        const categoryName = exp.category?.name || "Other";
-        // Extract clean category name (without emoji)
-        const cleanCategoryName =
-          categoryName
-            .replace(
-              /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]\s*/u,
-              ""
-            )
-            .trim() || "Other";
-        if (cleanCategoryName !== categoryFilter) {
-          return false;
-        }
-      }
-
-      // Amount filter (simplified for now)
-      if (amountFilter !== "All Amounts") {
-        const amount = Math.abs(exp.amount);
-        switch (amountFilter) {
-          case "Under $10":
-            if (amount >= 10) return false;
-            break;
-          case "$10 - $50":
-            if (amount < 10 || amount > 50) return false;
-            break;
-          case "$50 - $100":
-            if (amount < 50 || amount > 100) return false;
-            break;
-          case "Over $100":
-            if (amount <= 100) return false;
-            break;
-        }
-      }
-
-      // Date filter (simplified for now)
-      if (dateFilter !== "All Dates") {
-        const expDate = new Date(exp.date);
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-        const weekAgo = new Date(today);
-        weekAgo.setDate(today.getDate() - 7);
-        const monthAgo = new Date(today);
-        monthAgo.setMonth(today.getMonth() - 1);
-
-        switch (dateFilter) {
-          case "Today":
-            if (expDate.toDateString() !== today.toDateString()) return false;
-            break;
-          case "Yesterday":
-            if (expDate.toDateString() !== yesterday.toDateString())
-              return false;
-            break;
-          case "This Week":
-            if (expDate < weekAgo) return false;
-            break;
-          case "This Month":
-            if (expDate < monthAgo) return false;
-            break;
-        }
-      }
-
-      return true;
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .map((exp) => ({
-      id: exp.id,
-      description: exp.description,
-      category: exp.category?.name || "Other",
-      emoji: exp.category?.emoji || "⚪",
-      date: exp.date,
-      amount: exp.amount,
-      isIncome: exp.is_income,
-    }));
+  const filteredTransactions = useMemo(() => {
+    return filterTransactions(entries, {
+      searchQuery,
+      categoryFilter: categoryFilter as CategoryFilterOption,
+      amountFilter: amountFilter as AmountFilterOption,
+      dateFilter: dateFilter as DateFilterOption,
+    });
+  }, [entries, searchQuery, categoryFilter, amountFilter, dateFilter]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
@@ -185,21 +92,10 @@ export default function SearchTransactionsCard({
   const totalPages = Math.ceil(
     filteredTransactions.length / transactionsPerPage
   );
-  const paginatedTransactions = filteredTransactions
-    .slice((page - 1) * transactionsPerPage, page * transactionsPerPage)
-    .map((exp) => ({
-      id: exp.id,
-      description: exp.description,
-      category: exp.category,
-      emoji: exp.emoji,
-      date: exp.date,
-      amount: exp.amount,
-      isIncome: exp.isIncome,
-    }));
-
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery, categoryFilter, amountFilter, dateFilter]);
+  const paginatedTransactions = filteredTransactions.slice(
+    (page - 1) * transactionsPerPage,
+    page * transactionsPerPage
+  );
 
   return (
     <Card
@@ -345,9 +241,7 @@ export default function SearchTransactionsCard({
         </Box>
 
         {/* Transactions List */}
-        <List sx={{ width: "100%", p: 0 }}>
-          <ExpenseListCard expenses={paginatedTransactions} tgUser={tgUser} />
-        </List>
+        <ExpenseListCard entries={paginatedTransactions} tgUser={tgUser} />
         {totalPages > 1 && (
           <>
             <Divider sx={{ mt: 2, backgroundColor: colors.inputBg }} />
@@ -407,8 +301,18 @@ export default function SearchTransactionsCard({
           anchorEl={categoryAnchor}
           open={Boolean(categoryAnchor)}
           onClose={() => setCategoryAnchor(null)}
-          menuItems={["All Categories", ...categories]}
-          setValue={setCategoryFilter}
+          menuItems={["All Categories", ...categories.map((c) => c.raw_name)]}
+          displayValue={categories.find(c => c.name === categoryFilter)?.raw_name || categoryFilter}
+          setValue={(rawName) => {
+            if (rawName === "All Categories") {
+              setCategoryFilter("All Categories");
+            } else {
+              const category = categories.find(c => c.raw_name === rawName);
+              if (category) {
+                setCategoryFilter(category.name);
+              }
+            }
+          }}
           value={categoryFilter}
           setAnchor={setCategoryAnchor}
         />

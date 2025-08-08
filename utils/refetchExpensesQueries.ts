@@ -5,9 +5,8 @@ export const refetchExpensesQueries = async (
   userId: string
 ) => {
   const keys = [
-    ["expensesAndBudgets", userId],
     ["expensesWithBudget", userId],
-    ["expenses", userId],
+    ["allEntries", userId],
   ];
 
   await Promise.all(

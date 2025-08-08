@@ -4,16 +4,16 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from "next/router";
 import { Box, Typography, alpha } from "@mui/material";
 import React, { useState } from "react";
-import { ExpenseListCardProps } from "./ExpenseListCard";
 import DeleteExpenseDialog from "../utils/DeleteExpenseDialog";
 import { displayDateTime } from "../../../utils/displayDateTime";
+import { UnifiedEntry } from "../../../utils/types";
 import { TelegramUser } from "../../dashboard";
 
 const ExpenseRow = ({
   tx,
   tgUser,
 }: {
-  tx: ExpenseListCardProps["expenses"][0];
+  tx: UnifiedEntry;
   tgUser: TelegramUser | null;
 }) => {
   const { colors } = useTheme();
@@ -89,7 +89,9 @@ const ExpenseRow = ({
               border: `1px solid ${alpha(colors.primary, 0.3)}`,
             },
           }}
-          onClick={() => router.push(`/expenses/${tx.id}`)}
+          onClick={() =>
+            router.push(`/expenses/${tx.id}?isIncome=${tx.isIncome}`)
+          }
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box>

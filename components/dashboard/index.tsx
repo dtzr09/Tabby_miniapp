@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import BalanceCard from "../balance/BalanceCard";
 import { Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { getDailyBreakdown } from "../../utils/getDailyBreakdown";
-import { getFilteredExpenses } from "../../utils/getFilteredExpenses";
-import { getCategoryData } from "../../utils/getCategoryData";
-import { Budget, Expense, TelegramWebApp, ViewMode } from "../../utils/types";
+import {
+  AllEntriesResponse,
+  Expense,
+  TelegramWebApp,
+  ViewMode,
+} from "../../utils/types";
 import {
   backButton,
   init,
@@ -17,21 +19,16 @@ import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
 import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
-import {
-  fetchExpenses,
-  fetchExpensesAndBudgets,
-  fetchExpensesForBudgets,
-} from "../../services/expenses";
+import { fetchExpensesForBudgets } from "../../services/expenses";
 import { useQuery } from "@tanstack/react-query";
 import WelcomeScreen from "./WelcomeScreen";
+import { fetchAllEntries } from "../../services/allEntries";
+import { isSameMonth } from "../../utils/isSameMonth";
+import { calculateSummaryData } from "../../utils/calculateSummaryData";
+import { getDashboardData } from "../../utils/getDashboardData";
 
 export interface TelegramUser {
   id: string;
-}
-
-interface ExpensesAndBudgets {
-  expenses: Expense[];
-  budgets: Budget[];
 }
 
 const Dashboard = () => {
@@ -41,48 +38,58 @@ const Dashboard = () => {
   const [initData, setInitData] = useState<string | null>(null);
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>("weekly");
 
-  const { data: expensesAndBudgets, isLoading: isExpensesLoading } =
-    useQuery<ExpensesAndBudgets>({
-      queryKey: ["expensesAndBudgets", tgUser?.id],
+  const { data: allEntries, isLoading: isAllEntriesLoading } =
+    useQuery<AllEntriesResponse>({
+      queryKey: ["allEntries", tgUser?.id],
       queryFn: () => {
         if (tgUser && initData) {
-          return fetchExpensesAndBudgets(tgUser.id, initData);
+          return fetchAllEntries(tgUser.id, initData);
         }
-        return Promise.resolve({ expenses: [], budgets: [] });
+        return Promise.resolve({ expenses: [], income: [], budgets: [] });
       },
       enabled: !!tgUser && !!initData,
       gcTime: 300000, // Cache for 5 minutes
       refetchOnWindowFocus: true, // refetch when window regains focus
     });
 
+  const currentMonthExpenses = useMemo(() => {
+    const currentDate = new Date();
+
+    const expenses =
+      allEntries?.expenses.filter((expense) => {
+        const expenseDate = new Date(expense.date);
+        return isSameMonth(expenseDate, currentDate);
+      }) || [];
+
+    const income =
+      allEntries?.income.filter((income) => {
+        const incomeDate = new Date(income.date);
+        return isSameMonth(incomeDate, currentDate);
+      }) || [];
+
+    const budgets =
+      allEntries?.budgets.filter((budget) => {
+        const budgetDate = new Date(budget.created_at);
+        return isSameMonth(budgetDate, currentDate);
+      }) || [];
+
+    return { expenses, income, budgets };
+  }, [allEntries]);
+
+  // Get expenses with budgets
   const { data: expensesWithBudget, isLoading: isExpensesWithBudgetLoading } =
-    useQuery<ExpensesAndBudgets>({
+    useQuery<Expense[]>({
       queryKey: ["expensesWithBudget", tgUser?.id],
       queryFn: () => {
         if (tgUser && initData) {
           return fetchExpensesForBudgets(tgUser.id, initData);
         }
-        return Promise.resolve({ expenses: [], budgets: [] });
+        return Promise.resolve([]);
       },
       enabled: !!tgUser && !!initData,
       gcTime: 300000, // Cache for 5 minutes
       refetchOnWindowFocus: true, // Refetch when window regains focus
     });
-
-  const { data: allExpenses, isLoading: isAllExpensesLoading } = useQuery<
-    Expense[]
-  >({
-    queryKey: ["expenses", tgUser?.id],
-    queryFn: () => {
-      if (tgUser && initData) {
-        return fetchExpenses(tgUser.id, initData);
-      }
-      return Promise.resolve([]);
-    },
-    enabled: !!tgUser && !!initData,
-    gcTime: 300000, // Cache for 5 minutes
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -125,74 +132,30 @@ const Dashboard = () => {
 
   // Only show loading when we have user data and are actually fetching
   if (
-    !expensesAndBudgets ||
-    !expensesWithBudget ||
-    (tgUser && initData && isExpensesLoading) ||
-    (tgUser && initData && isAllExpensesLoading) ||
+    !allEntries ||
+    (tgUser && initData && isAllEntriesLoading) ||
     (tgUser && initData && isExpensesWithBudgetLoading)
   ) {
     return <LoadingSkeleton />;
   }
 
   // Show welcome screen if no data
-  if (
-    expensesAndBudgets.expenses.length === 0 &&
-    expensesAndBudgets.budgets.length === 0 &&
-    expensesWithBudget.expenses.length === 0 &&
-    expensesWithBudget.budgets.length === 0
-  ) {
+  if (allEntries.expenses.length === 0 && allEntries.budgets.length === 0) {
     return <WelcomeScreen />;
   }
 
-  // Use empty arrays as fallbacks when data is undefined
-  const expenses = expensesAndBudgets.expenses;
-  const budgets = expensesAndBudgets.budgets;
-
   // Calculate summary data from real expenses
-  const totalIncome = expenses
-    .filter((exp: Expense) => exp.is_income)
-    .reduce((sum: number, exp: Expense) => sum + (exp.amount || 0), 0);
-
-  const totalExpenses = expenses
-    .filter((exp: Expense) => !exp.is_income)
-    .reduce((sum: number, exp: Expense) => sum + Math.abs(exp.amount || 0), 0);
-
-  // Calculate total budget from budgets data
-  const totalBudget = budgets.reduce(
-    (sum: number, budget: Budget) => sum + (budget.amount || 0),
-    0
-  );
+  const { totalIncome, totalExpenses, totalBudget } =
+    calculateSummaryData(currentMonthExpenses);
 
   // Generate real data based on expenses
-  const getRealData = (period: ViewMode) => {
-    const filteredExpenses = getFilteredExpenses(expenses, period);
-    const totalExpenses = filteredExpenses.reduce(
-      (sum: number, exp: Expense) => sum + Math.abs(exp.amount || 0),
-      0
-    );
+  const data = getDashboardData(
+    currentMonthExpenses.expenses,
+    currentMonthExpenses.budgets,
+    internalViewMode
+  );
 
-    const categories = getCategoryData(expenses, budgets, period);
-    const dailyExpenses = getDailyBreakdown(expenses, period);
-
-    return {
-      totalExpenses,
-      dateRange:
-        period === "daily"
-          ? "Today"
-          : period === "weekly"
-          ? "This Week"
-          : "This Month",
-      dailyExpenses,
-      categories,
-      num_of_budgets:
-        budgets.filter(
-          (budget: Budget) =>
-            !budget.category.name.toLowerCase().includes("flexible")
-        ).length || 0,
-    };
-  };
-
-  const data = getRealData(internalViewMode);
+  const hasBudget = currentMonthExpenses.budgets.length > 0 && totalBudget > 0;
 
   return (
     <Box
@@ -223,15 +186,14 @@ const Dashboard = () => {
           }}
         >
           {/* Balance Card */}
-          {budgets.length > 0 && totalBudget > 0 && (
+          {hasBudget && (
             <Box sx={{ width: "100%" }}>
               <BalanceCard
-                expensesWithBudget={expensesWithBudget.expenses}
+                expensesWithBudget={expensesWithBudget || []}
                 totalBudget={totalBudget}
               />
             </Box>
           )}
-
           <ExpenseSummaryCard
             totalIncome={totalIncome}
             totalExpenses={totalExpenses}
@@ -248,7 +210,7 @@ const Dashboard = () => {
 
           {/* Recent Transactions Card (now below summary) */}
           <Box sx={{ width: "100%", mb: 4 }}>
-            <ExpenseList allExpenses={allExpenses ?? []} tgUser={tgUser} />
+            <ExpenseList allEntries={allEntries} tgUser={tgUser} />
           </Box>
         </Box>
       </Box>
