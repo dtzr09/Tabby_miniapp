@@ -218,7 +218,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     return {
       background: theme.bg_color || "#f3f6fa",
-      surface: theme.secondary_bg_color || theme.section_bg_color || "#ffffff",
+      surface: isDark
+        ? theme.secondary_bg_color || theme.section_bg_color || "#ffffff"
+        : "#f8fafc",
       text: theme.text_color || "#111827",
       textSecondary: theme.subtitle_text_color || theme.hint_color || "#64748b",
       primary: theme.accent_text_color || theme.link_color || "#2563eb",
@@ -232,7 +234,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
       incomeExpenseCard: isDark ? "#283442" : "#f8fafc",
       cardBg: isDark ? "#1e2a38" : "#eaf2fe",
       disabled: isDark ? "#334155" : "#dde6f2",
-      inputBg: isDark ? "#4a5e80" : "#4a5e80",
+      inputBg: isDark ? "#4a5e80" : "#f8fafc",
     };
   };
 

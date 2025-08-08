@@ -112,7 +112,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Avatar
               sx={{
-                bgcolor: colors.surface,
+                bgcolor: colors.card,
                 color: colors.primary,
                 width: 30,
                 height: 30,

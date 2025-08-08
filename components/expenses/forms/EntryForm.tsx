@@ -66,7 +66,7 @@ export default function EntryForm({
   const inputStyles = {
     "& .MuiOutlinedInput-root": {
       color: colors.text,
-      background: colors.inputBg,
+      background: colors.surface,
       borderRadius: 2,
       "& fieldset": {
         border: "none",
@@ -155,7 +155,7 @@ export default function EntryForm({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <AttachMoney sx={{ color: "white" }} fontSize="small" />
+                    <AttachMoney sx={{ color: colors.text }} fontSize="small" />
                   </InputAdornment>
                 ),
               }}
@@ -228,4 +228,4 @@ export default function EntryForm({
       </Box>
     </Box>
   );
-} 
+}
