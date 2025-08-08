@@ -98,6 +98,9 @@ export default async function handler(
       }
     } else if (req.method === "PUT") {
       const { description, amount, category_id } = req.body;
+      console.log("🔍 description", description);
+      console.log("🔍 amount", amount);
+      console.log("🔍 category_id", category_id);
 
       if (!description || amount === undefined || category_id === undefined) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -137,6 +140,7 @@ export default async function handler(
            WHERE e.id = $1 AND e.chat_id = $2`,
           [id, telegram_id]
         );
+        console.log("🔍 updatedResult", updatedResult);
 
         const updatedEntry = updatedResult.rows[0];
         const formattedEntry = {
@@ -149,6 +153,7 @@ export default async function handler(
               }
             : null,
         };
+        console.log("🔍 formattedEntry", formattedEntry);
 
         return res.status(200).json(formattedEntry);
       } else {

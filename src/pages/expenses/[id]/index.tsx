@@ -27,6 +27,8 @@ const ExpenseDetail = () => {
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const queryClient = useQueryClient();
 
+  console.log("🔍 entryId", entryId);
+  console.log("🔍 isIncome", isIncome);
   const { isLoading, expense, categories, loadData } = useEntryData({
     entryId: entryId as string,
     isIncome: isIncome === "true",
@@ -121,6 +123,7 @@ const ExpenseDetail = () => {
             isIncome: isIncome === "true",
           }),
         });
+        console.log("🔍 response", response);
 
         if (!response.ok) {
           console.error("Failed to update entry:", await response.text());
@@ -128,6 +131,7 @@ const ExpenseDetail = () => {
         }
 
         await refetchExpensesQueries(queryClient, user.id.toString());
+        console.log("🔍 refetched");
 
         showPopup({
           title: "Success",
@@ -136,6 +140,7 @@ const ExpenseDetail = () => {
           } updated successfully`,
           buttons: [{ type: "ok" }],
         });
+        console.log("🔍 reset");
 
         reset(data, { keepDirty: false });
       } catch (err) {
