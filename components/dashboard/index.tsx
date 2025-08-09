@@ -4,7 +4,7 @@ import { Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import {
   AllEntriesResponse,
-  Expense,
+  // Expense,
   TelegramWebApp,
   ViewMode,
 } from "../../utils/types";
@@ -19,7 +19,7 @@ import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
 import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
-import { fetchExpensesForBudgets } from "../../services/expenses";
+// import { fetchExpensesForBudgets } from "../../services/expenses";
 import { useQuery } from "@tanstack/react-query";
 import WelcomeScreen from "./WelcomeScreen";
 import { fetchAllEntries } from "../../services/allEntries";
@@ -76,20 +76,20 @@ const Dashboard = () => {
     return { expenses, income, budgets };
   }, [allEntries]);
 
-  // Get expenses with budgets
-  const { data: expensesWithBudget, isLoading: isExpensesWithBudgetLoading } =
-    useQuery<Expense[]>({
-      queryKey: ["expensesWithBudget", tgUser?.id],
-      queryFn: () => {
-        if (tgUser && initData) {
-          return fetchExpensesForBudgets(tgUser.id, initData);
-        }
-        return Promise.resolve([]);
-      },
-      enabled: !!tgUser && !!initData,
-      gcTime: 300000, // Cache for 5 minutes
-      refetchOnWindowFocus: true, // Refetch when window regains focus
-    });
+  // // Get expenses with budgets
+  // const { data: expensesWithBudget, isLoading: isExpensesWithBudgetLoading } =
+  //   useQuery<Expense[]>({
+  //     queryKey: ["expensesWithBudget", tgUser?.id],
+  //     queryFn: () => {
+  //       if (tgUser && initData) {
+  //         return fetchExpensesForBudgets(tgUser.id, initData);
+  //       }
+  //       return Promise.resolve([]);
+  //     },
+  //     enabled: !!tgUser && !!initData,
+  //     gcTime: 300000, // Cache for 5 minutes
+  //     refetchOnWindowFocus: true, // Refetch when window regains focus
+  //   });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -133,8 +133,8 @@ const Dashboard = () => {
   // Only show loading when we have user data and are actually fetching
   if (
     !allEntries ||
-    (tgUser && initData && isAllEntriesLoading) ||
-    (tgUser && initData && isExpensesWithBudgetLoading)
+    (tgUser && initData && isAllEntriesLoading)
+    // (tgUser && initData && isExpensesWithBudgetLoading)
   ) {
     return <LoadingSkeleton />;
   }
@@ -189,7 +189,8 @@ const Dashboard = () => {
           {hasBudget && (
             <Box sx={{ width: "100%" }}>
               <BalanceCard
-                expensesWithBudget={expensesWithBudget || []}
+                expensesWithBudget={currentMonthExpenses.expenses}
+                budgets={currentMonthExpenses.budgets}
                 totalBudget={totalBudget}
               />
             </Box>

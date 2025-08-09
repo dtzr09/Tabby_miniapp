@@ -2,7 +2,7 @@ import { Card } from "@mui/material";
 import React from "react";
 import ExpensesOverviewCard from "./ExpensesOverviewCard";
 import { useTheme } from "@/contexts/ThemeContext";
-import BudgetOverviewCard from "../../budget/BudgetOverviewCard";
+// import BudgetOverviewCard from "../../budget/BudgetOverviewCard";
 
 interface ExpensesAndBudgetOverviewProps {
   data: {
@@ -34,7 +34,7 @@ const ExpensesAndBudgetOverview = ({
     <Card
       sx={{
         px: 2,
-        py: 2,
+        pt: 2,
         borderRadius: 4,
         bgcolor: colors.card,
         boxShadow: "none",
@@ -46,11 +46,11 @@ const ExpensesAndBudgetOverview = ({
         viewMode={viewMode}
         onViewModeChange={onViewModeChange}
       />
-      <BudgetOverviewCard
+      {/* <BudgetOverviewCard
         data={data}
         viewMode={viewMode}
         onViewModeChange={onViewModeChange}
-      />
+      /> */}
     </Card>
   );
 };
