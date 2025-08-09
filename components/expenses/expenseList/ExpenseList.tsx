@@ -199,6 +199,11 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
   const filteredEntries = useMemo(() => {
     let entries = combineEntries();
 
+    // If search is active but query is empty, return empty array
+    if (isSearchActive && !searchQuery.trim()) {
+      return [];
+    }
+
     // Apply date range filter first
     const start = new Date(dateRange.start);
     const end = new Date(dateRange.end);
