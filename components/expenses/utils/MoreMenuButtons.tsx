@@ -10,16 +10,16 @@ import { alpha } from "@mui/material/styles";
 import { FilterType } from "../../../utils/advancedFilterUtils";
 
 interface MoreMenuButtonsProps {
-  moreMenuAnchor: HTMLElement | null;
-  setMoreMenuAnchor: (anchor: HTMLElement | null) => void;
-  filterMenuAnchor: HTMLElement | null;
-  setFilterMenuAnchor: (anchor: HTMLElement | null) => void;
+  moreMenuAnchor: null | HTMLElement;
+  setMoreMenuAnchor: (anchor: null | HTMLElement) => void;
+  filterMenuAnchor: null | HTMLElement;
+  setFilterMenuAnchor: (anchor: null | HTMLElement) => void;
   handleSearchToggle: () => void;
   selectedFilter: FilterType;
   onClearFilter: () => void;
 }
 
-const MoreMenuButtons = ({
+export default function MoreMenuButtons({
   moreMenuAnchor,
   setMoreMenuAnchor,
   filterMenuAnchor,
@@ -27,8 +27,13 @@ const MoreMenuButtons = ({
   handleSearchToggle,
   selectedFilter,
   onClearFilter,
-}: MoreMenuButtonsProps) => {
+}: MoreMenuButtonsProps) {
   const { colors } = useTheme();
+
+  const handleClose = () => {
+    setMoreMenuAnchor(null);
+    onClearFilter();
+  };
 
   const getFilterLabel = (filter: FilterType) => {
     switch (filter) {
@@ -140,7 +145,7 @@ const MoreMenuButtons = ({
             <SearchRounded sx={{ fontSize: "1rem" }} />
           </IconButton>
           <IconButton
-            onClick={() => setMoreMenuAnchor(null)}
+            onClick={handleClose}
             sx={{
               color: colors.text,
               p: 0.8,
@@ -158,6 +163,4 @@ const MoreMenuButtons = ({
       )}
     </>
   );
-};
-
-export default MoreMenuButtons;
+}

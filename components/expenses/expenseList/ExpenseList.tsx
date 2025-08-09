@@ -140,18 +140,46 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
     }
   }, [timeOffset, viewType]);
 
-  const filteredEntries = useMemo(() => {
-    const unifiedEntries = combineEntries();
+  const searchExpenses = (
+    entries: UnifiedEntry[],
+    query: string
+  ): UnifiedEntry[] => {
+    if (!query.trim()) return [];
 
-    // First apply the time range filter
-    const timeFilteredEntries = unifiedEntries.filter((entry) => {
+    const searchTerms = query.toLowerCase().trim().split(/\s+/);
+
+    return entries.filter((entry) => {
+      const searchableText = entry.description?.toLowerCase() || "";
+      return searchTerms.every((term) => searchableText.includes(term));
+    });
+  };
+
+  const filteredEntries = useMemo(() => {
+    const entries = combineEntries();
+    
+    if (isSearchActive) {
+      return searchExpenses(entries, searchQuery);
+    }
+
+    // Apply date range filter
+    const start = new Date(dateRange.start);
+    const end = new Date(dateRange.end);
+    
+    const dateFiltered = entries.filter((entry) => {
       const entryDate = new Date(entry.date);
-      return entryDate >= dateRange.start && entryDate <= dateRange.end;
+      return entryDate >= start && entryDate <= end;
     });
 
-    // Then apply any other filters
-    return applyFilter(timeFilteredEntries, currentFilter, filterOptions);
-  }, [allEntries, currentFilter, dateRange, filterOptions]);
+    // Apply other filters
+    return applyFilter(dateFiltered, currentFilter, filterOptions);
+  }, [
+    allEntries,
+    currentFilter,
+    filterOptions,
+    dateRange,
+    isSearchActive,
+    searchQuery,
+  ]);
 
   const handleViewTypeChange = (type: "Week" | "Month") => {
     setViewType(type);
@@ -258,12 +286,12 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
                 }}
                 InputProps={{
                   startAdornment: (
-                    <SearchIcon 
-                      sx={{ 
+                    <SearchIcon
+                      sx={{
                         color: colors.textSecondary,
                         fontSize: "0.8rem",
                         mr: 0.5,
-                      }} 
+                      }}
                     />
                   ),
                 }}
@@ -375,10 +403,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
               "-webkit-overflow-scrolling": "touch",
             }}
           >
-            <ExpenseListCard
-              entries={isSearchActive ? [] : filteredEntries}
-              tgUser={tgUser}
-            />
+            <ExpenseListCard entries={filteredEntries} tgUser={tgUser} />
           </List>
         </Box>
       </CardContent>
