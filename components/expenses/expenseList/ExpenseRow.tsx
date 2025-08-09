@@ -2,7 +2,7 @@ import { useSwipeable } from "react-swipeable";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from "next/router";
-import { Box, Typography, alpha } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import React, { useState } from "react";
 import DeleteExpenseDialog from "../utils/DeleteExpenseDialog";
 import { displayDateTime } from "../../../utils/displayDateTime";
