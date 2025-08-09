@@ -95,7 +95,7 @@ export default function MoreMenuButtons({
             >
               <Typography
                 sx={{
-                  fontSize: "0.75rem",
+                  fontSize: "0.8rem",
                   fontWeight: 600,
                   color: colors.primary,
                 }}
@@ -105,7 +105,7 @@ export default function MoreMenuButtons({
               <CloseRounded
                 onClick={onClearFilter}
                 sx={{
-                  fontSize: "0.7rem",
+                  fontSize: "0.8rem",
                   color: colors.textSecondary,
                   cursor: "pointer",
                 }}

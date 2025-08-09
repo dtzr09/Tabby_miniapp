@@ -12,9 +12,11 @@ export const cleanCategoryName = (
 ): {
   name: string;
   raw_name: string;
+  emoji: string;
 } => {
   // First trim any leading/trailing whitespace from the original string
   const trimmedCategory = categoryName.trim();
+  const emoji = trimmedCategory.match(EMOJI_REGEX)?.[0] || "🏷️";
 
   // Then remove emoji and trim again to handle any space that was after the emoji
   const cleanedName = trimmedCategory.replace(EMOJI_REGEX, "").trim();
@@ -23,6 +25,7 @@ export const cleanCategoryName = (
   return {
     name: cleanedName || "Other",
     raw_name: trimmedCategory,
+    emoji,
   };
 };
 
@@ -38,18 +41,18 @@ export const getUniqueCategories = (
   entries.forEach((entry) => {
     const rawName = entry.category || "Other";
     const cleanedCategory = cleanCategoryName(rawName);
-    
+
     // Use the cleaned name as the key to ensure uniqueness
     if (!categoryMap.has(cleanedCategory.name)) {
       categoryMap.set(cleanedCategory.name, {
         name: cleanedCategory.name,
-        raw_name: rawName
+        raw_name: rawName,
       });
     }
   });
 
   // Convert map to array and sort by clean name
-  return Array.from(categoryMap.values()).sort((a, b) => 
+  return Array.from(categoryMap.values()).sort((a, b) =>
     a.name.localeCompare(b.name)
   );
 };

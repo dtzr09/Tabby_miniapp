@@ -20,18 +20,24 @@ export default function BudgetBreakdown({
   // Get category data with icons and colors
   const categories = getCategoryData(expenses, budgets, viewType);
 
-  // Calculate adjusted budgets and spending
-  const adjustedCategories = categories.map((category) => {
-    const adjustedBudget =
-      viewType === "weekly" ? category.budget / 4 : category.budget;
-    const adjustedSpent =
-      viewType === "weekly" ? category.spent : category.spent;
-    return {
-      ...category,
-      budget: adjustedBudget,
-      spent: adjustedSpent,
-    };
-  });
+  // Calculate adjusted budgets and spending, and sort flexible to bottom
+  const adjustedCategories = categories
+    .map((category) => {
+      const adjustedBudget =
+        viewType === "weekly" ? category.budget / 4 : category.budget;
+      const adjustedSpent =
+        viewType === "weekly" ? category.spent / 4 : category.spent;
+      return {
+        ...category,
+        budget: adjustedBudget,
+        spent: adjustedSpent,
+        isFlexible: category.name.toLowerCase().includes("flexible"),
+      };
+    })
+    .sort((a, b) => {
+      if (a.isFlexible === b.isFlexible) return 0;
+      return a.isFlexible ? 1 : -1;
+    });
 
   return (
     <Box sx={{ pb: 2 }}>

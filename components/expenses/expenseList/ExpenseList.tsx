@@ -22,6 +22,7 @@ import TimeRangeMenu from "../utils/TimeRangeMenu";
 import FilterViews from "../utils/FilterViews";
 import ExpensesBarChart from "../../charts/ExpensesBarChart";
 import { alpha } from "@mui/material/styles";
+import { cleanCategoryName } from "../../../utils/categoryUtils";
 
 interface ExpenseListProps {
   allEntries: AllEntriesResponse;
@@ -54,11 +55,14 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
     // Add expenses
     if (allEntries?.expenses) {
       allEntries.expenses.forEach((expense) => {
+        const categoryName = expense.category?.name || "Other";
+        const { emoji } = cleanCategoryName(categoryName);
+        
         combined.push({
           id: expense.id,
           description: expense.description,
-          category: expense.category?.name || "Other",
-          emoji: expense.category?.emoji,
+          category: categoryName,
+          emoji: expense.category?.emoji || emoji,
           date: expense.date,
           amount: expense.amount,
           isIncome: expense.is_income,
@@ -69,11 +73,14 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
     // Add income entries
     if (allEntries?.income) {
       allEntries.income.forEach((income) => {
+        const categoryName = income.category?.name || "Income";
+        const { emoji } = cleanCategoryName(categoryName);
+
         combined.push({
           id: income.id,
           description: income.description,
-          category: income.category?.name || "Income",
-          emoji: undefined,
+          category: categoryName,
+          emoji: income.category?.emoji || emoji || "💰",
           date: income.date,
           amount: income.amount,
           isIncome: true,
@@ -149,11 +156,13 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
       );
       endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + 6);
+      endDate.setHours(23, 59, 59, 999);  // Set to end of day
     } else {
       startDate = getMonthStart(
         new Date(today.setMonth(today.getMonth() + timeOffset))
       );
       endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+      endDate.setHours(23, 59, 59, 999);  // Set to end of day
     }
 
     // Ensure we don't go before the earliest allowed date
@@ -163,6 +172,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
         viewType === "Week"
           ? new Date(startDate.setDate(startDate.getDate() + 6))
           : new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+      endDate.setHours(23, 59, 59, 999);  // Set to end of day
     }
 
     const formatDate = (date: Date) => {
@@ -207,9 +217,25 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
     // Apply date range filter first
     const start = new Date(dateRange.start);
     const end = new Date(dateRange.end);
+    
+    // Set to start and end of day
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+
+    console.log('Date range:', {
+      start: start.toISOString(),
+      end: end.toISOString()
+    });
+
     entries = entries.filter((entry) => {
       const entryDate = new Date(entry.date);
-      return entryDate >= start && entryDate <= end;
+      const isInRange = entryDate >= start && entryDate <= end;
+      console.log('Entry date check:', {
+        date: entry.date,
+        isInRange,
+        amount: entry.amount
+      });
+      return isInRange;
     });
 
     // Apply date selection filter if active
@@ -353,54 +379,45 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
     }
   }, [dateRange, allEntries, colors.primary, colors.accent, viewType]);
 
-  const handleViewTypeChange = (type: "Week" | "Month") => {
-    setViewType(type);
-    setTimeOffset(0); // Reset offset when changing view type
-    setSelectedDate(null); // Clear date selection when changing view
+  // Handlers
+  const handleSearch = {
+    toggle: () => {
+      setIsSearchActive(true);
+      setSearchQuery("");
+    },
+    cancel: () => {
+      setIsSearchActive(false);
+      setSearchQuery("");
+    },
+    update: (value: string) => setSearchQuery(value),
   };
 
-  const handleSearchToggle = () => {
-    setIsSearchActive(true);
-    setSearchQuery("");
+  const handleFilter = {
+    change: (type: FilterType) => {
+      setCurrentFilter(type);
+      setFilterOptions({});
+    },
+    clear: () => {
+      setCurrentFilter("all");
+      setFilterOptions({});
+    },
+    setCategory: (category: string) =>
+      setFilterOptions((prev) => ({ ...prev, categoryId: category })),
+    setType: (type: "income" | "expense") =>
+      setFilterOptions((prev) => ({ ...prev, showIncome: type === "income" })),
   };
 
-  const handleSearchCancel = () => {
-    setIsSearchActive(false);
-    setSearchQuery("");
-  };
-
-  const handleFilterChange = (type: FilterType) => {
-    setCurrentFilter(type);
-    // Reset options when changing filter type
-    setFilterOptions({});
-  };
-
-  const handleClearFilter = () => {
-    setCurrentFilter("all");
-    setFilterOptions({});
-  };
-
-  const handleCategorySelect = (category: string) => {
-    setFilterOptions((prev) => ({
-      ...prev,
-      categoryId: category,
-    }));
-  };
-
-  const handleTypeSelect = (type: "income" | "expense") => {
-    setFilterOptions((prev) => ({
-      ...prev,
-      showIncome: type === "income",
-    }));
-  };
-
-  const handleDateSelect = (date: string | null) => {
-    setSelectedDate(date);
-  };
-
-  const handleTimeOffsetChange = (offset: number) => {
-    setTimeOffset(offset);
-    setSelectedDate(null); // Clear selection when time offset changes
+  const handleView = {
+    changeType: (type: "Week" | "Month") => {
+      setViewType(type);
+      setTimeOffset(0);
+      setSelectedDate(null);
+    },
+    setDate: (date: string | null) => setSelectedDate(date),
+    setOffset: (offset: number) => {
+      setTimeOffset(offset);
+      setSelectedDate(null);
+    },
   };
 
   return (
@@ -427,7 +444,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
           },
         }}
       >
-        {/* Header */}
+        {/* Header - Fixed */}
         <Box
           sx={{
             display: "flex",
@@ -444,7 +461,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
                 autoFocus
                 placeholder="Search"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearch.update(e.target.value)}
                 size="small"
                 sx={{
                   "& .MuiOutlinedInput-root": {
@@ -479,7 +496,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
                 }}
               />
               <IconButton
-                onClick={handleSearchCancel}
+                onClick={handleSearch.cancel}
                 sx={{
                   ml: 0.5,
                   p: 0.5,
@@ -517,85 +534,81 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
                 setMoreMenuAnchor={setMoreMenuAnchor}
                 filterMenuAnchor={filterMenuAnchor}
                 setFilterMenuAnchor={setFilterMenuAnchor}
-                handleSearchToggle={handleSearchToggle}
+                handleSearchToggle={handleSearch.toggle}
                 selectedFilter={currentFilter}
-                onClearFilter={handleClearFilter}
+                onClearFilter={handleFilter.clear}
               />
               <FilterMenu
                 selectedFilter={currentFilter}
                 anchorEl={filterMenuAnchor}
                 onClose={() => setFilterMenuAnchor(null)}
-                onFilterChange={handleFilterChange}
+                onFilterChange={handleFilter.change}
               />
             </>
           )}
         </Box>
 
-        {/* Time Range Controls - Only show when search is not active */}
-        {!isSearchActive && (
-          <>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <TimeRangeToggle
-                timeRange={dateRange.display}
-                setTimeOffset={(offset) => handleTimeOffsetChange(offset)}
-                timeOffset={timeOffset}
-                canGoBack={canGoBack}
-              />
-              <TimeRangeMenu
-                viewType={viewType}
-                onViewTypeChange={handleViewTypeChange}
-              />
-            </Box>
-
-            {/* Bar Chart */}
-            {chartData.length > 0 &&
-              chartData.some((data) => data.amount > 0) && (
-                <ExpensesBarChart
-                  chartData={chartData}
-                  onDateSelect={handleDateSelect}
-                  selectedDate={selectedDate}
-                />
-              )}
-
-            <Box sx={{ mb: 0.5 }}>
-              <FilterViews
-                filterType={currentFilter}
-                entries={combineEntries()}
-                selectedCategory={filterOptions.categoryId}
-                onCategorySelect={handleCategorySelect}
-                selectedType={filterOptions.showIncome ? "income" : "expense"}
-                onTypeSelect={handleTypeSelect}
-              />
-            </Box>
-          </>
-        )}
-
-        {/* Scrollable List */}
+        {/* Scrollable Content */}
         <Box
           sx={{
             flex: 1,
             minHeight: 0,
-            overflow: "hidden",
+            overflow: "auto",
+            scrollbarWidth: "none",
+            "&::-webkit-scrollbar": {
+              display: "none",
+            },
+            msOverflowStyle: "none",
+            "-webkit-overflow-scrolling": "touch",
           }}
         >
-          <List
-            sx={{
-              height: "100%",
-              overflow: "auto",
-              scrollbarWidth: "none",
-              "&::-webkit-scrollbar": {
-                display: "none",
-              },
-              msOverflowStyle: "none",
-              "-webkit-overflow-scrolling": "touch",
-            }}
-          >
+          {/* Time Range Controls - Only show when search is not active */}
+          {!isSearchActive && (
+            <>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <TimeRangeToggle
+                  timeRange={dateRange.display}
+                  setTimeOffset={handleView.setOffset}
+                  timeOffset={timeOffset}
+                  canGoBack={canGoBack}
+                />
+                <TimeRangeMenu
+                  viewType={viewType}
+                  onViewTypeChange={handleView.changeType}
+                />
+              </Box>
+
+              {/* Bar Chart */}
+              {chartData.length > 0 &&
+                chartData.some((data) => data.amount > 0) && (
+                  <ExpensesBarChart
+                    chartData={chartData}
+                    onDateSelect={handleView.setDate}
+                    selectedDate={selectedDate}
+                  />
+                )}
+
+              <Box sx={{ mb: 0.5 }}>
+                <FilterViews
+                  filterType={currentFilter}
+                  entries={combineEntries()}
+                  selectedCategory={filterOptions.categoryId}
+                  onCategorySelect={handleFilter.setCategory}
+                  selectedType={filterOptions.showIncome ? "income" : "expense"}
+                  onTypeSelect={handleFilter.setType}
+                />
+              </Box>
+            </>
+          )}
+
+          {/* Expense List */}
+          <List sx={{ p: 0 }}>
             <ExpenseListCard entries={filteredEntries} tgUser={tgUser} />
           </List>
         </Box>

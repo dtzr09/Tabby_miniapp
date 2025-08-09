@@ -257,63 +257,6 @@ export default function BalanceCard({
                 }}
               />
             </Box>
-
-            {/* Percentage Labels */}
-            {/* <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                px: 0.5,
-                mb: 1, // Reduced bottom margin
-              }}
-            >
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  color: colors.textSecondary,
-                  fontWeight: 500,
-                }}
-              >
-                0%
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  color: colors.textSecondary,
-                  fontWeight: 500,
-                }}
-              >
-                25%
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  color: colors.textSecondary,
-                  fontWeight: 500,
-                }}
-              >
-                50%
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  color: colors.textSecondary,
-                  fontWeight: 500,
-                }}
-              >
-                75%
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  color: colors.textSecondary,
-                  fontWeight: 500,
-                }}
-              >
-                100%
-              </Typography>
-            </Box> */}
           </>
         )}
         {/* Expandable Section */}

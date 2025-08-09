@@ -80,13 +80,13 @@ export default function FilterMenu({
           <Icon
             sx={{
               color: selectedFilter === id ? colors.primary : colors.text,
-              fontSize: "0.7rem",
+              fontSize: "0.8rem",
             }}
           />
           <Typography
             variant="body2"
             sx={{
-              fontSize: "0.7rem",
+              fontSize: "0.8rem",
               fontWeight: 500,
               color: selectedFilter === id ? colors.primary : colors.text,
               flex: 1,
@@ -96,7 +96,7 @@ export default function FilterMenu({
           </Typography>
           {selectedFilter === id && (
             <CheckIcon
-              sx={{ ml: "auto", color: colors.primary, fontSize: "0.7rem" }}
+              sx={{ ml: "auto", color: colors.primary, fontSize: "0.8rem" }}
             />
           )}
         </MenuItem>
