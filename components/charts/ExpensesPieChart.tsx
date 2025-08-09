@@ -20,9 +20,27 @@ const ExpensesPieChart = (props: ExpensesPieChartProps) => {
         position: "relative",
       }}
     >
-      <Box sx={{ width: 170, height: 170, position: "relative" }}>
+      <Box
+        sx={{
+          width: 170,
+          height: 170,
+          position: "relative",
+          "& .recharts-wrapper": {
+            outline: "none",
+          },
+          "& .recharts-surface": {
+            outline: "none",
+          },
+          "& .recharts-chart-container": {
+            outline: "none",
+          },
+          "& *": {
+            outline: "none !important",
+          }
+        }}
+      >
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+          <PieChart style={{ outline: "none" }}>
             <Pie
               data={props.chartData}
               cx="50%"

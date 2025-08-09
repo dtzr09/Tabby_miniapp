@@ -114,11 +114,29 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
   };
 
   return (
-    <Box sx={{ height: 140, mt: 2 }}>
+    <Box 
+      sx={{ 
+        height: 140, 
+        mt: 2,
+        "& .recharts-wrapper": {
+          outline: "none",
+        },
+        "& .recharts-surface": {
+          outline: "none",
+        },
+        "& .recharts-chart-container": {
+          outline: "none",
+        },
+        "& *": {
+          outline: "none !important",
+        }
+      }}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={props.chartData}
           margin={{ right: 0, left: 0, bottom: 20, top: 0 }}
+          style={{ outline: "none" }}
         >
           {yAxisTicks.map((tick) => (
             <ReferenceLine
