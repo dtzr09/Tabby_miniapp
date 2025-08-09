@@ -171,8 +171,12 @@ const Dashboard = () => {
     >
       <Box
         sx={{
+          width: "100%",
           maxWidth: "24rem",
+          minWidth: "24rem",
           bgcolor: colors.background,
+          mx: "auto", // Center the content
+          px: { xs: 2, sm: 2, md: 2 }, // Consistent padding
         }}
       >
         <Box
@@ -181,7 +185,6 @@ const Dashboard = () => {
             flexDirection: "column",
             alignItems: "center",
             mt: 2,
-            px: { xs: 2, sm: 1, md: 0 },
             gap: 1,
           }}
         >
@@ -195,10 +198,14 @@ const Dashboard = () => {
               />
             </Box>
           )}
-          <ExpenseSummaryCard
-            totalIncome={totalIncome}
-            totalExpenses={totalExpenses}
-          />
+
+          {/* Expense Summary Card */}
+          <Box sx={{ width: "100%" }}>
+            <ExpenseSummaryCard
+              totalIncome={totalIncome}
+              totalExpenses={totalExpenses}
+            />
+          </Box>
 
           {/* Budget Overview Card */}
           <Box sx={{ width: "100%" }}>
@@ -209,7 +216,7 @@ const Dashboard = () => {
             />
           </Box>
 
-          {/* Recent Transactions Card (now below summary) */}
+          {/* Recent Transactions Card */}
           <Box sx={{ width: "100%", mb: 4 }}>
             <ExpenseList allEntries={allEntries} tgUser={tgUser} />
           </Box>

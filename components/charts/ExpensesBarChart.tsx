@@ -6,23 +6,25 @@ import {
   ComposedChart,
   Label,
   ResponsiveContainer,
-  Tooltip,
+  // Tooltip,
   XAxis,
   YAxis,
   ReferenceLine,
   Cell,
 } from "recharts";
-import { ChartToolTip } from "./ChartToolTip";
+// import { ChartToolTip } from "./ChartToolTip";
 import React from "react";
 
 interface ExpensesBarChartProps {
   chartData: BarChartData[];
   onDateSelect?: (date: string | null) => void;
+  selectedDate?: string | null; // Add this prop
 }
 
 const ExpensesBarChart = (props: ExpensesBarChartProps) => {
   const { colors } = useTheme();
-  const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
+  // Remove local state and use prop instead
+  // const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
 
   // Calculate max value and generate nice ticks
   const maxValue = Math.max(...props.chartData.map((d) => d.amount));
@@ -61,10 +63,10 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
   // Generate dynamic date ticks based on the first data point's date
   const getDateTicks = () => {
     if (props.chartData.length === 0) return [];
-    
+
     // Check if we're in week view by looking at the first data point format
     const isWeekView = props.chartData[0]?.name.length <= 3; // "Mon", "Tue", etc.
-    
+
     if (isWeekView) {
       return undefined; // Let the XAxis show all weekday labels
     }
@@ -79,10 +81,10 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
 
       // Get the month number (0-11) from the month name
       const monthNumber = new Date(`${month} 1, 2024`).getMonth();
-      
+
       // Get the number of days in the month
       const daysInMonth = new Date(2024, monthNumber + 1, 0).getDate();
-      
+
       // Calculate 4 evenly spaced days
       const interval = Math.floor(daysInMonth / 4);
       const days = [
@@ -104,8 +106,8 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
 
   const handleBarClick = (entry: BarChartData) => {
     // Toggle selection - if clicking the same date, clear selection
-    const newDate = entry.name === selectedDate ? null : entry.name;
-    setSelectedDate(newDate);
+    const newDate = entry.name === props.selectedDate ? null : entry.name;
+    // setSelectedDate(newDate); // Remove this
     if (props.onDateSelect) {
       props.onDateSelect(newDate);
     }
@@ -149,7 +151,7 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
             tickLine={false}
             width={35}
           />
-          <Tooltip content={<ChartToolTip />} />
+          {/* <Tooltip content={<ChartToolTip />} /> */}
           <Bar
             dataKey="amount"
             radius={[6, 6, 6, 6]}
@@ -162,7 +164,13 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
               <Cell
                 key={`cell-${index}`}
                 fill={colors.primary}
-                opacity={selectedDate === null || selectedDate === entry.name ? 1 : 0.3}
+                opacity={
+                  props.selectedDate === entry.name
+                    ? 1
+                    : props.selectedDate === null
+                    ? 1
+                    : 0.3
+                }
               >
                 <Label
                   content={({ value }) => (
@@ -174,7 +182,9 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
                       fontSize={11}
                       fontWeight={500}
                       opacity={
-                        selectedDate === null || selectedDate === entry.name
+                        props.selectedDate === entry.name
+                          ? 1
+                          : props.selectedDate === null
                           ? 1
                           : 0.3
                       }

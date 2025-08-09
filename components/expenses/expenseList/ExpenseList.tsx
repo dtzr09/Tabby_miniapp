@@ -195,6 +195,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
     });
   };
 
+  // Update the filteredEntries logic
   const filteredEntries = useMemo(() => {
     let entries = combineEntries();
 
@@ -216,12 +217,12 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
           });
           return dayName === selectedDate;
         } else {
-          // For month view, compare both day and month
-          const dayMonth = entryDate.toLocaleDateString("en-US", {
-            day: "numeric",
-            month: "short",
-          });
-          return dayMonth === selectedDate;
+          // Make sure the format matches exactly what's shown in the chart
+          const formattedDayMonth = `${entryDate.getDate()} ${entryDate.toLocaleDateString(
+            "en-US",
+            { month: "short" }
+          )}`;
+          return formattedDayMonth === selectedDate;
         }
       });
     }
@@ -392,6 +393,11 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
     setSelectedDate(date);
   };
 
+  const handleTimeOffsetChange = (offset: number) => {
+    setTimeOffset(offset);
+    setSelectedDate(null); // Clear selection when time offset changes
+  };
+
   return (
     <Card
       sx={{
@@ -532,7 +538,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
             >
               <TimeRangeToggle
                 timeRange={dateRange.display}
-                setTimeOffset={setTimeOffset}
+                setTimeOffset={(offset) => handleTimeOffsetChange(offset)}
                 timeOffset={timeOffset}
                 canGoBack={canGoBack}
               />
@@ -548,6 +554,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
                 <ExpensesBarChart
                   chartData={chartData}
                   onDateSelect={handleDateSelect}
+                  selectedDate={selectedDate}
                 />
               )}
 
