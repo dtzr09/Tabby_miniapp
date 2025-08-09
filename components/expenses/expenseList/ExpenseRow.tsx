@@ -83,11 +83,11 @@ const ExpenseRow = ({
             alignItems: "center",
             justifyContent: "space-between",
             cursor: "pointer",
-            "&:hover": {
-              bgcolor: alpha(colors.primary, 0.08),
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-              border: `1px solid ${alpha(colors.primary, 0.3)}`,
-            },
+            // "&:hover": {
+            //   bgcolor: alpha(colors.primary, 0.08),
+            //   boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            //   border: `1px solid ${alpha(colors.primary, 0.3)}`,
+            // },
           }}
           onClick={() =>
             router.push(`/expenses/${tx.id}?isIncome=${tx.isIncome}`)
