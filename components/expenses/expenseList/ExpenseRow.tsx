@@ -70,7 +70,7 @@ const ExpenseRow = ({
             zIndex: 2,
             bgcolor: "transparent",
             borderRadius: 1.5,
-            mb: 0.25,
+            mb: 0.4,
             px: 1,
             py: 0.7,
             width: "100%",
