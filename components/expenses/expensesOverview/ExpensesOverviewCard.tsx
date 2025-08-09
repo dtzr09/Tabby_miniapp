@@ -42,7 +42,7 @@ export default function ExpensesOverviewCard({
 
   return (
     <>
-      <Box sx={{ px: 1 }}>
+      <Box>
         {/* View Mode Toggle */}
         <Box
           sx={{
@@ -50,6 +50,7 @@ export default function ExpensesOverviewCard({
             mb: 4,
             position: "relative",
             justifyContent: "space-between",
+            px: 2,
           }}
         >
           {timeframes.map((mode) => (

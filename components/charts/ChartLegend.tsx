@@ -19,7 +19,7 @@ const ChartLegend = (props: ChartLegendProps) => {
     <>
       <Box
         sx={{
-          mt: 4,
+          mt: 3,
           display: "flex",
           justifyContent: "center",
           gap: {

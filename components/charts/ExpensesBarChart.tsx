@@ -22,10 +22,7 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
   return (
     <Box sx={{ height: 200, mt: 4, mb: 2 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart
-          data={props.chartData}
-          margin={{ right: 10, bottom: 20 }}
-        >
+        <ComposedChart data={props.chartData} margin={{ right: 5, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={colors.surface} />
           <XAxis dataKey="name" stroke={colors.textSecondary} fontSize={12} />
           <YAxis

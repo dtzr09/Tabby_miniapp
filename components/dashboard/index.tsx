@@ -182,7 +182,7 @@ const Dashboard = () => {
             alignItems: "center",
             mt: 2,
             px: { xs: 2, sm: 1, md: 0 },
-            gap: 2,
+            gap: 1,
           }}
         >
           {/* Balance Card */}
