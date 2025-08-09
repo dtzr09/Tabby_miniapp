@@ -15,11 +15,12 @@ import ExpenseListCard from "./ExpenseListCard";
 import FilterMenu from "./FilterMenu";
 import { AllEntriesResponse, UnifiedEntry } from "../../../utils/types";
 import { TelegramUser } from "../../dashboard";
-import { FilterType, applyFilter } from "../../../utils/advancedFilterUtils";
+import { FilterType } from "../../../utils/advancedFilterUtils";
 import MoreMenuButtons from "../utils/MoreMenuButtons";
 import TimeRangeToggle from "../utils/TimeRangeToggle";
 import TimeRangeMenu from "../utils/TimeRangeMenu";
 import FilterViews from "../utils/FilterViews";
+import ExpensesBarChart from "../../charts/ExpensesBarChart";
 import { alpha } from "@mui/material/styles";
 
 interface ExpenseListProps {
@@ -44,6 +45,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
     categoryId?: string;
     showIncome?: boolean;
   }>({});
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // Combine income and expenses into unified entries
   const combineEntries = (): UnifiedEntry[] => {
@@ -82,63 +84,102 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
     return combined;
   };
 
+  // Get the earliest expense date
+  const earliestDate = useMemo(() => {
+    if (!allEntries?.expenses || allEntries.expenses.length === 0) return null;
+    const firstDate = new Date(
+      Math.min(
+        ...allEntries.expenses.map((exp) => new Date(exp.date).getTime())
+      )
+    );
+    firstDate.setHours(0, 0, 0, 0);
+    return firstDate;
+  }, [allEntries?.expenses]);
+
+  // Helper functions for date calculations
+  const getWeekStart = (date: Date) => {
+    const currentDay = date.getDay();
+    const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
+    const result = new Date(date);
+    result.setDate(date.getDate() - daysToMonday);
+    result.setHours(0, 0, 0, 0);
+    return result;
+  };
+
+  const getMonthStart = (date: Date) => {
+    const result = new Date(date.getFullYear(), date.getMonth(), 1);
+    result.setHours(0, 0, 0, 0);
+    return result;
+  };
+
+  // Calculate the earliest allowed date (start of week/month containing earliest expense)
+  const earliestAllowedDate = useMemo(() => {
+    if (!earliestDate) return null;
+    return viewType === "Week"
+      ? getWeekStart(earliestDate)
+      : getMonthStart(earliestDate);
+  }, [earliestDate, viewType]);
+
+  // Calculate if we can go back based on earliest expense
+  const canGoBack = useMemo(() => {
+    if (!earliestAllowedDate) return false;
+
+    const now = new Date();
+    const targetDate =
+      viewType === "Week"
+        ? getWeekStart(
+            new Date(now.setDate(now.getDate() + (timeOffset - 1) * 7))
+          )
+        : getMonthStart(
+            new Date(now.setMonth(now.getMonth() + timeOffset - 1))
+          );
+
+    return targetDate >= earliestAllowedDate;
+  }, [timeOffset, viewType, earliestAllowedDate]);
+
+  // Calculate current date range
   const dateRange = useMemo(() => {
     const today = new Date();
+    let startDate: Date;
+    let endDate: Date;
 
     if (viewType === "Week") {
-      const startOfWeek = new Date(today);
-      // Get current day (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-      const currentDay = today.getDay();
-      // Calculate days to subtract to get to Monday (Monday = 1, so for Sunday we subtract 6, for Monday 0, for Tuesday 1, etc.)
-      const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
-      // Set to start of current week (Monday) and apply offset
-      startOfWeek.setDate(today.getDate() - daysToMonday + timeOffset * 7);
-
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6); // Add 6 days to get to Sunday
-
-      const formatDate = (date: Date) => {
-        return date.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        });
-      };
-
-      return {
-        display: `${formatDate(startOfWeek)} - ${formatDate(
-          endOfWeek
-        )}, ${endOfWeek.getFullYear()}`,
-        start: startOfWeek,
-        end: endOfWeek,
-      };
+      startDate = getWeekStart(
+        new Date(today.setDate(today.getDate() + timeOffset * 7))
+      );
+      endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 6);
     } else {
-      const startOfMonth = new Date(
-        today.getFullYear(),
-        today.getMonth() + timeOffset,
-        1
+      startDate = getMonthStart(
+        new Date(today.setMonth(today.getMonth() + timeOffset))
       );
-      const endOfMonth = new Date(
-        today.getFullYear(),
-        today.getMonth() + timeOffset + 1,
-        0
-      );
-
-      const formatDate = (date: Date) => {
-        return date.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        });
-      };
-
-      return {
-        display: `${formatDate(startOfMonth)} - ${formatDate(
-          endOfMonth
-        )}, ${endOfMonth.getFullYear()}`,
-        start: startOfMonth,
-        end: endOfMonth,
-      };
+      endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
     }
-  }, [timeOffset, viewType]);
+
+    // Ensure we don't go before the earliest allowed date
+    if (earliestAllowedDate && startDate < earliestAllowedDate) {
+      startDate = new Date(earliestAllowedDate);
+      endDate =
+        viewType === "Week"
+          ? new Date(startDate.setDate(startDate.getDate() + 6))
+          : new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+    }
+
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    };
+
+    return {
+      display: `${formatDate(startDate)} - ${formatDate(
+        endDate
+      )}, ${endDate.getFullYear()}`,
+      start: startDate,
+      end: endDate,
+    };
+  }, [timeOffset, viewType, earliestAllowedDate]);
 
   const searchExpenses = (
     entries: UnifiedEntry[],
@@ -155,35 +196,161 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
   };
 
   const filteredEntries = useMemo(() => {
-    const entries = combineEntries();
-    
-    if (isSearchActive) {
-      return searchExpenses(entries, searchQuery);
-    }
+    let entries = combineEntries();
 
-    // Apply date range filter
+    // Apply date range filter first
     const start = new Date(dateRange.start);
     const end = new Date(dateRange.end);
-    
-    const dateFiltered = entries.filter((entry) => {
+    entries = entries.filter((entry) => {
       const entryDate = new Date(entry.date);
       return entryDate >= start && entryDate <= end;
     });
 
-    // Apply other filters
-    return applyFilter(dateFiltered, currentFilter, filterOptions);
+    // Apply date selection filter if active
+    if (selectedDate) {
+      entries = entries.filter((entry) => {
+        const entryDate = new Date(entry.date);
+        if (viewType === "Week") {
+          const dayName = entryDate.toLocaleDateString("en-US", {
+            weekday: "short",
+          });
+          return dayName === selectedDate;
+        } else {
+          // For month view, compare both day and month
+          const dayMonth = entryDate.toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "short",
+          });
+          return dayMonth === selectedDate;
+        }
+      });
+    }
+
+    // Apply search filter
+    if (isSearchActive && searchQuery) {
+      entries = searchExpenses(entries, searchQuery);
+    }
+
+    // Apply category filter
+    if (filterOptions.categoryId) {
+      entries = entries.filter(
+        (entry) => entry.category === filterOptions.categoryId
+      );
+    }
+
+    // Apply type filter
+    if (filterOptions.showIncome !== undefined) {
+      entries = entries.filter((entry) =>
+        filterOptions.showIncome ? entry.isIncome : !entry.isIncome
+      );
+    }
+
+    // Sort by date, most recent first
+    return entries.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
   }, [
     allEntries,
-    currentFilter,
     filterOptions,
     dateRange,
     isSearchActive,
     searchQuery,
+    selectedDate,
+    viewType,
   ]);
+
+  const chartData = useMemo(() => {
+    // Only use expense entries from allEntries.expenses
+    const entries =
+      allEntries?.expenses?.map((expense) => ({
+        id: expense.id,
+        description: expense.description,
+        category: expense.category?.name || "Other",
+        emoji: expense.category?.emoji,
+        date: expense.date,
+        amount: expense.amount,
+        isIncome: expense.is_income,
+      })) || [];
+
+    const start = new Date(dateRange.start);
+    const end = new Date(dateRange.end);
+
+    // Create a map to store daily totals
+    const dailyTotals = new Map<string, number>();
+
+    if (viewType === "Week") {
+      // Initialize all days in the range with 0
+      const current = new Date(start);
+      while (current <= end) {
+        const dayKey = current.toLocaleDateString("en-US", {
+          weekday: "short",
+        });
+        dailyTotals.set(dayKey, 0);
+        current.setDate(current.getDate() + 1);
+      }
+
+      // Sum up amounts for each day
+      entries.forEach((entry) => {
+        const entryDate = new Date(entry.date);
+        if (entryDate >= start && entryDate <= end) {
+          const dayKey = entryDate.toLocaleDateString("en-US", {
+            weekday: "short",
+          });
+          const currentTotal = dailyTotals.get(dayKey) || 0;
+          dailyTotals.set(dayKey, currentTotal + Math.abs(entry.amount));
+        }
+      });
+
+      // Convert to chart data format
+      const today = new Date().toLocaleDateString("en-US", {
+        weekday: "short",
+      });
+      return Array.from(dailyTotals.entries()).map(([day, amount]) => ({
+        name: day,
+        amount,
+        lineValue: amount * 1.1,
+        fill: day === today ? colors.primary : colors.accent,
+      }));
+    } else {
+      // Monthly view
+      const current = new Date(start);
+      const month = current.toLocaleDateString("en-US", { month: "short" });
+
+      // Initialize all days in the month with 0
+      while (current <= end) {
+        const day = current.getDate();
+        const dayKey = `${day} ${month}`;
+        dailyTotals.set(dayKey, 0);
+        current.setDate(current.getDate() + 1);
+      }
+
+      // Sum up amounts for each day
+      entries.forEach((entry) => {
+        const entryDate = new Date(entry.date);
+        if (entryDate >= start && entryDate <= end) {
+          const day = entryDate.getDate();
+          const dayKey = `${day} ${month}`;
+          const currentTotal = dailyTotals.get(dayKey) || 0;
+          dailyTotals.set(dayKey, currentTotal + Math.abs(entry.amount));
+        }
+      });
+
+      // Convert to chart data format
+      const today = new Date();
+      const todayKey = `${today.getDate()} ${month}`;
+      return Array.from(dailyTotals.entries()).map(([day, amount]) => ({
+        name: day,
+        amount,
+        lineValue: amount * 1.1,
+        fill: day === todayKey ? colors.primary : colors.accent,
+      }));
+    }
+  }, [dateRange, allEntries, colors.primary, colors.accent, viewType]);
 
   const handleViewTypeChange = (type: "Week" | "Month") => {
     setViewType(type);
     setTimeOffset(0); // Reset offset when changing view type
+    setSelectedDate(null); // Clear date selection when changing view
   };
 
   const handleSearchToggle = () => {
@@ -214,11 +381,15 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
     }));
   };
 
-  const handleTypeSelect = (type: "expense" | "income") => {
+  const handleTypeSelect = (type: "income" | "expense") => {
     setFilterOptions((prev) => ({
       ...prev,
       showIncome: type === "income",
     }));
+  };
+
+  const handleDateSelect = (date: string | null) => {
+    setSelectedDate(date);
   };
 
   return (
@@ -363,12 +534,22 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
                 timeRange={dateRange.display}
                 setTimeOffset={setTimeOffset}
                 timeOffset={timeOffset}
+                canGoBack={canGoBack}
               />
               <TimeRangeMenu
                 viewType={viewType}
                 onViewTypeChange={handleViewTypeChange}
               />
             </Box>
+
+            {/* Bar Chart */}
+            {chartData.length > 0 &&
+              chartData.some((data) => data.amount > 0) && (
+                <ExpensesBarChart
+                  chartData={chartData}
+                  onDateSelect={handleDateSelect}
+                />
+              )}
 
             <Box sx={{ mb: 0.5 }}>
               <FilterViews

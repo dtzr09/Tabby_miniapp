@@ -1,9 +1,9 @@
 import { Box } from "@mui/material";
-import { useTheme } from "@/contexts/ThemeContext";
+// import { useTheme } from "@/contexts/ThemeContext";
 import ChartLegend from "../../charts/ChartLegend";
 import ExpensesPieChart from "../../charts/ExpensesPieChart";
 import { DBData, ViewMode } from "../../../utils/types";
-import ExpensesBarChart from "../../charts/ExpensesBarChart";
+// import ExpensesBarChart from "../../charts/ExpensesBarChart";
 import TimeFrame from "./TimeFrame";
 import { chartColors } from "../../../utils/chartColors";
 
@@ -18,17 +18,17 @@ export default function ExpensesOverviewCard({
   onViewModeChange,
   data,
 }: ExpensesOverviewCardProps) {
-  const { colors } = useTheme();
+  // const { colors } = useTheme();
 
-  // Prepare data for Recharts
-  const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
+  // // Prepare data for Recharts
+  // const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
 
-  const barChartData = data.dailyExpenses.map((day) => ({
-    name: day.day,
-    amount: day.amount,
-    lineValue: day.amount * 1.1,
-    fill: day.day === today ? colors.primary : colors.accent,
-  }));
+  // const barChartData = data.dailyExpenses.map((day) => ({
+  //   name: day.day,
+  //   amount: day.amount,
+  //   lineValue: day.amount * 1.1,
+  //   fill: day.day === today ? colors.primary : colors.accent,
+  // }));
 
   const pieChartData = data.categories
     .filter((category) => category.spent > 0) // Only include categories with expenses
@@ -74,7 +74,7 @@ export default function ExpensesOverviewCard({
         <ChartLegend data={pieChartData} />
 
         {/* Daily/Weekly Breakdown */}
-        <ExpensesBarChart chartData={barChartData} />
+        {/* <ExpensesBarChart chartData={barChartData} /> */}
       </Box>
     </>
   );

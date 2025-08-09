@@ -61,9 +61,9 @@ export default function FilterViews({
             "-webkit-overflow-scrolling": "touch",
           }}
         >
-          {selectedType === "income" ? (
+          {selectedType === "expense" ? (
             <Box
-              onClick={() => onTypeSelect("expense")}
+              onClick={() => onTypeSelect("income")}
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -81,7 +81,7 @@ export default function FilterViews({
             </Box>
           ) : (
             <Box
-              onClick={() => onTypeSelect("income")}
+              onClick={() => onTypeSelect("expense")}
               sx={{
                 display: "flex",
                 alignItems: "center",
