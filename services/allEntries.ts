@@ -31,10 +31,13 @@ export const fetchAllEntries = async (
 
     // Fetch budgets
     const budgetsResponse = await fetch(`/api/budgets?${params.toString()}`);
-    if (!budgetsResponse.ok) {
+    let budgets = [];
+    if (budgetsResponse.ok) {
+      budgets = await budgetsResponse.json();
+    } else if (budgetsResponse.status !== 404) {
+      // Only throw for non-404 errors
       throw new Error(`Failed to fetch budgets: ${budgetsResponse.statusText}`);
     }
-    const budgets = await budgetsResponse.json();
 
     return {
       expenses,

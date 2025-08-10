@@ -98,7 +98,7 @@ export default function WelcomeScreen() {
 
           <List sx={{ mb: 2 }}>
             {[
-              "Open the ExpenseTracker bot in Telegram",
+              "Open the Tabby bot in Telegram",
               "Send the command /start",
               "Begin tracking your expenses and managing your budget",
             ].map((text, index) => (

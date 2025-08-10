@@ -21,7 +21,6 @@ import TimeRangeToggle from "../utils/TimeRangeToggle";
 import TimeRangeMenu from "../utils/TimeRangeMenu";
 import FilterViews from "../utils/FilterViews";
 import ExpensesBarChart from "../../charts/ExpensesBarChart";
-import { alpha } from "@mui/material/styles";
 import { cleanCategoryName } from "../../../utils/categoryUtils";
 
 interface ExpenseListProps {
