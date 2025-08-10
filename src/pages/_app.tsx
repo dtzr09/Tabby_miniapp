@@ -3,7 +3,12 @@ import type { AppProps } from "next/app";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { init, isTMA, viewport } from "@telegram-apps/sdk";
+import {
+  init,
+  isTMA,
+  disableVerticalSwipes,
+  viewport,
+} from "@telegram-apps/sdk";
 
 const queryClient = new QueryClient();
 // Extend the Window interface to include Telegram
@@ -29,6 +34,7 @@ declare global {
           bottom_bar_bg_color?: string;
         };
         onEvent?: (eventType: string, eventHandler: () => void) => void;
+        lockOrientation?: (orientation: string) => void;
       };
     };
   }
@@ -49,9 +55,12 @@ function MyApp({ Component, pageProps }: AppProps) {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (viewport.requestFullscreen.isAvailable() && isMobile) {
           await viewport.requestFullscreen();
+          // viewport.lockOrientation("portrait");
         }
       }
     }
+    disableVerticalSwipes();
+
     initTg();
   }, []);
 

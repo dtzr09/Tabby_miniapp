@@ -114,6 +114,8 @@ const Dashboard = () => {
           const hash = webApp.initDataUnsafe?.hash;
           const initData = webApp.initData;
 
+          webApp.lockOrientation?.("portrait");
+
           if (user && hash && initData) {
             setTgUser(user);
             setInitData(initData);

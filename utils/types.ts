@@ -8,6 +8,7 @@ export interface TelegramWebApp {
   initData?: string;
   themeParams?: Record<string, string>;
   colorScheme?: string;
+  lockOrientation?: (orientation: string) => void;
 }
 
 export interface Budget {
