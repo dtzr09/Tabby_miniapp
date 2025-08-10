@@ -2,6 +2,8 @@ import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { init, isTMA, viewport } from "@telegram-apps/sdk";
 
 const queryClient = new QueryClient();
 // Extend the Window interface to include Telegram
@@ -33,6 +35,26 @@ declare global {
 }
 
 function MyApp({ Component, pageProps }: AppProps) {
+  useEffect(() => {
+    async function initTg() {
+      if (await isTMA()) {
+        init();
+
+        if (viewport.mount.isAvailable()) {
+          await viewport.mount();
+          viewport.expand();
+        }
+
+        // Only request fullscreen on mobile devices
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (viewport.requestFullscreen.isAvailable() && isMobile) {
+          await viewport.requestFullscreen();
+        }
+      }
+    }
+    initTg();
+  }, []);
+
   return (
     <>
       <ThemeProvider>
