@@ -57,7 +57,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
       allEntries.expenses.forEach((expense) => {
         const categoryName = expense.category?.name || "Other";
         const { emoji } = cleanCategoryName(categoryName);
-        
+
         combined.push({
           id: expense.id,
           description: expense.description,
@@ -156,13 +156,13 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
       );
       endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + 6);
-      endDate.setHours(23, 59, 59, 999);  // Set to end of day
+      endDate.setHours(23, 59, 59, 999); // Set to end of day
     } else {
       startDate = getMonthStart(
         new Date(today.setMonth(today.getMonth() + timeOffset))
       );
       endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-      endDate.setHours(23, 59, 59, 999);  // Set to end of day
+      endDate.setHours(23, 59, 59, 999); // Set to end of day
     }
 
     // Ensure we don't go before the earliest allowed date
@@ -172,7 +172,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
         viewType === "Week"
           ? new Date(startDate.setDate(startDate.getDate() + 6))
           : new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-      endDate.setHours(23, 59, 59, 999);  // Set to end of day
+      endDate.setHours(23, 59, 59, 999); // Set to end of day
     }
 
     const formatDate = (date: Date) => {
@@ -222,7 +222,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
       // Apply date range filter first
       const start = new Date(dateRange.start);
       const end = new Date(dateRange.end);
-      
+
       // Set to start and end of day
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
@@ -442,7 +442,7 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
             alignItems: "center",
             justifyContent: "space-between",
             position: "relative",
-            mb: isSearchActive ? 0 : 0.5,
+            mb: isSearchActive ? 2 : 0.5, // Increased bottom margin when search is active
           }}
         >
           {isSearchActive ? (
@@ -496,11 +496,6 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
                   minWidth: "28px",
                   bgcolor: colors.incomeExpenseCard,
                   color: colors.text,
-                  "&:hover": {
-                    color: colors.primary,
-                    bgcolor: alpha(colors.primary, 0.1),
-                  },
-                  transition: "all 0.2s ease-in-out",
                 }}
               >
                 <CloseIcon sx={{ fontSize: "0.8rem" }} />
