@@ -24,31 +24,17 @@ a {
   text-decoration: none;
 }
 
-/* make the app fill the visible height without hiding under the notch */
-html,
-body,
-#root {
-  height: 100%;
-  margin: 0;
+/* Define safe area vars with fallbacks */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-height: 100dvh; /* will be replaced by JS with TG viewport */
 }
+/* Single source of truth for height; DO NOT subtract safe areas here */
 .app {
   box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-top: env(safe-area-inset-top);
-  height: calc(100dvh - var(--safe-top) - var(--safe-bottom)); /* use dvh */
-  overflow: auto; /* or your scroll container */
-}
-
-/* if you have fixed headers/footers: offset them by the safe area */
-.header {
-  position: fixed;
-  top: var(--safe-top);
-  left: 0;
-  right: 0;
-}
-.footer {
-  position: fixed;
-  bottom: var(--safe-bottom);
-  left: 0;
-  right: 0;
+  height: var(--app-height);
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  overflow: auto;
 }

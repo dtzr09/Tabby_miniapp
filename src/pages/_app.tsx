@@ -40,6 +40,15 @@ declare global {
   }
 }
 
+const applyViewportHeight = () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tg = (window as any).Telegram?.WebApp;
+  const h = tg?.viewportStableHeight || tg?.viewportHeight; // Telegram’s real height
+  const vv = window.visualViewport?.height; // iOS/Safari fallback
+  const best = h ? `${h}px` : vv ? `${vv}px` : null;
+  if (best) document.documentElement.style.setProperty("--app-height", best);
+};
+
 function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
     async function initTg() {
@@ -51,13 +60,25 @@ function MyApp({ Component, pageProps }: AppProps) {
           viewport.expand();
         }
 
-        // Only request fullscreen on mobile devices
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (viewport.requestFullscreen.isAvailable() && isMobile) {
           await viewport.requestFullscreen();
           disableVerticalSwipes();
           // viewport.lockOrientation("portrait");
         }
+
+        // ✅ Apply height once after setup
+        applyViewportHeight();
+
+        // ✅ Listen for Telegram viewport changes
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).Telegram?.WebApp?.onEvent?.(
+          "viewportChanged",
+          applyViewportHeight
+        );
+
+        // ✅ Fallback for browser visual viewport changes (iOS keyboard, rotation, etc.)
+        window.visualViewport?.addEventListener("resize", applyViewportHeight);
       }
     }
 
