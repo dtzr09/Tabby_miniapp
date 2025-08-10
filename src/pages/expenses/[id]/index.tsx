@@ -152,10 +152,11 @@ const ExpenseDetail = () => {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        height: "100%",
         background: colors.background,
         px: 2,
-        py: 1,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <EntryForm
@@ -176,7 +177,7 @@ const ExpenseDetail = () => {
           flexDirection: "row",
           gap: 1,
           p: 2,
-          mb: 2,
+          background: colors.background,
         }}
       >
         <Button
