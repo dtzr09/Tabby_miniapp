@@ -8,10 +8,11 @@ const LoadingSkeleton = () => {
     <Box
       sx={{
         bgcolor: colors.background,
-        minHeight: "100vh",
+        height: "100%",
         width: "100%",
         px: 6,
-        py: 4,
+        pt: "var(--safe-top)",
+        pb: "var(--safe-bottom)",
         color: colors.text,
         display: "flex",
         flexDirection: "column",
