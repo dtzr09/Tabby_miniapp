@@ -6,31 +6,52 @@ export const getCategoryData = (
   budgets: Budget[],
   period: "daily" | "weekly" | "monthly"
 ) => {
-  // If no budgets are set, return empty array
-  // Budget overview should only show when there are actual budgets
-  if (!budgets || budgets.length === 0) {
-    return [];
-  }
-
   const filteredExpenses = getFilteredExpenses(expenses, period);
   const categoryMap = new Map<
     string,
     { name: string; spent: number; emoji: string; budget: number }
   >();
 
-  // First, add all budgets to the map
-  budgets.forEach((budget) => {
-    // Handle both nested category object and direct category name
-    const categoryName = budget.category?.name;
+  // First, add all budgets to the map (if any exist)
+  if (budgets && budgets.length > 0) {
+    budgets.forEach((budget) => {
+      // Handle both nested category object and direct category name
+      const categoryName = budget.category?.name;
+      if (!categoryName) return;
+
+      // Extract emoji from category name (more comprehensive emoji regex)
+      const emojiMatch = categoryName.match(
+        /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]/u
+      );
+      const emoji = emojiMatch ? emojiMatch[0] : "⚪";
+
+      // Remove emoji from category name and trim
+      const cleanName = categoryName
+        .replace(
+          /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]\s*/u,
+          ""
+        )
+        .trim();
+
+      categoryMap.set(cleanName, {
+        name: cleanName,
+        spent: 0, // Will be updated with expenses
+        emoji,
+        budget: budget.amount || 0,
+      });
+    });
+  }
+
+  // Process all expenses, creating categories for those without budgets
+  filteredExpenses.forEach((expense) => {
+    const categoryName = expense.category?.name;
     if (!categoryName) return;
 
-    // Extract emoji from category name (more comprehensive emoji regex)
+    // Extract emoji and clean name as before
     const emojiMatch = categoryName.match(
       /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]/u
     );
     const emoji = emojiMatch ? emojiMatch[0] : "⚪";
-
-    // Remove emoji from category name and trim
     const cleanName = categoryName
       .replace(
         /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]\s*/u,
@@ -38,48 +59,53 @@ export const getCategoryData = (
       )
       .trim();
 
-    categoryMap.set(cleanName, {
+    // Get or create category data
+    const categoryData = categoryMap.get(cleanName) || {
       name: cleanName,
-      spent: 0, // Will be updated with expenses
+      spent: 0,
       emoji,
-      budget: budget.amount || 0,
-    });
+      budget: 0, // No budget for categories without one
+    };
+
+    // Add expense amount
+    categoryData.spent += Math.abs(expense.amount || 0);
+    categoryMap.set(cleanName, categoryData);
   });
 
-  // Then, add expenses to the map (only for categories that have budgets)
-  filteredExpenses.forEach((exp) => {
-    // Handle both nested category object and direct category name
-    const categoryName = exp.category?.name || "Other";
-
-    // Extract emoji from category name (more comprehensive emoji regex)
-    const emojiMatch = categoryName.match(
-      /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]/u
-    );
-    const emoji = emojiMatch ? emojiMatch[0] : "⚪";
-
-    // Remove emoji from category name and trim
-    const cleanName = categoryName
-      .replace(
-        /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]\s*/u,
-        ""
-      )
-      .trim();
-
-    // Only add spending to categories that already have budgets
-    if (categoryMap.has(cleanName)) {
-      categoryMap.get(cleanName)!.spent += Math.abs(exp.amount);
-    }
-    // Removed the else block that was creating categories with zero budgets
-  });
-
-  return Array.from(categoryMap.values()).map((cat, index) => ({
-    id: `category-${index}`,
-    name: cat.name,
-    icon: <span>{cat.emoji}</span>,
-    budget: cat.budget,
-    spent: cat.spent,
-    color: ["#4CAF50", "#FF9800", "#2196F3", "#9C27B0", "#F44336", "#00BCD4"][
-      index % 6
-    ],
-  }));
+  // Convert map to array and sort by spent amount
+  return Array.from(categoryMap.values())
+    .sort((a, b) => b.spent - a.spent)
+    .map((cat, index) => ({
+      id: `category-${index}`,
+      name: cat.name,
+      icon: <span>{cat.emoji}</span>,
+      budget: cat.budget,
+      spent: cat.spent,
+      color: [
+        "#4CAF50", // Green
+        "#FF9800", // Orange
+        "#2196F3", // Blue
+        "#9C27B0", // Purple
+        "#F44336", // Red
+        "#00BCD4", // Cyan
+        "#FF5722", // Deep Orange
+        "#3F51B5", // Indigo
+        "#009688", // Teal
+        "#E91E63", // Pink
+        "#8BC34A", // Light Green
+        "#673AB7", // Deep Purple
+        "#FFC107", // Amber
+        "#03A9F4", // Light Blue
+        "#795548", // Brown
+        "#607D8B", // Blue Grey
+        "#CDDC39", // Lime
+        "#FF4081", // Pink Accent
+        "#00E676", // Green Accent
+        "#64FFDA", // Teal Accent
+        "#40C4FF", // Light Blue Accent
+        "#536DFE", // Indigo Accent
+        "#FF5252", // Red Accent
+        "#FFD740", // Amber Accent
+      ][index % 24],
+    }));
 };

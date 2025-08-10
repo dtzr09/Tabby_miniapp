@@ -76,21 +76,6 @@ const Dashboard = () => {
     return { expenses, income, budgets };
   }, [allEntries]);
 
-  // // Get expenses with budgets
-  // const { data: expensesWithBudget, isLoading: isExpensesWithBudgetLoading } =
-  //   useQuery<Expense[]>({
-  //     queryKey: ["expensesWithBudget", tgUser?.id],
-  //     queryFn: () => {
-  //       if (tgUser && initData) {
-  //         return fetchExpensesForBudgets(tgUser.id, initData);
-  //       }
-  //       return Promise.resolve([]);
-  //     },
-  //     enabled: !!tgUser && !!initData,
-  //     gcTime: 300000, // Cache for 5 minutes
-  //     refetchOnWindowFocus: true, // Refetch when window regains focus
-  //   });
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 

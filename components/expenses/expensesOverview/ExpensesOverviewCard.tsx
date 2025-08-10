@@ -18,18 +18,6 @@ export default function ExpensesOverviewCard({
   onViewModeChange,
   data,
 }: ExpensesOverviewCardProps) {
-  // const { colors } = useTheme();
-
-  // // Prepare data for Recharts
-  // const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
-
-  // const barChartData = data.dailyExpenses.map((day) => ({
-  //   name: day.day,
-  //   amount: day.amount,
-  //   lineValue: day.amount * 1.1,
-  //   fill: day.day === today ? colors.primary : colors.accent,
-  // }));
-
   const pieChartData = data.categories
     .filter((category) => category.spent > 0) // Only include categories with expenses
     .map((category, index) => ({
@@ -72,9 +60,6 @@ export default function ExpensesOverviewCard({
 
         {/* Legend */}
         <ChartLegend data={pieChartData} />
-
-        {/* Daily/Weekly Breakdown */}
-        {/* <ExpensesBarChart chartData={barChartData} /> */}
       </Box>
     </>
   );
