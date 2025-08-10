@@ -20,8 +20,7 @@ const TimeFrame = ({
       sx={{
         position: "relative",
         cursor: "pointer",
-        px: 3,
-        py: 1,
+        py: 0.5,
       }}
       onClick={() => onViewModeChange?.(currentTimeFrame)}
     >

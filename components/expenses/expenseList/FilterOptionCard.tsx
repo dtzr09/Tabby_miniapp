@@ -58,7 +58,7 @@ const FilterOptionCard = (props: FilterOptionCardProps) => {
           textTransform: "none",
           fontSize: "0.75rem",
           py: 0.5,
-          borderRadius: 2,
+          borderRadius: 4,
           "&:hover": {
             bgcolor: "#5a6e90",
             borderColor: "#5a6e90",

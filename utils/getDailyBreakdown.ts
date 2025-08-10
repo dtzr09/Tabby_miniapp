@@ -55,13 +55,28 @@ export const getDailyBreakdown = (
   } else {
     // Group by week for monthly view
     const weekMap = new Map<number, number>();
+
+    // Get the first day of the current month
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Calculate week dates
+    const weekDates = Array.from({ length: 4 }, (_, i) => {
+      const date = new Date(firstDay);
+      date.setDate(1 + i * 7); // 1st, 8th, 15th, 22nd of the month
+      return date.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      });
+    });
+
     filteredExpenses.forEach((exp) => {
       const week = Math.ceil(new Date(exp.date).getDate() / 7);
       weekMap.set(week, (weekMap.get(week) || 0) + Math.abs(exp.amount));
     });
 
     return Array.from({ length: 4 }, (_, i) => ({
-      day: `Week ${i + 1}`,
+      day: weekDates[i],
       amount: weekMap.get(i + 1) || 0,
     }));
   }

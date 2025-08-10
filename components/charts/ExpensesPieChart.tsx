@@ -20,16 +20,34 @@ const ExpensesPieChart = (props: ExpensesPieChartProps) => {
         position: "relative",
       }}
     >
-      <Box sx={{ width: 200, height: 200, position: "relative" }}>
+      <Box
+        sx={{
+          width: 170,
+          height: 170,
+          position: "relative",
+          "& .recharts-wrapper": {
+            outline: "none",
+          },
+          "& .recharts-surface": {
+            outline: "none",
+          },
+          "& .recharts-chart-container": {
+            outline: "none",
+          },
+          "& *": {
+            outline: "none !important",
+          }
+        }}
+      >
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+          <PieChart style={{ outline: "none" }}>
             <Pie
               data={props.chartData}
               cx="50%"
               cy="50%"
-              innerRadius={80}
-              outerRadius={100}
-              paddingAngle={2}
+              innerRadius={70}
+              outerRadius={85}
+              paddingAngle={1}
               dataKey="value"
               stroke="none"
             >
@@ -46,8 +64,8 @@ const ExpensesPieChart = (props: ExpensesPieChartProps) => {
             left: "50%",
             transform: "translate(-50%, -50%)",
             textAlign: "center",
-            width: "160px", // Match the inner radius * 2 (80 * 2)
-            height: "160px", // Match the inner radius * 2 (80 * 2)
+            width: "140px", // Match the inner radius * 2 (80 * 2)
+            height: "140px", // Match the inner radius * 2 (80 * 2)
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
@@ -60,7 +78,7 @@ const ExpensesPieChart = (props: ExpensesPieChartProps) => {
           <Typography
             sx={{
               fontWeight: 700,
-              fontSize: "1.8rem",
+              fontSize: "1.5rem",
               color: colors.text,
               lineHeight: 1.2,
               mb: 0.5,

@@ -4,7 +4,7 @@ import { Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import {
   AllEntriesResponse,
-  Expense,
+  // Expense,
   TelegramWebApp,
   ViewMode,
 } from "../../utils/types";
@@ -19,7 +19,7 @@ import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
 import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
-import { fetchExpensesForBudgets } from "../../services/expenses";
+// import { fetchExpensesForBudgets } from "../../services/expenses";
 import { useQuery } from "@tanstack/react-query";
 import WelcomeScreen from "./WelcomeScreen";
 import { fetchAllEntries } from "../../services/allEntries";
@@ -76,20 +76,20 @@ const Dashboard = () => {
     return { expenses, income, budgets };
   }, [allEntries]);
 
-  // Get expenses with budgets
-  const { data: expensesWithBudget, isLoading: isExpensesWithBudgetLoading } =
-    useQuery<Expense[]>({
-      queryKey: ["expensesWithBudget", tgUser?.id],
-      queryFn: () => {
-        if (tgUser && initData) {
-          return fetchExpensesForBudgets(tgUser.id, initData);
-        }
-        return Promise.resolve([]);
-      },
-      enabled: !!tgUser && !!initData,
-      gcTime: 300000, // Cache for 5 minutes
-      refetchOnWindowFocus: true, // Refetch when window regains focus
-    });
+  // // Get expenses with budgets
+  // const { data: expensesWithBudget, isLoading: isExpensesWithBudgetLoading } =
+  //   useQuery<Expense[]>({
+  //     queryKey: ["expensesWithBudget", tgUser?.id],
+  //     queryFn: () => {
+  //       if (tgUser && initData) {
+  //         return fetchExpensesForBudgets(tgUser.id, initData);
+  //       }
+  //       return Promise.resolve([]);
+  //     },
+  //     enabled: !!tgUser && !!initData,
+  //     gcTime: 300000, // Cache for 5 minutes
+  //     refetchOnWindowFocus: true, // Refetch when window regains focus
+  //   });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -114,6 +114,8 @@ const Dashboard = () => {
           const hash = webApp.initDataUnsafe?.hash;
           const initData = webApp.initData;
 
+          webApp.lockOrientation?.("portrait");
+
           if (user && hash && initData) {
             setTgUser(user);
             setInitData(initData);
@@ -133,8 +135,8 @@ const Dashboard = () => {
   // Only show loading when we have user data and are actually fetching
   if (
     !allEntries ||
-    (tgUser && initData && isAllEntriesLoading) ||
-    (tgUser && initData && isExpensesWithBudgetLoading)
+    (tgUser && initData && isAllEntriesLoading)
+    // (tgUser && initData && isExpensesWithBudgetLoading)
   ) {
     return <LoadingSkeleton />;
   }
@@ -171,8 +173,12 @@ const Dashboard = () => {
     >
       <Box
         sx={{
+          width: "100%",
           maxWidth: "24rem",
+          minWidth: "24rem",
           bgcolor: colors.background,
+          mx: "auto", // Center the content
+          px: { xs: 2, sm: 2, md: 2 }, // Consistent padding
         }}
       >
         <Box
@@ -181,23 +187,27 @@ const Dashboard = () => {
             flexDirection: "column",
             alignItems: "center",
             mt: 2,
-            px: { xs: 2, sm: 1, md: 0 },
-            gap: 2,
+            gap: 1,
           }}
         >
           {/* Balance Card */}
           {hasBudget && (
             <Box sx={{ width: "100%" }}>
               <BalanceCard
-                expensesWithBudget={expensesWithBudget || []}
+                expensesWithBudget={currentMonthExpenses.expenses}
+                budgets={currentMonthExpenses.budgets}
                 totalBudget={totalBudget}
               />
             </Box>
           )}
-          <ExpenseSummaryCard
-            totalIncome={totalIncome}
-            totalExpenses={totalExpenses}
-          />
+
+          {/* Expense Summary Card */}
+          <Box sx={{ width: "100%" }}>
+            <ExpenseSummaryCard
+              totalIncome={totalIncome}
+              totalExpenses={totalExpenses}
+            />
+          </Box>
 
           {/* Budget Overview Card */}
           <Box sx={{ width: "100%" }}>
@@ -208,7 +218,7 @@ const Dashboard = () => {
             />
           </Box>
 
-          {/* Recent Transactions Card (now below summary) */}
+          {/* Recent Transactions Card */}
           <Box sx={{ width: "100%", mb: 4 }}>
             <ExpenseList allEntries={allEntries} tgUser={tgUser} />
           </Box>

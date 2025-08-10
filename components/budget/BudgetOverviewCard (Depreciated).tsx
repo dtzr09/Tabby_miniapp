@@ -2,6 +2,7 @@ import { Box, Typography } from "@mui/material";
 import React, { useMemo } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { getProgressColor } from "../balance/BalanceCard";
+import { getCurrentMonthInfo } from "../../utils/getCurrentMonthInfo";
 
 interface BudgetOverviewCardProps {
   viewMode?: "daily" | "weekly" | "monthly";
@@ -26,31 +27,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
   const { colors } = useTheme();
 
   // Calculate actual days and weeks in current month
-  const getCurrentMonthInfo = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
 
-    // Get the last day of the current month
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-
-    // Calculate weeks in month (including partial weeks)
-    const firstDay = new Date(year, month, 1);
-
-    // Get the day of week for first and last day (0 = Sunday, 1 = Monday, etc.)
-    const firstDayOfWeek = firstDay.getDay();
-
-    // Calculate total weeks (including partial weeks at start and end)
-    const weeksInMonth = Math.ceil((daysInMonth + firstDayOfWeek) / 7);
-
-    return {
-      daysInMonth,
-      weeksInMonth,
-      currentDay: now.getDate(),
-      currentWeek: Math.ceil((now.getDate() + firstDayOfWeek) / 7),
-    };
-  };
 
   // Calculate adjusted budgets based on view mode
   const adjustedCategories = useMemo(() => {
@@ -74,7 +51,7 @@ const BudgetOverviewCard = (props: BudgetOverviewCardProps) => {
             break;
           case "weekly":
             // For weekly view, divide monthly budget by actual weeks in month
-            adjustedBudget = category.budget / 4;
+            adjustedBudget = category.budget / monthInfo.weeksInMonth;
             break;
           case "monthly":
             // For monthly view, use the original budget

@@ -5,13 +5,24 @@ import {
   Box,
   alpha,
   LinearProgress,
+  IconButton,
+  Collapse,
+  Button,
 } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { Expense } from "../../utils/types";
+import { Budget, Expense } from "../../utils/types";
+import { useState } from "react";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import BudgetBreakdown from "../budget/BudgetBreakdown";
+
 interface BalanceCardProps {
   expensesWithBudget: Expense[];
+  budgets: Budget[];
   totalBudget: number;
 }
+
+type ViewType = "weekly" | "monthly";
 
 // Determine progress bar color based on usage percentage
 export const getProgressColor = (percentage: number) => {
@@ -23,25 +34,106 @@ export const getProgressColor = (percentage: number) => {
 
 export default function BalanceCard({
   expensesWithBudget,
+  budgets,
   totalBudget,
 }: BalanceCardProps) {
   const { colors } = useTheme();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [viewType, setViewType] = useState<ViewType>("monthly");
+
+  const toggleView = () => {
+    setViewType(viewType === "weekly" ? "monthly" : "weekly");
+  };
 
   const daysRemaining =
-    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() -
-    new Date().getDate();
+    viewType === "weekly"
+      ? 7 - new Date().getDay() || 7 // If Sunday (0), show 7 days remaining
+      : new Date(
+          new Date().getFullYear(),
+          new Date().getMonth() + 1,
+          0
+        ).getDate() - new Date().getDate();
 
   const hasBudget = totalBudget > 0;
-  const totalExpenses = expensesWithBudget.reduce(
-    (sum: number, exp: Expense) => sum + (exp.amount || 0),
-    0
-  );
 
-  const availableBalance = totalBudget - totalExpenses;
+  // Get the start of the current week/month
+  const getStartDate = () => {
+    const today = new Date();
+    if (viewType === "weekly") {
+      const dayOfWeek = today.getDay();
+      const adjustedDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - adjustedDay + 1);
+      monday.setHours(0, 0, 0, 0);
+      return monday;
+    } else {
+      return new Date(today.getFullYear(), today.getMonth(), 1);
+    }
+  };
 
-  // Calculate budget usage percentage
-  const usagePercentage = hasBudget ? (totalExpenses / totalBudget) * 100 : 0;
+  // Calculate exact number of weeks in current month
+  const getMonthInfo = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    
+    // Get the last day of the current month
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    
+    // Get the first day of the month
+    const firstDay = new Date(year, month, 1);
+    const firstDayOfWeek = firstDay.getDay();
+    
+    // Calculate total weeks (including partial weeks)
+    const weeksInMonth = Math.ceil((daysInMonth + firstDayOfWeek) / 7);
+    
+    return {
+      daysInMonth,
+      weeksInMonth,
+    };
+  };
+
+  // Calculate expenses for current period
+  const periodExpenses = expensesWithBudget.reduce((sum, exp) => {
+    const expDate = new Date(exp.date);
+    const startDate = getStartDate();
+    if (expDate >= startDate) {
+      return sum + (exp.amount || 0);
+    }
+    return sum;
+  }, 0);
+
+  const monthInfo = getMonthInfo();
+  const weeklyBudget = totalBudget / monthInfo.weeksInMonth;
+  const currentBudget = viewType === "weekly" ? weeklyBudget : totalBudget;
+  const availableBalance = currentBudget - periodExpenses;
+
+  // Calculate budget usage percentage based on current period
+  const usagePercentage = hasBudget
+    ? (periodExpenses / currentBudget) * 100
+    : 0;
   const dailyBudget = availableBalance / daysRemaining;
+
+  // Group expenses by category for current period
+  // const categoryExpenses = expensesWithBudget.reduce((acc, exp) => {
+  //   const expDate = new Date(exp.date);
+  //   const startDate = getStartDate();
+
+  //   if (expDate >= startDate) {
+  //     const categoryName = exp.category?.name || "Uncategorized";
+  //     if (!acc[categoryName]) {
+  //       acc[categoryName] = {
+  //         total: 0,
+  //         budget:
+  //           viewType === "weekly" ? (totalBudget * 0.3) / 4 : totalBudget * 0.3,
+  //         color: getProgressColor(0), // Placeholder, will be updated by BudgetBreakdown
+  //       };
+  //     }
+  //     acc[categoryName].total += exp.amount || 0;
+  //   }
+  //   return acc;
+  // }, {} as Record<string, { total: number; budget: number; color: string }>);
 
   return (
     <Card
@@ -52,27 +144,55 @@ export default function BalanceCard({
         border: `1px solid ${colors.border}`,
       }}
     >
-      <CardContent sx={{ px: 3 }}>
+      <CardContent sx={{ px: 3, pb: "4px !important" }}>
+        {" "}
+        {/* Override default CardContent padding */}
         {/* Header */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "flex-start",
-            mb: 2,
+            alignItems: "center",
+            mb: 1.5,
           }}
         >
-          <Typography
-            sx={{
-              fontSize: "0.9rem",
-              color: colors.textSecondary,
-              fontWeight: 500,
-            }}
-          >
-            Remaining Balance
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <Typography
+              sx={{
+                fontSize: "0.9rem",
+                color: colors.textSecondary,
+                fontWeight: 500,
+              }}
+            >
+              Remaining Balance
+            </Typography>
+            <Button
+              onClick={toggleView}
+              size="small"
+              sx={{
+                textTransform: "none",
+                fontSize: "0.75rem",
+                color: colors.textSecondary,
+                bgcolor: alpha(colors.text, 0.05),
+                borderRadius: 3,
+                minWidth: 0,
+                px: 1,
+                py: 0.25,
+                height: 20,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: `1px solid ${alpha(colors.text, 0.15)}`,
+                "&:hover": {
+                  border: `1px solid ${alpha(colors.text, 0.25)}`,
+                  bgcolor: alpha(colors.text, 0.07),
+                },
+              }}
+            >
+              {viewType === "weekly" ? "Week" : "Month"}
+            </Button>
+          </Box>
         </Box>
-
         {/* Main Balance */}
         <Box sx={{ mb: hasBudget && daysRemaining > 0 ? 2 : 0 }}>
           <Typography
@@ -107,14 +227,13 @@ export default function BalanceCard({
                       marginLeft: "8px",
                     }}
                   >
-                    of ${totalBudget.toFixed(2)}
+                    of ${currentBudget.toFixed(2)}
                   </span>
                 </>
               );
             })()}
           </Typography>
         </Box>
-
         {/* Budget Info Box - Only show if there's a budget */}
         {hasBudget && daysRemaining > 0 && (
           <>
@@ -160,64 +279,29 @@ export default function BalanceCard({
                 }}
               />
             </Box>
-
-            {/* Percentage Labels */}
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                px: 0.5,
-              }}
-            >
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  color: colors.textSecondary,
-                  fontWeight: 500,
-                }}
-              >
-                0%
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  color: colors.textSecondary,
-                  fontWeight: 500,
-                }}
-              >
-                25%
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  color: colors.textSecondary,
-                  fontWeight: 500,
-                }}
-              >
-                50%
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  color: colors.textSecondary,
-                  fontWeight: 500,
-                }}
-              >
-                75%
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  color: colors.textSecondary,
-                  fontWeight: 500,
-                }}
-              >
-                100%
-              </Typography>
-            </Box>
           </>
         )}
+        {/* Expandable Section */}
+        <Box>
+          <IconButton
+            onClick={() => setIsExpanded(!isExpanded)}
+            sx={{
+              width: "100%",
+              p: 0,
+              borderRadius: 1,
+              color: colors.textSecondary,
+            }}
+          >
+            {isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </IconButton>
+          <Collapse in={isExpanded}>
+            <BudgetBreakdown
+              expenses={expensesWithBudget}
+              budgets={budgets}
+              viewType={viewType}
+            />
+          </Collapse>
+        </Box>
       </CardContent>
     </Card>
   );

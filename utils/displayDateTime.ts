@@ -1,4 +1,4 @@
-export const displayDateTime = (entry: { date: string }) => {
+export const displayDateTime = (entry: { date: string }, noDate?: boolean) => {
   const expenseDate = new Date(entry.date);
   const today = new Date();
 
@@ -20,5 +20,5 @@ export const displayDateTime = (entry: { date: string }) => {
     hour: "numeric",
     minute: "2-digit",
   });
-  return `${date} • ${time}`;
+  return noDate ? time : `${date} • ${time}`;
 };

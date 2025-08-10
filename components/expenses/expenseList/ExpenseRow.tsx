@@ -2,12 +2,13 @@ import { useSwipeable } from "react-swipeable";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from "next/router";
-import { Box, Typography, alpha } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import React, { useState } from "react";
 import DeleteExpenseDialog from "../utils/DeleteExpenseDialog";
 import { displayDateTime } from "../../../utils/displayDateTime";
 import { UnifiedEntry } from "../../../utils/types";
 import { TelegramUser } from "../../dashboard";
+import { alpha } from "@mui/material/styles";
 
 const ExpenseRow = ({
   tx,
@@ -19,33 +20,26 @@ const ExpenseRow = ({
   const { colors } = useTheme();
   const router = useRouter();
   const [showDelete, setShowDelete] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handlers = useSwipeable({
     onSwipedLeft: () => setShowDelete(true),
     onSwipedRight: () => setShowDelete(false),
     trackTouch: true,
   });
-  const [showConfirm, setShowConfirm] = useState(false);
 
   return (
     <Box {...handlers}>
-      <Box
-        sx={{
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
+      <Box sx={{ position: "relative", overflow: "hidden" }}>
         {showDelete && (
           <Box
-            onClick={() => {
-              setShowConfirm(true);
-            }}
+            onClick={() => setShowConfirm(true)}
             sx={{
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
               borderRadius: "50%",
               position: "absolute",
-              right: 10,
+              right: 8,
               top: "40%",
               transform: "translateY(-50%)",
               bgcolor: "#e74c3c",
@@ -56,7 +50,7 @@ const ExpenseRow = ({
               cursor: "pointer",
             }}
           >
-            <DeleteIcon />
+            <DeleteIcon sx={{ fontSize: "1.2rem" }} />
           </Box>
         )}
         <DeleteExpenseDialog
@@ -66,6 +60,7 @@ const ExpenseRow = ({
           setShowConfirm={setShowConfirm}
           tgUser={tgUser}
         />
+
         {/* Main card */}
         <Box
           sx={{
@@ -73,34 +68,47 @@ const ExpenseRow = ({
             transition: "transform 0.2s ease",
             position: "relative",
             zIndex: 2,
-            bgcolor: colors.incomeExpenseCard,
-            borderRadius: 3,
-            mb: 1.5,
-            px: 2,
-            py: 2,
+            bgcolor: "transparent",
+            borderRadius: 1.5,
+            mb: 0.4,
+            px: 1,
+            py: 0.7,
             width: "100%",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             cursor: "pointer",
-            "&:hover": {
-              bgcolor: alpha(colors.primary, 0.08),
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-              border: `1px solid ${alpha(colors.primary, 0.3)}`,
-            },
           }}
           onClick={() =>
             router.push(`/expenses/${tx.id}?isIncome=${tx.isIncome}`)
           }
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            {/* Category Icon */}
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 1.5,
+                bgcolor: alpha(colors.text, 0.04),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.2rem",
+              }}
+            >
+              {tx.emoji || "🏷️"}
+            </Box>
+
+            {/* Description and Time */}
             <Box>
               <Typography
                 sx={{
-                  fontWeight: 700,
-                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  fontSize: "0.9rem",
                   color: colors.text,
-                  mb: 0.8,
+                  mb: 0.25,
+                  lineHeight: 1.2,
                 }}
               >
                 {tx.description}
@@ -108,22 +116,24 @@ const ExpenseRow = ({
               <Typography
                 sx={{
                   color: colors.textSecondary,
-                  fontSize: "0.7rem",
-                  fontWeight: 500,
+                  fontSize: "0.75rem",
+                  lineHeight: 1.2,
                 }}
               >
-                {tx.category} • {displayDateTime({ date: tx.date })}
+                {displayDateTime({ date: tx.date }, true)}
               </Typography>
             </Box>
           </Box>
+
+          {/* Amount */}
           <Typography
             sx={{
-              fontWeight: 700,
+              fontWeight: 600,
               color: tx.isIncome ? colors.income : colors.expense,
-              fontSize: "1rem",
+              fontSize: "0.95rem",
             }}
           >
-            {tx.isIncome ? "+" : "-"}
+            {tx.isIncome ? "+" : "-"}$
             {Math.abs(tx.amount).toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
