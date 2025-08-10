@@ -14,7 +14,7 @@ import { Budget, Expense } from "../../utils/types";
 import { useState } from "react";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import BudgetBreakdown from "./BudgetBreakdown";
+import BudgetBreakdown from "../budget/BudgetBreakdown";
 
 interface BalanceCardProps {
   expensesWithBudget: Expense[];
@@ -71,6 +71,29 @@ export default function BalanceCard({
     }
   };
 
+  // Calculate exact number of weeks in current month
+  const getMonthInfo = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    
+    // Get the last day of the current month
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    
+    // Get the first day of the month
+    const firstDay = new Date(year, month, 1);
+    const firstDayOfWeek = firstDay.getDay();
+    
+    // Calculate total weeks (including partial weeks)
+    const weeksInMonth = Math.ceil((daysInMonth + firstDayOfWeek) / 7);
+    
+    return {
+      daysInMonth,
+      weeksInMonth,
+    };
+  };
+
   // Calculate expenses for current period
   const periodExpenses = expensesWithBudget.reduce((sum, exp) => {
     const expDate = new Date(exp.date);
@@ -81,15 +104,14 @@ export default function BalanceCard({
     return sum;
   }, 0);
 
-  const weeklyBudget = totalBudget / 4;
+  const monthInfo = getMonthInfo();
+  const weeklyBudget = totalBudget / monthInfo.weeksInMonth;
   const currentBudget = viewType === "weekly" ? weeklyBudget : totalBudget;
-  const currentExpenses =
-    viewType === "weekly" ? periodExpenses : periodExpenses;
-  const availableBalance = currentBudget - currentExpenses;
+  const availableBalance = currentBudget - periodExpenses;
 
   // Calculate budget usage percentage based on current period
   const usagePercentage = hasBudget
-    ? (currentExpenses / currentBudget) * 100
+    ? (periodExpenses / currentBudget) * 100
     : 0;
   const dailyBudget = availableBalance / daysRemaining;
 

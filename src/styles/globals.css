@@ -24,12 +24,6 @@ a {
   text-decoration: none;
 }
 
-:root {
-  /* safe area (with fallbacks) */
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-}
-
 /* make the app fill the visible height without hiding under the notch */
 html,
 body,
@@ -39,8 +33,8 @@ body,
 }
 .app {
   box-sizing: border-box;
-  padding-top: var(--safe-top);
-  padding-bottom: var(--safe-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: env(safe-area-inset-top);
   height: calc(100dvh - var(--safe-top) - var(--safe-bottom)); /* use dvh */
   overflow: auto; /* or your scroll container */
 }

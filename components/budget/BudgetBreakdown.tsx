@@ -2,7 +2,7 @@ import { Box, Typography, LinearProgress, alpha } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { getCategoryData } from "../../utils/getCategoryData";
 import { Budget, Expense } from "../../utils/types";
-import { getProgressColor } from "./BalanceCard";
+import { getProgressColor } from "../balance/BalanceCard";
 
 interface BudgetBreakdownProps {
   expenses: Expense[];
@@ -26,7 +26,7 @@ export default function BudgetBreakdown({
       const adjustedBudget =
         viewType === "weekly" ? category.budget / 4 : category.budget;
       const adjustedSpent =
-        viewType === "weekly" ? category.spent / 4 : category.spent;
+        viewType === "weekly" ? category.spent : category.spent;
       return {
         ...category,
         budget: adjustedBudget,
@@ -46,6 +46,7 @@ export default function BudgetBreakdown({
           const progress = (category.spent / category.budget) * 100;
           const progressColor = getProgressColor(progress);
           const remaining = category.budget - category.spent;
+          const adjustedRemaining = remaining < 0 ? 0 : remaining;
 
           return (
             <Box key={category.id}>
@@ -90,7 +91,7 @@ export default function BudgetBreakdown({
                     fontWeight: 500,
                   }}
                 >
-                  ${remaining.toFixed(2)} /{" "}
+                  ${adjustedRemaining.toFixed(2)} left /{" "}
                   <span style={{ color: colors.textSecondary }}>
                     ${category.budget.toFixed(0)}
                   </span>
