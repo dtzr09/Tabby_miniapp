@@ -214,53 +214,44 @@ export default function ExpenseList({ allEntries, tgUser }: ExpenseListProps) {
       return [];
     }
 
-    // Apply date range filter first
-    const start = new Date(dateRange.start);
-    const end = new Date(dateRange.end);
-    
-    // Set to start and end of day
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
-
-    console.log('Date range:', {
-      start: start.toISOString(),
-      end: end.toISOString()
-    });
-
-    entries = entries.filter((entry) => {
-      const entryDate = new Date(entry.date);
-      const isInRange = entryDate >= start && entryDate <= end;
-      console.log('Entry date check:', {
-        date: entry.date,
-        isInRange,
-        amount: entry.amount
-      });
-      return isInRange;
-    });
-
-    // Apply date selection filter if active
-    if (selectedDate) {
-      entries = entries.filter((entry) => {
-        const entryDate = new Date(entry.date);
-        if (viewType === "Week") {
-          const dayName = entryDate.toLocaleDateString("en-US", {
-            weekday: "short",
-          });
-          return dayName === selectedDate;
-        } else {
-          // Make sure the format matches exactly what's shown in the chart
-          const formattedDayMonth = `${entryDate.getDate()} ${entryDate.toLocaleDateString(
-            "en-US",
-            { month: "short" }
-          )}`;
-          return formattedDayMonth === selectedDate;
-        }
-      });
-    }
-
-    // Apply search filter
+    // Apply search filter first if active
     if (isSearchActive && searchQuery) {
       entries = searchExpenses(entries, searchQuery);
+    } else {
+      // Only apply date filters if not searching
+      // Apply date range filter first
+      const start = new Date(dateRange.start);
+      const end = new Date(dateRange.end);
+      
+      // Set to start and end of day
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+
+      entries = entries.filter((entry) => {
+        const entryDate = new Date(entry.date);
+        const isInRange = entryDate >= start && entryDate <= end;
+        return isInRange;
+      });
+
+      // Apply date selection filter if active
+      if (selectedDate) {
+        entries = entries.filter((entry) => {
+          const entryDate = new Date(entry.date);
+          if (viewType === "Week") {
+            const dayName = entryDate.toLocaleDateString("en-US", {
+              weekday: "short",
+            });
+            return dayName === selectedDate;
+          } else {
+            // Make sure the format matches exactly what's shown in the chart
+            const formattedDayMonth = `${entryDate.getDate()} ${entryDate.toLocaleDateString(
+              "en-US",
+              { month: "short" }
+            )}`;
+            return formattedDayMonth === selectedDate;
+          }
+        });
+      }
     }
 
     // Apply category filter

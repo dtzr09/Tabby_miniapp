@@ -98,9 +98,6 @@ export default async function handler(
       }
     } else if (req.method === "PUT") {
       const { description, amount, category_id } = req.body;
-      console.log("🔍 description", description);
-      console.log("🔍 amount", amount);
-      console.log("🔍 category_id", category_id);
 
       if (!description || amount === undefined || category_id === undefined) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -124,12 +121,21 @@ export default async function handler(
             : "description = $1, amount = $2, category_id = $3, is_income = $4, updated_at = NOW()";
           const updateValues = isIncomeBoolean
             ? [description, amount, category_id, id, telegram_id]
-            : [description, amount, category_id, isIncomeBoolean, id, telegram_id];
+            : [
+                description,
+                amount,
+                category_id,
+                isIncomeBoolean,
+                id,
+                telegram_id,
+              ];
 
           await postgresClient.query(
             `UPDATE ${tableName}
              SET ${updateFields}
-             WHERE id = ${isIncomeBoolean ? "$4" : "$5"} AND chat_id = ${isIncomeBoolean ? "$5" : "$6"}`,
+             WHERE id = ${isIncomeBoolean ? "$4" : "$5"} AND chat_id = ${
+              isIncomeBoolean ? "$5" : "$6"
+            }`,
             updateValues
           );
 
@@ -142,7 +148,9 @@ export default async function handler(
       } else {
         // Use Supabase for production
         if (!supabaseAdmin) {
-          return res.status(500).json({ error: "Supabase client not configured" });
+          return res
+            .status(500)
+            .json({ error: "Supabase client not configured" });
         }
 
         try {
@@ -165,7 +173,7 @@ export default async function handler(
               description,
               amount,
               category_id,
-              is_income: isIncomeBoolean,
+              ...(isIncomeBoolean ? {} : { is_income: isIncomeBoolean }), // Only include is_income for expenses table
               updated_at: new Date().toISOString(),
             })
             .eq("id", id)

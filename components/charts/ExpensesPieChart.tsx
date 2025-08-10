@@ -12,6 +12,16 @@ interface ExpensesPieChartProps {
 const ExpensesPieChart = (props: ExpensesPieChartProps) => {
   const { colors } = useTheme();
 
+  if (props.chartData.length === 0) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4, mb: 4 }}>
+        <Typography variant="body1" sx={{ color: colors.textSecondary }}>
+          No expenses yet.
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
@@ -36,7 +46,7 @@ const ExpensesPieChart = (props: ExpensesPieChartProps) => {
           },
           "& *": {
             outline: "none !important",
-          }
+          },
         }}
       >
         <ResponsiveContainer width="100%" height="100%">
