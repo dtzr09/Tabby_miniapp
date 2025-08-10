@@ -5,11 +5,21 @@ export const refetchExpensesQueries = async (
   userId: string
 ) => {
   const keys = [
-    ["expensesWithBudget", userId],
-    ["allEntries", userId],
+    ["expensesWithBudget", userId] as const,
+    ["allEntries", userId] as const,
   ];
 
+  // Invalidate first
   await Promise.all(
-    keys.map((key) => queryClient.refetchQueries({ queryKey: key }))
+    keys.map((key) =>
+      queryClient.invalidateQueries({ queryKey: key, exact: true })
+    )
+  );
+
+  // Then refetch only active instances immediately
+  await Promise.all(
+    keys.map((key) =>
+      queryClient.refetchQueries({ queryKey: key, type: "active", exact: true })
+    )
   );
 };

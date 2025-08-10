@@ -9,6 +9,8 @@ import { displayDateTime } from "../../../utils/displayDateTime";
 import { UnifiedEntry } from "../../../utils/types";
 import { TelegramUser } from "../../dashboard";
 import { alpha } from "@mui/material/styles";
+import { useQueryClient } from "@tanstack/react-query";
+import { refetchExpensesQueries } from "../../../utils/refetchExpensesQueries";
 
 const ExpenseRow = ({
   tx,
@@ -21,12 +23,21 @@ const ExpenseRow = ({
   const router = useRouter();
   const [showDelete, setShowDelete] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const queryClient = useQueryClient();
 
   const handlers = useSwipeable({
     onSwipedLeft: () => setShowDelete(true),
     onSwipedRight: () => setShowDelete(false),
     trackTouch: true,
   });
+
+  const handleDeleteSuccess = () => {
+    setShowDelete(false);
+    // Invalidate and refetch expenses queries
+    if (tgUser) {
+      refetchExpensesQueries(queryClient, tgUser.id.toString());
+    }
+  };
 
   return (
     <Box {...handlers}>
@@ -55,10 +66,11 @@ const ExpenseRow = ({
         )}
         <DeleteExpenseDialog
           id={tx.id}
-          onSuccess={() => setShowDelete(false)}
+          onSuccess={handleDeleteSuccess}
           showConfirm={showConfirm}
           setShowConfirm={setShowConfirm}
           tgUser={tgUser}
+          isIncome={tx.isIncome}
         />
 
         {/* Main card */}
