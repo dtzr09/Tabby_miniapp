@@ -157,8 +157,6 @@ const ExpenseDetail = () => {
         px: 2,
         display: "flex",
         flexDirection: "column",
-        pt: "var(--safe-top)",
-        pb: "var(--safe-bottom)",
       }}
     >
       <EntryForm
