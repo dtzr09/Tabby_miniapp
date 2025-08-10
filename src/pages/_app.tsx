@@ -13,14 +13,15 @@ import {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Reduce stale time for more frequent updates
-      staleTime: 0,
-      // Reduce cache time for real-time data
-      gcTime: 60000, // 1 minute
-      // Enable automatic background refetching
+      // Keep data fresh for 5 seconds before considering it stale
+      staleTime: 5000,
+      // Keep unused data in cache for 5 minutes
+      gcTime: 300000,
+      // Only refetch on mount if data is stale
+      refetchOnMount: 'always',
+      // Only refetch on window focus if data is stale
       refetchOnWindowFocus: true,
-      refetchOnMount: true,
-      // Retry failed queries
+      // Retry failed queries once
       retry: 1,
     },
   },

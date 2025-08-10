@@ -57,10 +57,14 @@ const ExpenseRow = ({
           if (oldData.expenses || oldData.income) {
             return {
               ...oldData,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              expenses: oldData.expenses.filter((e: any) => e.id !== tx.id),
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              income: oldData.income.filter((i: any) => i.id !== tx.id),
+              expenses: tx.isIncome
+                ? oldData.expenses
+                : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  oldData.expenses.filter((e: any) => e.id !== tx.id),
+              income: tx.isIncome
+                ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  oldData.income.filter((i: any) => i.id !== tx.id)
+                : oldData.income,
             };
           }
 

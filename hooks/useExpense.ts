@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AllEntriesResponse } from "../utils/types";
+import { UnifiedEntry } from "../utils/types";
 
 interface UseExpenseProps {
   id: string | number;
@@ -34,25 +35,22 @@ export const useExpense = ({
   };
 
   // Function to update expense in all relevant caches
-  const updateExpenseInCache = (updatedExpense: any) => {
+  const updateExpenseInCache = (updatedExpense: UnifiedEntry) => {
     // Update in allEntries cache
     queryClient.setQueryData<AllEntriesResponse>(
       ["allEntries", userId],
       (oldData) => {
         if (!oldData) return oldData;
 
+        const targetArray = isIncome ? 'income' : 'expenses';
+        const otherArray = isIncome ? 'expenses' : 'income';
+
         return {
           ...oldData,
-          expenses: isIncome
-            ? oldData.expenses
-            : oldData.expenses.map((e) =>
-                e.id.toString() === id.toString() ? updatedExpense : e
-              ),
-          income: isIncome
-            ? oldData.income.map((i) =>
-                i.id.toString() === id.toString() ? updatedExpense : i
-              )
-            : oldData.income,
+          [targetArray]: oldData[targetArray].map((entry) =>
+            entry.id.toString() === id.toString() ? updatedExpense : entry
+          ),
+          [otherArray]: oldData[otherArray],
         };
       }
     );
