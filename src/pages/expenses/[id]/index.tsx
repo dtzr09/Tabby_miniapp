@@ -113,7 +113,7 @@ const ExpenseDetail = () => {
         const userId = user.id.toString();
         const queryKeys = [
           ["expensesWithBudget", userId],
-          ["allEntries", userId]
+          ["allEntries", userId],
         ];
 
         // Create the updated expense object
@@ -121,17 +121,18 @@ const ExpenseDetail = () => {
           ...expense,
           description: data.description,
           amount: parseFloat(data.amount) * (isIncome === "true" ? 1 : -1),
-          category: categories.find(c => c.id === data.category_id),
+          category: categories.find((c) => c.id === data.category_id),
         };
 
         // Optimistically update the cache
-        queryKeys.forEach(queryKey => {
+        queryKeys.forEach((queryKey) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           queryClient.setQueryData(queryKey, (oldData: any) => {
             if (!oldData) return oldData;
 
             // Handle array response
             if (Array.isArray(oldData)) {
-              return oldData.map(item => 
+              return oldData.map((item) =>
                 item.id === updatedExpense.id ? updatedExpense : item
               );
             }
@@ -141,12 +142,18 @@ const ExpenseDetail = () => {
               const isIncomeEntry = isIncome === "true";
               return {
                 ...oldData,
-                expenses: isIncomeEntry 
-                  ? oldData.expenses 
-                  : oldData.expenses.map((e: any) => e.id === updatedExpense.id ? updatedExpense : e),
+                expenses: isIncomeEntry
+                  ? oldData.expenses
+                  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    oldData.expenses.map((e: any) =>
+                      e.id === updatedExpense.id ? updatedExpense : e
+                    ),
                 income: isIncomeEntry
-                  ? oldData.income.map((i: any) => i.id === updatedExpense.id ? updatedExpense : i)
-                  : oldData.income
+                  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    oldData.income.map((i: any) =>
+                      i.id === updatedExpense.id ? updatedExpense : i
+                    )
+                  : oldData.income,
               };
             }
 
@@ -169,10 +176,10 @@ const ExpenseDetail = () => {
 
         if (!response.ok) {
           // If the update fails, revert the optimistic update
-          queryKeys.forEach(queryKey => {
+          queryKeys.forEach((queryKey) => {
             queryClient.invalidateQueries({ queryKey });
           });
-          
+
           console.error("Failed to update entry:", await response.text());
           showPopup({
             title: "Error",
@@ -187,7 +194,9 @@ const ExpenseDetail = () => {
 
         showPopup({
           title: "Success",
-          message: `${isIncome === "true" ? "Income" : "Expense"} updated successfully`,
+          message: `${
+            isIncome === "true" ? "Income" : "Expense"
+          } updated successfully`,
           buttons: [{ type: "ok" }],
         });
 
