@@ -33,9 +33,40 @@ const ExpenseRow = ({
 
   const handleDeleteSuccess = () => {
     setShowDelete(false);
-    // Invalidate and refetch expenses queries
+    
+    // Optimistically update the cache
     if (tgUser) {
-      refetchExpensesQueries(queryClient, tgUser.id.toString());
+      const userId = tgUser.id.toString();
+      const queryKeys = [
+        ["expensesWithBudget", userId],
+        ["allEntries", userId]
+      ];
+
+      // Update each query's data optimistically
+      queryKeys.forEach(queryKey => {
+        queryClient.setQueryData(queryKey, (oldData: any) => {
+          if (!oldData) return oldData;
+          
+          // Handle both array and object responses
+          if (Array.isArray(oldData)) {
+            return oldData.filter(item => item.id !== tx.id);
+          }
+          
+          // Handle the allEntries structure
+          if (oldData.expenses || oldData.income) {
+            return {
+              ...oldData,
+              expenses: oldData.expenses.filter((e: any) => e.id !== tx.id),
+              income: oldData.income.filter((i: any) => i.id !== tx.id)
+            };
+          }
+          
+          return oldData;
+        });
+      });
+
+      // Then trigger a background refetch to ensure consistency
+      refetchExpensesQueries(queryClient, userId);
     }
   };
 

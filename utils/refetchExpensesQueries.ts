@@ -9,17 +9,15 @@ export const refetchExpensesQueries = async (
     ["allEntries", userId] as const,
   ];
 
-  // Invalidate first
+  // Immediately refetch active queries without invalidating first
   await Promise.all(
     keys.map((key) =>
-      queryClient.invalidateQueries({ queryKey: key, exact: true })
-    )
-  );
-
-  // Then refetch only active instances immediately
-  await Promise.all(
-    keys.map((key) =>
-      queryClient.refetchQueries({ queryKey: key, type: "active", exact: true })
+      queryClient.refetchQueries({
+        queryKey: key,
+        exact: true,
+        type: "active",
+        stale: true // Mark as stale to force refetch
+      })
     )
   );
 };

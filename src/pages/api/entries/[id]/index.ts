@@ -107,117 +107,81 @@ export default async function handler(
       }
 
       if (isLocal) {
-        // First check if the entry exists and belongs to the user
-        const existingEntry = await postgresClient.query(
-          `SELECT id FROM ${tableName} WHERE id = $1 AND chat_id = $2`,
-          [id, telegram_id]
-        );
+        try {
+          // First check if the entry exists and belongs to the user
+          const existingEntry = await postgresClient.query(
+            `SELECT id FROM ${tableName} WHERE id = $1 AND chat_id = $2`,
+            [id, telegram_id]
+          );
 
-        if (existingEntry.rows.length === 0) {
-          return res.status(404).json({ error: "Entry not found" });
+          if (existingEntry.rows.length === 0) {
+            return res.status(404).json({ error: "Entry not found" });
+          }
+
+          // Update the entry - only include is_income field for expenses table
+          const updateFields = isIncomeBoolean
+            ? "description = $1, amount = $2, category_id = $3, updated_at = NOW()"
+            : "description = $1, amount = $2, category_id = $3, is_income = $4, updated_at = NOW()";
+          const updateValues = isIncomeBoolean
+            ? [description, amount, category_id, id, telegram_id]
+            : [description, amount, category_id, isIncomeBoolean, id, telegram_id];
+
+          await postgresClient.query(
+            `UPDATE ${tableName}
+             SET ${updateFields}
+             WHERE id = ${isIncomeBoolean ? "$4" : "$5"} AND chat_id = ${isIncomeBoolean ? "$5" : "$6"}`,
+            updateValues
+          );
+
+          // Return minimal success response since we're using optimistic updates
+          return res.status(200).json({ success: true });
+        } catch (error) {
+          console.error("Database error:", error);
+          return res.status(500).json({ error: "Database error occurred" });
         }
-
-        // Update the entry - only include is_income field for expenses table
-        const updateFields = isIncomeBoolean
-          ? "description = $1, amount = $2, category_id = $3, updated_at = NOW()"
-          : "description = $1, amount = $2, category_id = $3, is_income = $4, updated_at = NOW()";
-        const updateValues = isIncomeBoolean
-          ? [description, amount, category_id, id, telegram_id]
-          : [description, amount, category_id, isIncomeBoolean, id, telegram_id];
-
-        await postgresClient.query(
-          `UPDATE ${tableName}
-           SET ${updateFields}
-           WHERE id = ${isIncomeBoolean ? "$4" : "$5"} AND chat_id = ${isIncomeBoolean ? "$5" : "$6"}`,
-          updateValues
-        );
-
-        // Get the updated entry
-        const updatedResult = await postgresClient.query(
-          `SELECT e.*, c.id as category_id, c.name as category_name
-           FROM ${tableName} e
-           LEFT JOIN all_categories c ON e.category_id = c.id
-           WHERE e.id = $1 AND e.chat_id = $2`,
-          [id, telegram_id]
-        );
-        console.log("🔍 updatedResult", updatedResult);
-
-        const updatedEntry = updatedResult.rows[0];
-        const formattedEntry = {
-          ...updatedEntry,
-          is_income: isIncomeBoolean, // Add is_income for consistency
-          category: updatedEntry.category_id
-            ? {
-                id: updatedEntry.category_id,
-                name: updatedEntry.category_name,
-              }
-            : null,
-        };
-        console.log("🔍 formattedEntry", formattedEntry);
-
-        return res.status(200).json(formattedEntry);
       } else {
+        // Use Supabase for production
         if (!supabaseAdmin) {
-          return res
-            .status(500)
-            .json({ error: "Supabase client not configured" });
+          return res.status(500).json({ error: "Supabase client not configured" });
         }
 
-        // First check if the entry exists and belongs to the user
-        const { data: existingEntry, error: fetchError } = await supabaseAdmin
-          .from(tableName)
-          .select("id")
-          .eq("id", id)
-          .eq("chat_id", telegram_id)
-          .single();
+        try {
+          // Check if the entry exists and belongs to the user
+          const { data: existingEntry, error: checkError } = await supabaseAdmin
+            .from(tableName)
+            .select("id")
+            .eq("id", id)
+            .eq("chat_id", telegram_id)
+            .single();
 
-        if (fetchError || !existingEntry) {
-          return res.status(404).json({ error: "Entry not found" });
-        }
+          if (checkError || !existingEntry) {
+            return res.status(404).json({ error: "Entry not found" });
+          }
 
-        // Update the entry - only include is_income field for expenses table
-        const updateData = isIncomeBoolean
-          ? {
-              description,
-              amount,
-              category_id,
-              updated_at: new Date().toISOString(),
-            }
-          : {
+          // Update the entry
+          const { error: updateError } = await supabaseAdmin
+            .from(tableName)
+            .update({
               description,
               amount,
               category_id,
               is_income: isIncomeBoolean,
               updated_at: new Date().toISOString(),
-            };
+            })
+            .eq("id", id)
+            .eq("chat_id", telegram_id);
 
-        const { data: updatedEntry, error: updateError } = await supabaseAdmin
-          .from(tableName)
-          .update(updateData)
-          .eq("id", id)
-          .eq("chat_id", telegram_id)
-          .select(
-            `
-            *,
-            category:all_categories(*)
-          `
-          )
-          .single();
+          if (updateError) {
+            console.error("Supabase update error:", updateError);
+            return res.status(500).json({ error: "Failed to update entry" });
+          }
 
-        if (updateError) {
-          console.error(`Error updating ${tableName}:`, updateError);
-          return res
-            .status(500)
-            .json({ error: `Failed to update ${tableName}` });
+          // Return minimal success response since we're using optimistic updates
+          return res.status(200).json({ success: true });
+        } catch (error) {
+          console.error("Supabase error:", error);
+          return res.status(500).json({ error: "Database error occurred" });
         }
-
-        // Add is_income field for consistency
-        const formattedEntry = {
-          ...updatedEntry,
-          is_income: isIncomeBoolean,
-        };
-
-        return res.status(200).json(formattedEntry);
       }
     } else if (req.method === "DELETE") {
       if (isLocal) {

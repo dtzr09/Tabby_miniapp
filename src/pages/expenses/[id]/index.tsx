@@ -110,11 +110,56 @@ const ExpenseDetail = () => {
           return;
         }
 
+        const userId = user.id.toString();
+        const queryKeys = [
+          ["expensesWithBudget", userId],
+          ["allEntries", userId]
+        ];
+
+        // Create the updated expense object
+        const updatedExpense = {
+          ...expense,
+          description: data.description,
+          amount: parseFloat(data.amount) * (isIncome === "true" ? 1 : -1),
+          category: categories.find(c => c.id === data.category_id),
+        };
+
+        // Optimistically update the cache
+        queryKeys.forEach(queryKey => {
+          queryClient.setQueryData(queryKey, (oldData: any) => {
+            if (!oldData) return oldData;
+
+            // Handle array response
+            if (Array.isArray(oldData)) {
+              return oldData.map(item => 
+                item.id === updatedExpense.id ? updatedExpense : item
+              );
+            }
+
+            // Handle allEntries structure
+            if (oldData.expenses || oldData.income) {
+              const isIncomeEntry = isIncome === "true";
+              return {
+                ...oldData,
+                expenses: isIncomeEntry 
+                  ? oldData.expenses 
+                  : oldData.expenses.map((e: any) => e.id === updatedExpense.id ? updatedExpense : e),
+                income: isIncomeEntry
+                  ? oldData.income.map((i: any) => i.id === updatedExpense.id ? updatedExpense : i)
+                  : oldData.income
+              };
+            }
+
+            return oldData;
+          });
+        });
+
+        // Make the API call
         const response = await fetch(`/api/entries/${entryId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            telegram_id: user.id.toString(),
+            telegram_id: userId,
             initData,
             ...data,
             amount: parseFloat(data.amount),
@@ -123,26 +168,40 @@ const ExpenseDetail = () => {
         });
 
         if (!response.ok) {
+          // If the update fails, revert the optimistic update
+          queryKeys.forEach(queryKey => {
+            queryClient.invalidateQueries({ queryKey });
+          });
+          
           console.error("Failed to update entry:", await response.text());
+          showPopup({
+            title: "Error",
+            message: "Failed to update. Please try again.",
+            buttons: [{ type: "ok" }],
+          });
           return;
         }
 
-        await refetchExpensesQueries(queryClient, user.id.toString());
+        // Background refetch to ensure consistency
+        refetchExpensesQueries(queryClient, userId);
 
         showPopup({
           title: "Success",
-          message: `${
-            isIncome === "true" ? "Income" : "Expense"
-          } updated successfully`,
+          message: `${isIncome === "true" ? "Income" : "Expense"} updated successfully`,
           buttons: [{ type: "ok" }],
         });
 
         reset(data, { keepDirty: false });
       } catch (err) {
         console.error("Error updating entry:", err);
+        showPopup({
+          title: "Error",
+          message: "An error occurred. Please try again.",
+          buttons: [{ type: "ok" }],
+        });
       }
     },
-    [reset, entryId, isIncome]
+    [reset, entryId, isIncome, expense, categories, queryClient]
   );
 
   if (isLoading || !expense) {

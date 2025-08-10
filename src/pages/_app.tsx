@@ -10,7 +10,21 @@ import {
   viewport,
 } from "@telegram-apps/sdk";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Reduce stale time for more frequent updates
+      staleTime: 0,
+      // Reduce cache time for real-time data
+      gcTime: 60000, // 1 minute
+      // Enable automatic background refetching
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+      // Retry failed queries
+      retry: 1,
+    },
+  },
+});
 // Extend the Window interface to include Telegram
 declare global {
   interface Window {
