@@ -35,6 +35,7 @@ declare global {
         };
         onEvent?: (eventType: string, eventHandler: () => void) => void;
         lockOrientation?: (orientation: string) => void;
+        setViewportSettings?: (settings: { viewport_height?: boolean; expand_media_previews?: boolean }) => void;
       };
     };
   }
@@ -55,6 +56,12 @@ function MyApp({ Component, pageProps }: AppProps) {
     async function initTg() {
       if (await isTMA()) {
         init();
+
+        // Enable viewport height adjustments and safe areas
+        window.Telegram?.WebApp?.setViewportSettings?.({
+          viewport_height: true,
+          expand_media_previews: true,
+        });
 
         if (viewport.mount.isAvailable()) {
           await viewport.mount();

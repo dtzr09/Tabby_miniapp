@@ -30,13 +30,19 @@ a {
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   --app-height: 100dvh; /* will be replaced by JS with TG viewport */
 }
+
 /* Single source of truth for height; DO NOT subtract safe areas here */
 .app {
   box-sizing: border-box;
   height: var(--app-height);
-  padding-top: var(--safe-top);
-  padding-bottom: var(--safe-bottom);
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   overflow: auto;
+  /* Ensure content doesn't overlap with safe areas */
+  width: 100%;
+  max-width: 100%;
+  position: relative;
 }
