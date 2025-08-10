@@ -55,11 +55,11 @@ function MyApp({ Component, pageProps }: AppProps) {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (viewport.requestFullscreen.isAvailable() && isMobile) {
           await viewport.requestFullscreen();
+          disableVerticalSwipes();
           // viewport.lockOrientation("portrait");
         }
       }
     }
-    disableVerticalSwipes();
 
     initTg();
   }, []);

@@ -5,7 +5,8 @@ body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "kern" 1;
@@ -21,4 +22,39 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+:root {
+  /* safe area (with fallbacks) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* make the app fill the visible height without hiding under the notch */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+.app {
+  box-sizing: border-box;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  height: calc(100dvh - var(--safe-top) - var(--safe-bottom)); /* use dvh */
+  overflow: auto; /* or your scroll container */
+}
+
+/* if you have fixed headers/footers: offset them by the safe area */
+.header {
+  position: fixed;
+  top: var(--safe-top);
+  left: 0;
+  right: 0;
+}
+.footer {
+  position: fixed;
+  bottom: var(--safe-bottom);
+  left: 0;
+  right: 0;
 }
