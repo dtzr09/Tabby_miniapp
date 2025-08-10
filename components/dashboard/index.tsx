@@ -2,12 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import BalanceCard from "../balance/BalanceCard";
 import { Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import {
-  AllEntriesResponse,
-  // Expense,
-  TelegramWebApp,
-  ViewMode,
-} from "../../utils/types";
+import { TelegramWebApp, ViewMode } from "../../utils/types";
 import {
   backButton,
   init,
@@ -19,13 +14,11 @@ import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
 import ExpensesAndBudgetOverview from "../expenses/expensesOverview/ExpensesAndBudgetOverview";
-// import { fetchExpensesForBudgets } from "../../services/expenses";
-import { useQuery } from "@tanstack/react-query";
 import WelcomeScreen from "./WelcomeScreen";
-import { fetchAllEntries } from "../../services/allEntries";
 import { isSameMonth } from "../../utils/isSameMonth";
 import { calculateSummaryData } from "../../utils/calculateSummaryData";
 import { getDashboardData } from "../../utils/getDashboardData";
+import { useAllEntries } from "../../hooks/useAllEntries";
 
 export interface TelegramUser {
   id: string;
@@ -38,19 +31,10 @@ const Dashboard = () => {
   const [initData, setInitData] = useState<string | null>(null);
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>("weekly");
 
-  const { data: allEntries, isLoading: isAllEntriesLoading } =
-    useQuery<AllEntriesResponse>({
-      queryKey: ["allEntries", tgUser?.id],
-      queryFn: () => {
-        if (tgUser && initData) {
-          return fetchAllEntries(tgUser.id, initData);
-        }
-        return Promise.resolve({ expenses: [], income: [], budgets: [] });
-      },
-      enabled: !!tgUser && !!initData,
-      gcTime: 300000, // Cache for 5 minutes
-      refetchOnWindowFocus: true, // refetch when window regains focus
-    });
+  const { data: allEntries, isLoading: isAllEntriesLoading } = useAllEntries(
+    tgUser?.id,
+    initData || undefined
+  );
 
   const currentMonthExpenses = useMemo(() => {
     const currentDate = new Date();

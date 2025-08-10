@@ -1,5 +1,6 @@
-import { useCallback, useState } from "react";
-import { Category, Expense } from "../utils/types";
+import { useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Expense, Category, AllEntriesResponse } from "../utils/types";
 
 interface UseEntryDataProps {
   entryId: string;
@@ -20,6 +21,7 @@ export const useEntryData = ({
   const [isLoading, setIsLoading] = useState(false);
   const [expense, setExpense] = useState<Expense | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const queryClient = useQueryClient();
 
   const loadCategories = useCallback(
     async (telegram_id: string, initData: string): Promise<boolean> => {
@@ -49,6 +51,25 @@ export const useEntryData = ({
   const loadEntryDetail = useCallback(
     async (telegram_id: string, initData: string): Promise<boolean> => {
       try {
+        // Try to get the expense from the cache first
+        const cachedData = queryClient.getQueryData<AllEntriesResponse>([
+          "allEntries",
+          telegram_id,
+        ]);
+
+        if (cachedData) {
+          // Find the expense in the cached data
+          const foundExpense = isIncome
+            ? cachedData.income.find((i) => i.id.toString() === entryId)
+            : cachedData.expenses.find((e) => e.id.toString() === entryId);
+
+          if (foundExpense) {
+            setExpense(foundExpense as Expense);
+            return true;
+          }
+        }
+
+        // If not found in cache, fetch from API
         const params = new URLSearchParams({
           telegram_id,
           initData,
@@ -70,7 +91,7 @@ export const useEntryData = ({
         return false;
       }
     },
-    [entryId, isIncome]
+    [entryId, isIncome, queryClient]
   );
 
   const loadData = useCallback(

@@ -1,8 +1,7 @@
 import { backButton, init, showPopup } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState } from "react";
-import { Box, Button } from "@mui/material";
-import { useTheme } from "../../../contexts/ThemeContext";
+import { Box, Button, Alert } from "@mui/material";
 import { TelegramWebApp } from "../../../../utils/types";
 import { useForm } from "react-hook-form";
 import DeleteExpenseDialog from "../../../../components/expenses/utils/DeleteExpenseDialog";
@@ -10,8 +9,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { refetchExpensesQueries } from "../../../../utils/refetchExpensesQueries";
 import { TelegramUser } from "../../../../components/dashboard";
 import EntryForm from "../../../../components/expenses/forms/EntryForm";
-import { useEntryData } from "../../../../hooks/useEntryData";
 import LoadingSkeleton from "../../../../components/dashboard/LoadingSkeleton";
+import { useExpense } from "../../../../hooks/useExpense";
+import { useAllEntries } from "../../../../hooks/useAllEntries";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface ExpenseFormData {
   description: string;
@@ -25,11 +26,26 @@ const ExpenseDetail = () => {
   const { colors } = useTheme();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
+  const [initData, setInitData] = useState<string | undefined>(undefined);
   const queryClient = useQueryClient();
 
-  const { isLoading, expense, categories, loadData } = useEntryData({
-    entryId: entryId as string,
+  // Get categories from useAllEntries
+  const { categories, isError: isCategoriesError } = useAllEntries(
+    tgUser?.id,
+    initData
+  );
+
+  // Get expense data with cache-first strategy
+  const {
+    data: expense,
+    isLoading,
+    isError: isExpenseError,
+    error: expenseError,
+  } = useExpense({
+    id: entryId as string,
     isIncome: isIncome === "true",
+    userId: tgUser?.id,
+    initData,
   });
 
   const defaultValues: ExpenseFormData = {
@@ -62,7 +78,7 @@ const ExpenseDetail = () => {
     }
   }, [expense, reset]);
 
-  // Initialize Telegram WebApp and load data
+  // Initialize Telegram WebApp
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -81,31 +97,31 @@ const ExpenseDetail = () => {
         }
 
         const user = webApp.initDataUnsafe?.user;
-        const initData = webApp.initData;
+        const webAppInitData = webApp.initData;
 
-        if (!user?.id || !initData || !entryId) {
+        if (!user?.id || !webAppInitData || !entryId) {
           console.error("Missing required data");
           return;
         }
 
         setTgUser(user as TelegramUser);
-        await loadData(user.id.toString(), initData);
+        setInitData(webAppInitData);
       } catch (err) {
         console.error("Error initializing expense detail:", err);
       }
     };
 
     initializeApp();
-  }, [entryId, loadData, reset]); // Remove expense from dependencies
+  }, [entryId]);
 
   const onSubmit = useCallback(
     async (data: ExpenseFormData) => {
       try {
         const webApp = window.Telegram?.WebApp as TelegramWebApp;
         const user = webApp.initDataUnsafe?.user;
-        const initData = webApp.initData;
+        const webAppInitData = webApp.initData;
 
-        if (!user?.id || !initData || !entryId) {
+        if (!user?.id || !webAppInitData || !entryId || !expense) {
           console.error("Missing Telegram user/init data or expense ID");
           return;
         }
@@ -167,7 +183,7 @@ const ExpenseDetail = () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             telegram_id: userId,
-            initData,
+            initData: webAppInitData,
             ...data,
             amount: parseFloat(data.amount),
             isIncome: isIncome === "true",
@@ -180,7 +196,8 @@ const ExpenseDetail = () => {
             queryClient.invalidateQueries({ queryKey });
           });
 
-          console.error("Failed to update entry:", await response.text());
+          const errorText = await response.text();
+          console.error("Failed to update entry:", errorText);
           showPopup({
             title: "Error",
             message: "Failed to update. Please try again.",
@@ -213,8 +230,45 @@ const ExpenseDetail = () => {
     [reset, entryId, isIncome, expense, categories, queryClient]
   );
 
-  if (isLoading || !expense) {
+  // Handle loading and error states
+  if (isLoading) {
     return <LoadingSkeleton />;
+  }
+
+  if (isExpenseError || isCategoriesError) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {expenseError instanceof Error
+            ? expenseError.message
+            : "Failed to load expense data. Please try again."}
+        </Alert>
+        <Button
+          variant="contained"
+          onClick={() => router.back()}
+          sx={{ mt: 2 }}
+        >
+          Go Back
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!expense) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Alert severity="warning">
+          Expense not found. It may have been deleted.
+        </Alert>
+        <Button
+          variant="contained"
+          onClick={() => router.back()}
+          sx={{ mt: 2 }}
+        >
+          Go Back
+        </Button>
+      </Box>
+    );
   }
 
   return (
