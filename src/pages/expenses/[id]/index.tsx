@@ -158,7 +158,6 @@ const ExpenseDetail = () => {
         display: "flex",
         flexDirection: "column",
         pt: "16px",
-        pb: "16px",
       }}
     >
       <EntryForm
@@ -179,6 +178,7 @@ const ExpenseDetail = () => {
           flexDirection: "row",
           gap: 1,
           p: 2,
+          pb: "32px",
           background: colors.background,
         }}
       >
