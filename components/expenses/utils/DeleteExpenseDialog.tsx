@@ -1,25 +1,23 @@
-import { useCallback, useState } from "react";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogContentText,
   DialogActions,
   Button,
 } from "@mui/material";
-import { useTheme } from "../../../src/contexts/ThemeContext";
-import { useQueryClient } from "@tanstack/react-query";
-import { refetchExpensesQueries } from "../../../utils/refetchExpensesQueries";
 import { TelegramUser } from "../../dashboard";
+import { useTheme } from "@/contexts/ThemeContext";
 import { TelegramWebApp } from "../../../utils/types";
+import { showPopup } from "@telegram-apps/sdk";
 
 interface DeleteExpenseDialogProps {
   id: number;
-  isIncome?: boolean;
+  isIncome: boolean;
   onSuccess: () => void;
   showConfirm: boolean;
   setShowConfirm: (show: boolean) => void;
   tgUser: TelegramUser | null;
+  deleteFromCache?: () => void;
 }
 
 export default function DeleteExpenseDialog({
@@ -28,118 +26,94 @@ export default function DeleteExpenseDialog({
   onSuccess,
   showConfirm,
   setShowConfirm,
-  tgUser,
+  deleteFromCache,
 }: DeleteExpenseDialogProps) {
   const { colors } = useTheme();
-  const [isDeleting, setIsDeleting] = useState(false);
-  const queryClient = useQueryClient();
 
-  const handleDelete = useCallback(async () => {
-    if (!tgUser) return;
-
+  const handleDelete = async () => {
     try {
-      setIsDeleting(true);
+      // Optimistically update cache and UI
+      if (deleteFromCache) {
+        deleteFromCache();
+      }
+
+      // Call onSuccess immediately for better UX
+      onSuccess();
+      setShowConfirm(false);
+
+      // Make the API call in the background
       const webApp = window.Telegram?.WebApp as TelegramWebApp;
+      const user = webApp?.initDataUnsafe?.user;
       const initData = webApp?.initData;
+
+      if (!user?.id || !initData) {
+        throw new Error("Missing Telegram data");
+      }
 
       const response = await fetch(`/api/entries/${id}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          telegram_id: tgUser.id.toString(),
+          telegram_id: user.id.toString(),
           initData,
           isIncome,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete entry");
+        throw new Error("Failed to delete expense");
       }
-
-      await refetchExpensesQueries(queryClient, tgUser.id.toString());
-      onSuccess();
-    } catch (error) {
-      console.error("Error deleting entry:", error);
-    } finally {
-      setIsDeleting(false);
-      setShowConfirm(false);
+    } catch (err) {
+      console.error("Delete failed:", err);
+      // Show error message but don't revert UI since we already navigated
+      showPopup({
+        title: "Error",
+        message: "Failed to delete. Please refresh the page.",
+        buttons: [{ type: "ok" }],
+      });
     }
-  }, [id, isIncome, onSuccess, setShowConfirm, tgUser, queryClient]);
+  };
 
   return (
     <Dialog
       open={showConfirm}
-      onClose={() => !isDeleting && setShowConfirm(false)}
+      onClose={() => setShowConfirm(false)}
       PaperProps={{
         sx: {
-          bgcolor: colors.card,
+          backgroundColor: colors.background,
           color: colors.text,
-          borderRadius: 3,
-          width: "90%",
-          maxWidth: "400px",
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          color: colors.text,
-          fontSize: "1.1rem",
-          fontWeight: 600,
-          pt: 3,
-          textAlign: "center",
-        }}
-      >
+      <DialogTitle sx={{ color: colors.text }}>
         Delete {isIncome ? "Income" : "Expense"}
       </DialogTitle>
       <DialogContent>
-        <DialogContentText
-          sx={{
-            color: colors.textSecondary,
-            textAlign: "center",
-            fontSize: "0.9rem",
-          }}
-        >
-          Are you sure you want to delete this {isIncome ? "income" : "expense"}? This action cannot be undone.
-        </DialogContentText>
+        <div style={{ color: colors.text }}>
+          Are you sure you want to delete this {isIncome ? "income" : "expense"}
+          ?
+        </div>
       </DialogContent>
-      <DialogActions
-        sx={{
-          justifyContent: "center",
-          gap: 1,
-          pb: 3,
-          px: 3,
-        }}
-      >
+      <DialogActions>
         <Button
           onClick={() => setShowConfirm(false)}
-          disabled={isDeleting}
-          sx={{
-            color: colors.text,
-            bgcolor: colors.inputBg,
-            textTransform: "none",
-            width: "100%",
-            "&:hover": {
-              bgcolor: colors.surface,
-            },
-          }}
+          sx={{ color: colors.text }}
         >
           Cancel
         </Button>
         <Button
           onClick={handleDelete}
-          disabled={isDeleting}
           sx={{
             color: colors.text,
-            bgcolor: colors.expense,
-            textTransform: "none",
-            width: "100%",
+            backgroundColor: colors.expense,
             "&:hover": {
-              bgcolor: colors.expense,
-              opacity: 0.9,
+              backgroundColor: colors.expenseBg,
             },
           }}
         >
-          {isDeleting ? "Deleting..." : "Delete"}
+          Delete
         </Button>
       </DialogActions>
     </Dialog>

@@ -33,7 +33,59 @@ export const useExpense = ({
     return entry;
   };
 
-  return useQuery({
+  // Function to update expense in all relevant caches
+  const updateExpenseInCache = (updatedExpense: any) => {
+    // Update in allEntries cache
+    queryClient.setQueryData<AllEntriesResponse>(
+      ["allEntries", userId],
+      (oldData) => {
+        if (!oldData) return oldData;
+
+        return {
+          ...oldData,
+          expenses: isIncome
+            ? oldData.expenses
+            : oldData.expenses.map((e) =>
+                e.id.toString() === id.toString() ? updatedExpense : e
+              ),
+          income: isIncome
+            ? oldData.income.map((i) =>
+                i.id.toString() === id.toString() ? updatedExpense : i
+              )
+            : oldData.income,
+        };
+      }
+    );
+
+    // Update in individual expense cache
+    queryClient.setQueryData(["expense", id], updatedExpense);
+  };
+
+  // Function to delete expense from all caches
+  const deleteExpenseFromCache = () => {
+    // Remove from allEntries cache
+    queryClient.setQueryData<AllEntriesResponse>(
+      ["allEntries", userId],
+      (oldData) => {
+        if (!oldData) return oldData;
+
+        return {
+          ...oldData,
+          expenses: isIncome
+            ? oldData.expenses
+            : oldData.expenses.filter((e) => e.id.toString() !== id.toString()),
+          income: isIncome
+            ? oldData.income.filter((i) => i.id.toString() !== id.toString())
+            : oldData.income,
+        };
+      }
+    );
+
+    // Remove from individual expense cache
+    queryClient.removeQueries({ queryKey: ["expense", id] });
+  };
+
+  const query = useQuery({
     queryKey: ["expense", id],
     queryFn: async () => {
       if (!userId || !initData) {
@@ -47,7 +99,7 @@ export const useExpense = ({
       });
 
       const response = await fetch(`/api/entries/${id}?${params.toString()}`);
-
+      
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error("Expense not found");
@@ -64,4 +116,10 @@ export const useExpense = ({
     staleTime: 0, // Consider cached data immediately stale
     gcTime: 300000, // Keep unused data in cache for 5 minutes
   });
+
+  return {
+    ...query,
+    updateExpenseInCache,
+    deleteExpenseFromCache,
+  };
 };

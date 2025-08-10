@@ -5,8 +5,6 @@ import { Box, Button, Alert } from "@mui/material";
 import { TelegramWebApp } from "../../../../utils/types";
 import { useForm } from "react-hook-form";
 import DeleteExpenseDialog from "../../../../components/expenses/utils/DeleteExpenseDialog";
-import { useQueryClient } from "@tanstack/react-query";
-import { refetchExpensesQueries } from "../../../../utils/refetchExpensesQueries";
 import { TelegramUser } from "../../../../components/dashboard";
 import EntryForm from "../../../../components/expenses/forms/EntryForm";
 import LoadingSkeleton from "../../../../components/dashboard/LoadingSkeleton";
@@ -27,20 +25,18 @@ const ExpenseDetail = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | undefined>(undefined);
-  const queryClient = useQueryClient();
 
   // Get categories from useAllEntries
-  const { categories, isError: isCategoriesError } = useAllEntries(
-    tgUser?.id,
-    initData
-  );
+  const { categories } = useAllEntries(tgUser?.id, initData);
 
   // Get expense data with cache-first strategy
   const {
     data: expense,
     isLoading,
-    isError: isExpenseError,
-    error: expenseError,
+    isError,
+    error,
+    updateExpenseInCache,
+    deleteExpenseFromCache,
   } = useExpense({
     id: entryId as string,
     isIncome: isIncome === "true",
@@ -122,15 +118,9 @@ const ExpenseDetail = () => {
         const webAppInitData = webApp.initData;
 
         if (!user?.id || !webAppInitData || !entryId || !expense) {
-          console.error("Missing Telegram user/init data or expense ID");
+          console.error("Missing required data");
           return;
         }
-
-        const userId = user.id.toString();
-        const queryKeys = [
-          ["expensesWithBudget", userId],
-          ["allEntries", userId],
-        ];
 
         // Create the updated expense object
         const updatedExpense = {
@@ -141,48 +131,14 @@ const ExpenseDetail = () => {
         };
 
         // Optimistically update the cache
-        queryKeys.forEach((queryKey) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          queryClient.setQueryData(queryKey, (oldData: any) => {
-            if (!oldData) return oldData;
+        updateExpenseInCache(updatedExpense);
 
-            // Handle array response
-            if (Array.isArray(oldData)) {
-              return oldData.map((item) =>
-                item.id === updatedExpense.id ? updatedExpense : item
-              );
-            }
-
-            // Handle allEntries structure
-            if (oldData.expenses || oldData.income) {
-              const isIncomeEntry = isIncome === "true";
-              return {
-                ...oldData,
-                expenses: isIncomeEntry
-                  ? oldData.expenses
-                  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    oldData.expenses.map((e: any) =>
-                      e.id === updatedExpense.id ? updatedExpense : e
-                    ),
-                income: isIncomeEntry
-                  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    oldData.income.map((i: any) =>
-                      i.id === updatedExpense.id ? updatedExpense : i
-                    )
-                  : oldData.income,
-              };
-            }
-
-            return oldData;
-          });
-        });
-
-        // Make the API call
+        // Make the API call in the background
         const response = await fetch(`/api/entries/${entryId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            telegram_id: userId,
+            telegram_id: user.id.toString(),
             initData: webAppInitData,
             ...data,
             amount: parseFloat(data.amount),
@@ -191,23 +147,14 @@ const ExpenseDetail = () => {
         });
 
         if (!response.ok) {
-          // If the update fails, revert the optimistic update
-          queryKeys.forEach((queryKey) => {
-            queryClient.invalidateQueries({ queryKey });
-          });
-
-          const errorText = await response.text();
-          console.error("Failed to update entry:", errorText);
+          // If update fails, show error but don't block navigation
           showPopup({
             title: "Error",
-            message: "Failed to update. Please try again.",
+            message: "Failed to update. Please refresh the page.",
             buttons: [{ type: "ok" }],
           });
           return;
         }
-
-        // Background refetch to ensure consistency
-        refetchExpensesQueries(queryClient, userId);
 
         showPopup({
           title: "Success",
@@ -216,18 +163,16 @@ const ExpenseDetail = () => {
           } updated successfully`,
           buttons: [{ type: "ok" }],
         });
-
-        reset(data, { keepDirty: false });
       } catch (err) {
         console.error("Error updating entry:", err);
         showPopup({
           title: "Error",
-          message: "An error occurred. Please try again.",
+          message: "Failed to update. Please refresh the page.",
           buttons: [{ type: "ok" }],
         });
       }
     },
-    [reset, entryId, isIncome, expense, categories, queryClient]
+    [entryId, isIncome, expense, categories, updateExpenseInCache, router]
   );
 
   // Handle loading and error states
@@ -235,12 +180,12 @@ const ExpenseDetail = () => {
     return <LoadingSkeleton />;
   }
 
-  if (isExpenseError || isCategoriesError) {
+  if (isError) {
     return (
       <Box sx={{ p: 2 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
-          {expenseError instanceof Error
-            ? expenseError.message
+          {error instanceof Error
+            ? error.message
             : "Failed to load expense data. Please try again."}
         </Alert>
         <Button
@@ -343,6 +288,7 @@ const ExpenseDetail = () => {
         showConfirm={showDeleteDialog}
         setShowConfirm={setShowDeleteDialog}
         tgUser={tgUser}
+        deleteFromCache={deleteExpenseFromCache}
       />
     </Box>
   );
