@@ -40,17 +40,18 @@ declare global {
   }
 }
 
-const applyViewportHeight = () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tg = (window as any).Telegram?.WebApp;
-  const h = tg?.viewportStableHeight || tg?.viewportHeight; // Telegram’s real height
-  const vv = window.visualViewport?.height; // iOS/Safari fallback
-  const best = h ? `${h}px` : vv ? `${vv}px` : null;
-  if (best) document.documentElement.style.setProperty("--app-height", best);
-};
-
 function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
+    function applyViewportHeight() {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tg = (window as any).Telegram?.WebApp;
+      const h = tg?.viewportStableHeight || tg?.viewportHeight;
+      const vv = window.visualViewport?.height;
+      const best = h ? `${h}px` : vv ? `${vv}px` : null;
+      if (best)
+        document.documentElement.style.setProperty("--app-height", best);
+    }
+
     async function initTg() {
       if (await isTMA()) {
         init();
@@ -64,21 +65,29 @@ function MyApp({ Component, pageProps }: AppProps) {
         if (viewport.requestFullscreen.isAvailable() && isMobile) {
           await viewport.requestFullscreen();
           disableVerticalSwipes();
-          // viewport.lockOrientation("portrait");
         }
 
-        // ✅ Apply height once after setup
-        applyViewportHeight();
+        // Give Telegram a tick to finish layout before measuring
+        requestAnimationFrame(() => {
+          applyViewportHeight();
+        });
 
-        // ✅ Listen for Telegram viewport changes
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).Telegram?.WebApp?.onEvent?.(
           "viewportChanged",
           applyViewportHeight
         );
-
-        // ✅ Fallback for browser visual viewport changes (iOS keyboard, rotation, etc.)
         window.visualViewport?.addEventListener("resize", applyViewportHeight);
+      } else {
+        // Browser fallback
+        const setFromVV = () =>
+          document.documentElement.style.setProperty(
+            "--app-height",
+            `${window.visualViewport?.height || window.innerHeight}px`
+          );
+        setFromVV();
+        window.addEventListener("resize", setFromVV);
+        window.visualViewport?.addEventListener("resize", setFromVV);
       }
     }
 
@@ -89,7 +98,9 @@ function MyApp({ Component, pageProps }: AppProps) {
     <>
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <Component {...pageProps} />
+          <div className="app">
+            <Component {...pageProps} />
+          </div>
         </QueryClientProvider>
       </ThemeProvider>
     </>
