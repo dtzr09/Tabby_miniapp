@@ -6,7 +6,6 @@ import {
   MoreHorizRounded,
 } from "@mui/icons-material";
 import { useTheme } from "@/contexts/ThemeContext";
-import { alpha } from "@mui/material/styles";
 import { FilterType } from "../../../utils/advancedFilterUtils";
 
 interface MoreMenuButtonsProps {
@@ -56,10 +55,6 @@ export default function MoreMenuButtons({
           sx={{
             color: colors.text,
             p: 0.5,
-            "&:hover": {
-              color: colors.primary,
-              bgcolor: alpha(colors.primary, 0.1),
-            },
             transition: "all 0.2s ease-in-out",
             position: "absolute",
             right: 0,
@@ -87,9 +82,7 @@ export default function MoreMenuButtons({
                 p: "5px 8px",
                 borderRadius: 2,
                 cursor: "pointer",
-                "&:hover": {
-                  bgcolor: alpha(colors.primary, 0.1),
-                },
+
                 transition: "all 0.2s ease-in-out",
               }}
             >
@@ -119,10 +112,7 @@ export default function MoreMenuButtons({
                 bgcolor: colors.incomeExpenseCard,
                 color: Boolean(filterMenuAnchor) ? colors.primary : colors.text,
                 cursor: "pointer",
-                "&:hover": {
-                  color: colors.primary,
-                  bgcolor: alpha(colors.primary, 0.1),
-                },
+
                 transition: "all 0.2s ease-in-out",
               }}
             >
@@ -135,10 +125,7 @@ export default function MoreMenuButtons({
               color: colors.text,
               p: 0.8,
               bgcolor: colors.incomeExpenseCard,
-              "&:hover": {
-                color: colors.primary,
-                bgcolor: alpha(colors.primary, 0.1),
-              },
+
               transition: "all 0.2s ease-in-out",
             }}
           >
@@ -150,10 +137,7 @@ export default function MoreMenuButtons({
               color: colors.text,
               p: 0.8,
               bgcolor: colors.incomeExpenseCard,
-              "&:hover": {
-                color: colors.primary,
-                bgcolor: alpha(colors.primary, 0.1),
-              },
+
               transition: "all 0.2s ease-in-out",
             }}
           >

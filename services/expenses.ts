@@ -1,4 +1,6 @@
-import { TelegramWebApp } from "../utils/types";
+import { QueryObserverResult } from "@tanstack/react-query";
+import { Expense, TelegramWebApp } from "../utils/types";
+import { fetchUser } from "./users";
 
 export const deleteExpense = async (id: number) => {
   try {
@@ -29,10 +31,21 @@ export const deleteExpense = async (id: number) => {
   }
 };
 
-export const fetchExpenses = async (telegram_id: string, initData: string) => {
+export const fetchExpenses = async (
+  telegram_id: string,
+  initData: string,
+  group_id: string
+) => {
+  const user = await fetchUser(telegram_id, initData, group_id);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
   const params = new URLSearchParams({
     telegram_id,
     initData,
+    group_id,
+    user: JSON.stringify(user),
   });
 
   const response = await fetch(`/api/expenses?${params.toString()}`);
@@ -84,12 +97,19 @@ export const fetchExpenseDetail = async (
 
 export const fetchExpensesAndBudgets = async (
   telegram_id: string,
-  initData: string
+  initData: string,
+  group_id: string
 ) => {
+  const user = await fetchUser(telegram_id, initData, group_id);
+  if (!user) {
+    throw new Error("User not found");
+  }
   const params = new URLSearchParams({
     telegram_id,
     initData,
+    group_id: group_id,
     isPeriod: "true",
+    user: JSON.stringify(user),
   });
 
   const expensesResponse = fetch(`/api/expenses?${params.toString()}`).then(
@@ -122,6 +142,38 @@ export const fetchExpensesAndBudgets = async (
   ]);
 
   return { expenses: expenses || [], budgets: budgets || [] };
+};
+
+export const fetchGroupExpenses = async (
+  telegram_id: string,
+  initData: string,
+  group_id: string,
+  group_view: boolean
+) => {
+  const user = await fetchUser(telegram_id, initData, group_id);
+  if (!user) {
+    throw new Error("User not found");
+  }
+  //fetch all expenses from the group whether or not user is involved
+  const params = new URLSearchParams({
+    telegram_id,
+    initData,
+    group_id,
+    isPeriod: "true",
+    group_view: group_view.toString(),
+    user: JSON.stringify(user),
+  });
+
+  const response = await fetch(`/api/group-expenses?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error(
+      `Group expenses error ${response.status}: ${response.statusText}`
+    );
+  }
+
+  const data = await response.json();
+  return data;
 };
 
 export const fetchExpensesForBudgets = async (

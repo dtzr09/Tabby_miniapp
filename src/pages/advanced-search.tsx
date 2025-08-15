@@ -19,7 +19,7 @@ import { useTheme } from "../contexts/ThemeContext";
 export default function AdvancedSearch() {
   const router = useRouter();
   const { colors } = useTheme();
-  
+
   return (
     <Box
       sx={{
@@ -45,7 +45,10 @@ export default function AdvancedSearch() {
           px: 2,
         }}
       >
-        <IconButton sx={{ color: colors.text }} onClick={() => router.push("/")}>
+        <IconButton
+          sx={{ color: colors.text }}
+          onClick={() => router.push("/")}
+        >
           <ArrowBackIosNewIcon />
         </IconButton>
         <Typography
@@ -196,7 +199,6 @@ export default function AdvancedSearch() {
               boxShadow: 0,
               py: 1.5,
               px: 3,
-              '&:hover': { bgcolor: colors.primary },
             }}
           >
             Subscribe to Premium

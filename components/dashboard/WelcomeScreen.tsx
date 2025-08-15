@@ -98,9 +98,9 @@ export default function WelcomeScreen() {
 
           <List sx={{ mb: 2 }}>
             {[
-              "Open the Tabby bot in Telegram",
+              "Open Tabby in Telegram",
               "Send the command /start",
-              "Begin tracking your expenses and managing your budget",
+              "Start tracking your expenses and manage your budget",
             ].map((text, index) => (
               <ListItem
                 key={index}
@@ -161,9 +161,6 @@ export default function WelcomeScreen() {
               fontSize: "0.875rem",
               borderRadius: 1.5,
               textTransform: "none",
-              "&:hover": {
-                bgcolor: alpha(colors.primary, 0.9),
-              },
             }}
           >
             Open Tabby

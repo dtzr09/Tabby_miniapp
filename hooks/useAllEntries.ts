@@ -9,7 +9,7 @@ interface UseAllEntriesReturn {
   isError: boolean;
 }
 
-export const useAllEntries = (userId?: string, initData?: string): UseAllEntriesReturn => {
+export const useAllEntries = (userId?: string, initData?: string, groupId?: string | null): UseAllEntriesReturn => {
   // Query for categories
   const { 
     data: categoriesData,
@@ -41,10 +41,10 @@ export const useAllEntries = (userId?: string, initData?: string): UseAllEntries
     isLoading: isEntriesLoading,
     isError: isEntriesError
   } = useQuery<AllEntriesResponse>({
-    queryKey: ["allEntries", userId],
+    queryKey: ["allEntries", userId, groupId],
     queryFn: () => {
       if (userId && initData) {
-        return fetchAllEntries(userId, initData);
+        return fetchAllEntries(userId, initData, groupId);
       }
       return Promise.resolve({ expenses: [], income: [], budgets: [] });
     },

@@ -386,9 +386,6 @@ const Settings = () => {
                     "& .MuiOutlinedInput-notchedOutline": {
                       border: "none",
                     },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      border: "none",
-                    },
                     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                       border: "none",
                     },
@@ -408,15 +405,9 @@ const Settings = () => {
                         background: colors.card,
                         "& .MuiMenuItem-root": {
                           color: colors.text,
-                          "&:hover": {
-                            background: colors.surface,
-                          },
                           "&.Mui-selected": {
                             background: colors.primary,
                             color: colors.text,
-                            "&:hover": {
-                              background: colors.primary,
-                            },
                           },
                         },
                       },
@@ -469,9 +460,6 @@ const Settings = () => {
                     "& .MuiOutlinedInput-notchedOutline": {
                       border: "none",
                     },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      border: "none",
-                    },
                     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                       border: "none",
                     },
@@ -491,15 +479,9 @@ const Settings = () => {
                         background: colors.card,
                         "& .MuiMenuItem-root": {
                           color: colors.text,
-                          "&:hover": {
-                            background: colors.surface,
-                          },
                           "&.Mui-selected": {
                             background: colors.primary,
                             color: colors.text,
-                            "&:hover": {
-                              background: colors.primary,
-                            },
                           },
                         },
                       },

@@ -76,18 +76,18 @@ export default function BalanceCard({
     const today = new Date();
     const year = today.getFullYear();
     const month = today.getMonth();
-    
+
     // Get the last day of the current month
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    
+
     // Get the first day of the month
     const firstDay = new Date(year, month, 1);
     const firstDayOfWeek = firstDay.getDay();
-    
+
     // Calculate total weeks (including partial weeks)
     const weeksInMonth = Math.ceil((daysInMonth + firstDayOfWeek) / 7);
-    
+
     return {
       daysInMonth,
       weeksInMonth,
@@ -114,26 +114,6 @@ export default function BalanceCard({
     ? (periodExpenses / currentBudget) * 100
     : 0;
   const dailyBudget = availableBalance / daysRemaining;
-
-  // Group expenses by category for current period
-  // const categoryExpenses = expensesWithBudget.reduce((acc, exp) => {
-  //   const expDate = new Date(exp.date);
-  //   const startDate = getStartDate();
-
-  //   if (expDate >= startDate) {
-  //     const categoryName = exp.category?.name || "Uncategorized";
-  //     if (!acc[categoryName]) {
-  //       acc[categoryName] = {
-  //         total: 0,
-  //         budget:
-  //           viewType === "weekly" ? (totalBudget * 0.3) / 4 : totalBudget * 0.3,
-  //         color: getProgressColor(0), // Placeholder, will be updated by BudgetBreakdown
-  //       };
-  //     }
-  //     acc[categoryName].total += exp.amount || 0;
-  //   }
-  //   return acc;
-  // }, {} as Record<string, { total: number; budget: number; color: string }>);
 
   return (
     <Card
@@ -183,10 +163,6 @@ export default function BalanceCard({
                 alignItems: "center",
                 justifyContent: "center",
                 border: `1px solid ${alpha(colors.text, 0.15)}`,
-                "&:hover": {
-                  border: `1px solid ${alpha(colors.text, 0.25)}`,
-                  bgcolor: alpha(colors.text, 0.07),
-                },
               }}
             >
               {viewType === "weekly" ? "Week" : "Month"}

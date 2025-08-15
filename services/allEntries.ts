@@ -2,13 +2,18 @@ import { AllEntriesResponse } from "../utils/types";
 
 export const fetchAllEntries = async (
   telegram_id: string,
-  initData: string
+  initData: string,
+  groupId?: string | null
 ): Promise<AllEntriesResponse> => {
   try {
     const params = new URLSearchParams({
       telegram_id,
       initData,
     });
+
+    if (groupId) {
+      params.set("group_id", groupId);
+    }
 
     // Fetch all entries with isIncome parameter
     const [expensesResponse, incomesResponse] = await Promise.all([
@@ -17,7 +22,9 @@ export const fetchAllEntries = async (
     ]);
 
     if (!expensesResponse.ok) {
-      throw new Error(`Failed to fetch expenses: ${expensesResponse.statusText}`);
+      throw new Error(
+        `Failed to fetch expenses: ${expensesResponse.statusText}`
+      );
     }
 
     if (!incomesResponse.ok) {

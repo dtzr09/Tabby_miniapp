@@ -37,6 +37,10 @@ export interface Expense {
   date: string;
   is_income: boolean;
   category: Category;
+  shares?: Array<{
+    user_id: string | number;
+    share_amount: number;
+  }>;
 }
 
 // New unified entry type for display components
@@ -48,6 +52,12 @@ export interface UnifiedEntry {
   date: string;
   amount: number;
   isIncome: boolean;
+  isPersonalShare?: boolean;
+  originalAmount?: number;
+  userShare?: {
+    user_id: string | number;
+    share_amount: number;
+  };
 }
 
 // Service response types
@@ -97,4 +107,15 @@ export interface Category {
   name: string;
   emoji?: string;
   is_income: boolean;
+}
+
+export interface User {
+  id: number;
+  telegram_id: string;
+  chat_id: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  created_at: string;
+  updated_at: string;
 }

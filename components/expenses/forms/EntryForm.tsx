@@ -71,9 +71,6 @@ export default function EntryForm({
       "& fieldset": {
         border: "none",
       },
-      "&:hover fieldset": {
-        border: "none",
-      },
       "&.Mui-focused fieldset": {
         border: "none",
       },
@@ -197,15 +194,9 @@ export default function EntryForm({
                       background: colors.card,
                       "& .MuiMenuItem-root": {
                         color: colors.text,
-                        "&:hover": {
-                          background: colors.surface,
-                        },
                         "&.Mui-selected": {
                           background: colors.primary,
                           color: colors.text,
-                          "&:hover": {
-                            background: colors.primary,
-                          },
                         },
                       },
                     },

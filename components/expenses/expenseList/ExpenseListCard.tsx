@@ -65,7 +65,9 @@ const ExpenseListCard = (props: ExpenseListCardProps) => {
 
       grouped[key].entries.push(entry);
       // Add to net amount (positive for income, negative for expenses)
-      grouped[key].netAmount += entry.isIncome ? entry.amount : -entry.amount;
+      // For personal shares, use the share amount; for regular expenses, use the full amount
+      const amountToAdd = entry.isIncome ? entry.amount : -entry.amount;
+      grouped[key].netAmount += amountToAdd;
     });
 
     return grouped;

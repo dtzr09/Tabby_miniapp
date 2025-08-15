@@ -108,9 +108,6 @@ export default function DeleteExpenseDialog({
           sx={{
             color: colors.text,
             backgroundColor: colors.expense,
-            "&:hover": {
-              backgroundColor: colors.expenseBg,
-            },
           }}
         >
           Delete

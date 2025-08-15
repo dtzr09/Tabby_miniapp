@@ -64,12 +64,6 @@ export default function FilterMenu({
               selectedFilter === id
                 ? alpha(colors.primary, 0.08)
                 : "transparent",
-            "&:hover": {
-              bgcolor:
-                selectedFilter === id
-                  ? alpha(colors.primary, 0.15)
-                  : alpha(colors.primary, 0.1),
-            },
             display: "flex",
             alignItems: "center",
             gap: 1,

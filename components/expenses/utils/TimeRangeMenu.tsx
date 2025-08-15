@@ -2,7 +2,6 @@ import React from "react";
 import { Menu, MenuItem, IconButton, Typography } from "@mui/material";
 import { KeyboardArrowDown, Check as CheckIcon } from "@mui/icons-material";
 import { useTheme } from "@/contexts/ThemeContext";
-import { alpha } from "@mui/material/styles";
 
 interface TimeRangeMenuProps {
   viewType: "Week" | "Month";
@@ -40,9 +39,6 @@ export default function TimeRangeMenu({
           fontSize: "0.7rem",
           fontWeight: 500,
           textTransform: "none",
-          "&:hover": {
-            bgcolor: "transparent",
-          },
         }}
       >
         <Typography
@@ -86,9 +82,7 @@ export default function TimeRangeMenu({
               alignItems: "center",
               justifyContent: "space-between",
               gap: 0.5,
-              "&:hover": {
-                bgcolor: alpha(colors.primary, 0.1),
-              },
+
               "&.selected": {
                 color: colors.primary,
                 fontWeight: 600,
