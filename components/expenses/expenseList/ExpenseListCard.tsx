@@ -8,6 +8,7 @@ import { TelegramUser } from "../../dashboard";
 export interface ExpenseListCardProps {
   entries: UnifiedEntry[];
   tgUser: TelegramUser | null;
+  isGroupView?: boolean;
 }
 
 interface GroupedEntries {
@@ -149,7 +150,7 @@ const ExpenseListCard = (props: ExpenseListCardProps) => {
             }}
           />
           {groupedEntries[date].entries.map((tx) => (
-            <ExpenseRow key={tx.id} tx={tx} tgUser={props.tgUser} />
+            <ExpenseRow key={tx.id} tx={tx} tgUser={props.tgUser} isGroupView={props.isGroupView} />
           ))}
           <Box sx={{ mb: 2}} />
         </React.Fragment>

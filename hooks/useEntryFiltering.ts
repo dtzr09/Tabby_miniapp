@@ -40,6 +40,7 @@ export const useEntryFiltering = (
         isPersonalShare: personalData.isPersonalShare,
         originalAmount: personalData.originalAmount,
         userShare: personalData.userShare,
+        chat_id: expense.chat_id,
       });
     });
 
@@ -56,6 +57,7 @@ export const useEntryFiltering = (
         date: income.date,
         amount: income.amount,
         isIncome: true,
+        chat_id: income.chat_id,
       });
     });
 
@@ -63,95 +65,98 @@ export const useEntryFiltering = (
   }, [allEntries, isPersonalView, userId]);
 
   // Search function
-  const searchExpenses = useCallback((
-    entries: UnifiedEntry[],
-    query: string
-  ): UnifiedEntry[] => {
-    if (!query.trim()) return [];
+  const searchExpenses = useCallback(
+    (entries: UnifiedEntry[], query: string): UnifiedEntry[] => {
+      if (!query.trim()) return [];
 
-    const searchTerms = query.toLowerCase().trim().split(/\s+/);
+      const searchTerms = query.toLowerCase().trim().split(/\s+/);
 
-    return entries.filter((entry) => {
-      const searchableText = entry.description?.toLowerCase() || "";
-      return searchTerms.every((term) => searchableText.includes(term));
-    });
-  }, []);
+      return entries.filter((entry) => {
+        const searchableText = entry.description?.toLowerCase() || "";
+        return searchTerms.every((term) => searchableText.includes(term));
+      });
+    },
+    []
+  );
 
   // Main filtering function
-  const getFilteredEntries = useCallback((
-    isSearchActive: boolean,
-    searchQuery: string,
-    dateRange: DateRange,
-    selectedDate: string | null,
-    viewType: "Week" | "Month",
-    filterOptions: FilterOptions
-  ): UnifiedEntry[] => {
-    let entries = combineEntries();
+  const getFilteredEntries = useCallback(
+    (
+      isSearchActive: boolean,
+      searchQuery: string,
+      dateRange: DateRange,
+      selectedDate: string | null,
+      viewType: "Week" | "Month",
+      filterOptions: FilterOptions
+    ): UnifiedEntry[] => {
+      let entries = combineEntries();
 
-    // If search is active but query is empty, return empty array
-    if (isSearchActive && !searchQuery.trim()) {
-      return [];
-    }
+      // If search is active but query is empty, return empty array
+      if (isSearchActive && !searchQuery.trim()) {
+        return [];
+      }
 
-    // Apply search filter first if active
-    if (isSearchActive && searchQuery) {
-      entries = searchExpenses(entries, searchQuery);
-    } else {
-      // Only apply date filters if not searching
-      // Apply date range filter first
-      const start = new Date(dateRange.start);
-      const end = new Date(dateRange.end);
+      // Apply search filter first if active
+      if (isSearchActive && searchQuery) {
+        entries = searchExpenses(entries, searchQuery);
+      } else {
+        // Only apply date filters if not searching
+        // Apply date range filter first
+        const start = new Date(dateRange.start);
+        const end = new Date(dateRange.end);
 
-      // Set to start and end of day
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
+        // Set to start and end of day
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
 
-      entries = entries.filter((entry) => {
-        const entryDate = new Date(entry.date);
-        const isInRange = entryDate >= start && entryDate <= end;
-        return isInRange;
-      });
-
-      // Apply date selection filter if active
-      if (selectedDate) {
         entries = entries.filter((entry) => {
           const entryDate = new Date(entry.date);
-          if (viewType === "Week") {
-            const dayName = entryDate.toLocaleDateString("en-US", {
-              weekday: "short",
-            });
-            return dayName === selectedDate;
-          } else {
-            // Make sure the format matches exactly what's shown in the chart
-            const formattedDayMonth = `${entryDate.getDate()} ${entryDate.toLocaleDateString(
-              "en-US",
-              { month: "short" }
-            )}`;
-            return formattedDayMonth === selectedDate;
-          }
+          const isInRange = entryDate >= start && entryDate <= end;
+          return isInRange;
         });
+
+        // Apply date selection filter if active
+        if (selectedDate) {
+          entries = entries.filter((entry) => {
+            const entryDate = new Date(entry.date);
+            if (viewType === "Week") {
+              const dayName = entryDate.toLocaleDateString("en-US", {
+                weekday: "short",
+              });
+              return dayName === selectedDate;
+            } else {
+              // Make sure the format matches exactly what's shown in the chart
+              const formattedDayMonth = `${entryDate.getDate()} ${entryDate.toLocaleDateString(
+                "en-US",
+                { month: "short" }
+              )}`;
+              return formattedDayMonth === selectedDate;
+            }
+          });
+        }
       }
-    }
 
-    // Apply category filter
-    if (filterOptions.categoryId) {
-      entries = entries.filter(
-        (entry) => entry.category === filterOptions.categoryId
+      // Apply category filter
+      if (filterOptions.categoryId) {
+        entries = entries.filter(
+          (entry) => entry.category === filterOptions.categoryId
+        );
+      }
+
+      // Apply type filter
+      if (filterOptions.showIncome !== undefined) {
+        entries = entries.filter((entry) =>
+          filterOptions.showIncome ? entry.isIncome : !entry.isIncome
+        );
+      }
+
+      // Sort by date, most recent first
+      return entries.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-    }
-
-    // Apply type filter
-    if (filterOptions.showIncome !== undefined) {
-      entries = entries.filter((entry) =>
-        filterOptions.showIncome ? entry.isIncome : !entry.isIncome
-      );
-    }
-
-    // Sort by date, most recent first
-    return entries.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-  }, [combineEntries, searchExpenses]);
+    },
+    [combineEntries, searchExpenses]
+  );
 
   return {
     combineEntries,

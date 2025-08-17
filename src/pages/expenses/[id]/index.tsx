@@ -2,7 +2,7 @@ import { backButton, init, showPopup } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, Button, Alert } from "@mui/material";
-import { TelegramWebApp } from "../../../../utils/types";
+import { ExpenseFormData, TelegramWebApp } from "../../../../utils/types";
 import { useForm } from "react-hook-form";
 import DeleteExpenseDialog from "../../../../components/expenses/utils/DeleteExpenseDialog";
 import { TelegramUser } from "../../../../components/dashboard";
@@ -11,23 +11,18 @@ import LoadingSkeleton from "../../../../components/dashboard/LoadingSkeleton";
 import { useExpense } from "../../../../hooks/useExpense";
 import { useAllEntries } from "../../../../hooks/useAllEntries";
 import { useTheme } from "@/contexts/ThemeContext";
-
-interface ExpenseFormData {
-  description: string;
-  amount: string;
-  category_id: number;
-}
+import { useUser } from "../../../../hooks/useUser";
 
 const ExpenseDetail = () => {
   const router = useRouter();
-  const { id: entryId, isIncome } = router.query;
+  const { id: entryId, isIncome, chat_id, isGroupView } = router.query;
   const { colors } = useTheme();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | undefined>(undefined);
-
   // Get categories from useAllEntries
-  const { categories } = useAllEntries(tgUser?.id, initData);
+  const { categories } = useAllEntries(tgUser?.id, initData, chat_id as string);
+  const { data: user } = useUser(tgUser?.id, initData, chat_id as string);
 
   // Get expense data with cache-first strategy
   const {
@@ -42,6 +37,7 @@ const ExpenseDetail = () => {
     isIncome: isIncome === "true",
     userId: tgUser?.id,
     initData,
+    chat_id: chat_id as string,
   });
 
   const defaultValues: ExpenseFormData = {
@@ -53,12 +49,15 @@ const ExpenseDetail = () => {
   const {
     control,
     handleSubmit,
-    formState: { isDirty, isSubmitting },
+    formState: { isDirty, isSubmitting, errors },
     reset,
   } = useForm<ExpenseFormData>({
     defaultValues,
     mode: "onChange",
   });
+
+  const hasExpenseShares =
+    isGroupView !== "true" && expense?.shares && expense.shares.length > 0;
 
   // Reset form when expense data changes
   useEffect(() => {
@@ -66,13 +65,19 @@ const ExpenseDetail = () => {
       reset(
         {
           description: expense.description || "",
-          amount: Math.abs(expense.amount).toString(),
+          amount: hasExpenseShares
+            ? expense.shares
+                .find(
+                  (share: { user_id: number }) => share.user_id === user?.id
+                )
+                ?.share_amount.toString()
+            : expense.amount.toString(),
           category_id: expense.category?.id || 0,
         },
         { keepDirty: false }
       );
     }
-  }, [expense, reset]);
+  }, [expense, reset, user, isGroupView]);
 
   // Initialize Telegram WebApp
   useEffect(() => {
@@ -126,7 +131,7 @@ const ExpenseDetail = () => {
         const updatedExpense = {
           ...expense,
           description: data.description,
-          amount: parseFloat(data.amount) * (isIncome === "true" ? 1 : -1),
+          amount: parseFloat(data.amount),
           category: categories.find((c) => c.id === data.category_id),
         };
 
@@ -138,7 +143,7 @@ const ExpenseDetail = () => {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            telegram_id: user.id.toString(),
+            chat_id: user.id.toString(),
             initData: webAppInitData,
             ...data,
             amount: parseFloat(data.amount),
@@ -233,6 +238,10 @@ const ExpenseDetail = () => {
         isIncome={isIncome === "true"}
         isLoading={isLoading}
         date={expense.date}
+        expense={expense}
+        tgUser={tgUser as TelegramUser}
+        initData={initData as string}
+        chat_id={chat_id as string}
       />
 
       <Box
@@ -275,7 +284,7 @@ const ExpenseDetail = () => {
               color: colors.textSecondary,
             },
           }}
-          disabled={!isDirty}
+          disabled={!isDirty || Object.keys(errors).length > 0}
           onClick={handleSubmit(onSubmit)}
         >
           {isSubmitting ? "Saving..." : "Save Changes"}

@@ -3,7 +3,7 @@ import { AllEntriesResponse } from "../utils/types";
 export const fetchAllEntries = async (
   telegram_id: string,
   initData: string,
-  groupId?: string | null
+  chat_id?: string | null
 ): Promise<AllEntriesResponse> => {
   try {
     const params = new URLSearchParams({
@@ -11,8 +11,8 @@ export const fetchAllEntries = async (
       initData,
     });
 
-    if (groupId) {
-      params.set("group_id", groupId);
+    if (chat_id) {
+      params.set("chat_id", chat_id);
     }
 
     // Fetch all entries with isIncome parameter

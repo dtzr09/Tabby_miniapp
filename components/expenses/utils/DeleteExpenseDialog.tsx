@@ -56,7 +56,7 @@ export default function DeleteExpenseDialog({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          telegram_id: user.id.toString(),
+          chat_id: user.id.toString(),
           initData,
           isIncome,
         }),

@@ -15,9 +15,11 @@ import { refetchExpensesQueries } from "../../../utils/refetchExpensesQueries";
 const ExpenseRow = ({
   tx,
   tgUser,
+  isGroupView,
 }: {
   tx: UnifiedEntry;
   tgUser: TelegramUser | null;
+  isGroupView?: boolean;
 }) => {
   const { colors } = useTheme();
   const router = useRouter();
@@ -37,10 +39,7 @@ const ExpenseRow = ({
     // Optimistically update the cache
     if (tgUser) {
       const userId = tgUser.id.toString();
-      const queryKeys = [
-        ["expensesWithBudget", userId],
-        ["allEntries", userId],
-      ];
+      const queryKeys = [["allEntries", userId, tx.chat_id]];
 
       // Update each query's data optimistically
       queryKeys.forEach((queryKey) => {
@@ -129,9 +128,11 @@ const ExpenseRow = ({
             justifyContent: "space-between",
             cursor: "pointer",
           }}
-          onClick={() =>
-            router.push(`/expenses/${tx.id}?isIncome=${tx.isIncome}`)
-          }
+          onClick={() => {
+            router.push(
+              `/expenses/${tx.id}?isIncome=${tx.isIncome}&chat_id=${tx.chat_id}&isGroupView=${isGroupView}`
+            );
+          }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             {/* Category Icon */}
@@ -152,7 +153,14 @@ const ExpenseRow = ({
 
             {/* Description and Time */}
             <Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.25 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  mb: 0.25,
+                }}
+              >
                 <Typography
                   sx={{
                     fontWeight: 600,
@@ -206,20 +214,22 @@ const ExpenseRow = ({
                 maximumFractionDigits: 2,
               })}
             </Typography>
-            
+
             {/* Show share information for personal expenses */}
-            {tx.isPersonalShare && tx.originalAmount && tx.originalAmount !== tx.amount && (
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  color: colors.textSecondary,
-                  opacity: 0.7,
-                  lineHeight: 1,
-                }}
-              >
-                Share of ${tx.originalAmount}
-              </Typography>
-            )}
+            {tx.isPersonalShare &&
+              tx.originalAmount &&
+              tx.originalAmount !== tx.amount && (
+                <Typography
+                  sx={{
+                    fontSize: "0.7rem",
+                    color: colors.textSecondary,
+                    opacity: 0.7,
+                    lineHeight: 1,
+                  }}
+                >
+                  Share of ${tx.originalAmount}
+                </Typography>
+              )}
           </Box>
         </Box>
       </Box>

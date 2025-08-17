@@ -174,8 +174,8 @@ const Dashboard = () => {
 
   const handleViewToggle = () => setIsGroupView(!isGroupView);
 
-  // Show welcome screen if no data
-  if (!hasData) {
+  // Show welcome screen if no data and no groups
+  if (!hasData && !hasGroups) {
     return <WelcomeScreen />;
   }
 
@@ -275,7 +275,11 @@ const Dashboard = () => {
 
           {/* Recent Transactions Card */}
           <Box sx={{ width: "100%", mb: 4 }}>
-            <ExpenseList allEntries={filteredAllEntries} tgUser={tgUser} />
+            <ExpenseList
+              allEntries={filteredAllEntries}
+              tgUser={tgUser}
+              isGroupView={isGroupView}
+            />
           </Box>
         </Box>
       </Box>

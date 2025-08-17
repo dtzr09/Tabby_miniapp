@@ -31,6 +31,7 @@ interface ExpenseListProps {
   tgUser: TelegramUser | null;
   isPersonalView?: boolean;
   userId?: string | number;
+  isGroupView?: boolean;
 }
 
 export default function ExpenseList({
@@ -38,6 +39,7 @@ export default function ExpenseList({
   tgUser,
   isPersonalView,
   userId,
+  isGroupView,
 }: ExpenseListProps) {
   const { colors } = useTheme();
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -306,7 +308,11 @@ export default function ExpenseList({
 
           {/* Expense List */}
           <List sx={{ p: 0 }}>
-            <ExpenseListCard entries={filteredEntries} tgUser={tgUser} />
+            <ExpenseListCard
+              entries={filteredEntries}
+              tgUser={tgUser}
+              isGroupView={isGroupView}
+            />
           </List>
         </Box>
       </CardContent>

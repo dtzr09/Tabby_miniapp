@@ -26,7 +26,7 @@ export default async function handler(
     );
 
     if (userGroups.rows.length === 0) {
-      return res.status(200).json(null);
+      return res.status(200).json([]);
     }
 
     const groupsIds = userGroups.rows.map((user) => user.chat_id);
@@ -43,16 +43,42 @@ export default async function handler(
       [groupsIds]
     );
 
-    return res.status(200).json(groupsWithExpenses.rows);
+    return res.status(200).json(groupsWithExpenses.rows || []);
   } else {
     if (!supabaseAdmin) {
       return res.status(500).json({ error: "Supabase client not configured" });
     }
 
-    const { data: group } = await supabaseAdmin
+    // First get user's groups by finding users with matching telegram_id
+    const { data: userGroups, error: userError } = await supabaseAdmin
+      .from("users")
+      .select("chat_id")
+      .eq("telegram_id", telegram_id)
+      .neq("chat_id", telegram_id);
+
+    if (userError) {
+      console.error("Error fetching user groups:", userError);
+      return res.status(500).json({ error: "Failed to fetch user groups" });
+    }
+
+    if (!userGroups || userGroups.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const groupChatIds = userGroups.map(user => user.chat_id);
+
+    // Get groups that have expenses
+    const { data: groupsWithExpenses, error: groupsError } = await supabaseAdmin
       .from("groups")
       .select("*")
-      .eq("telegram_id", telegram_id);
-    return res.status(200).json(group);
+      .in("chat_id", groupChatIds)
+      .filter("chat_id", "in", `(${groupChatIds.join(",")})`);
+
+    if (groupsError) {
+      console.error("Error fetching groups with expenses:", groupsError);
+      return res.status(500).json({ error: "Failed to fetch groups" });
+    }
+
+    return res.status(200).json(groupsWithExpenses || []);
   }
 }

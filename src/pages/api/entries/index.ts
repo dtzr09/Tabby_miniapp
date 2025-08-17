@@ -12,7 +12,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { telegram_id, initData, isIncome, group_id } = req.query;
+  const { telegram_id, initData, isIncome, chat_id } = req.query;
   const isValid = await validateTelegramWebApp(initData as string, BOT_TOKEN);
 
   if (!isValid) {
@@ -22,20 +22,22 @@ export default async function handler(
   // Handle personal entries
   const isIncomeBoolean = isIncome === "true";
   const tableName = isIncomeBoolean ? "incomes" : "expenses";
-  const value = group_id ? group_id : telegram_id;
+  const value = chat_id ? chat_id : telegram_id;
 
   try {
     if (isLocal) {
       let entries;
 
-      if (group_id && !isIncomeBoolean) {
-        // For group expenses, include expense shares
+      if (chat_id && !isIncomeBoolean) {
+        // For group expenses, include expense shares with user information
         const result = await postgresClient.query(
           `SELECT e.*, c.id as category_id, c.name as category_name,
-                  es.user_id as share_user_id, es.share_amount
+                  es.user_id as share_user_id, es.share_amount,
+                  u.name, u.username
            FROM ${tableName} e
            LEFT JOIN all_categories c ON e.category_id = c.id
            LEFT JOIN expense_shares es ON e.id = es.expense_id
+           LEFT JOIN users u ON es.user_id = u.id
            WHERE e.chat_id = $1
            ORDER BY e.date DESC, e.id`,
           [value]
@@ -65,6 +67,9 @@ export default async function handler(
             expensesMap.get(expenseId).shares.push({
               user_id: row.share_user_id,
               share_amount: row.share_amount,
+              user_name: row.name || `User ${row.share_user_id}`,
+              username: row.username || "",
+              name: row.name || `User ${row.share_user_id}`, // For backward compatibility
             });
           }
         });
@@ -105,12 +110,12 @@ export default async function handler(
         category:all_categories!category_id(*)
       `;
 
-      // For group expenses, include expense shares
-      if (group_id && !isIncomeBoolean) {
+      // For group expenses, include expense shares with user information
+      if (chat_id && !isIncomeBoolean) {
         selectQuery = `
           *,
           category:all_categories!category_id(*),
-          shares:expense_shares(user_id, share_amount)
+          shares:expense_shares(user_id, share_amount, user:users!inner(name, username))
         `;
       }
 
@@ -123,6 +128,24 @@ export default async function handler(
       if (error) {
         console.error(`Error fetching ${tableName}:`, error);
         return res.status(500).json({ error: `Failed to fetch ${tableName}` });
+      }
+
+      // Process Supabase data to match SQL structure
+      if (chat_id && !isIncomeBoolean && entries) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const processedEntries = entries.map((entry: any) => ({
+          ...entry,
+          shares:
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            entry.shares?.map((share: any) => ({
+              user_id: share.user_id,
+              share_amount: share.share_amount,
+              user_name: share.user?.name || `User ${share.user_id}`,
+              username: share.user?.username || "",
+              name: share.user?.name || `User ${share.user_id}`, // For backward compatibility
+            })) || [],
+        }));
+        return res.status(200).json(processedEntries || []);
       }
 
       return res.status(200).json(entries || []);
