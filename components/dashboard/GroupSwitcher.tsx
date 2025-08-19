@@ -58,7 +58,7 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
           gap: 0.3,
           py: 1,
           color: colors.text,
-          backgroundColor: colors.incomeExpenseCard,
+          backgroundColor: colors.card,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flex: 1 }}>

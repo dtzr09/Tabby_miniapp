@@ -38,7 +38,7 @@ export default function GroupPersonalToggle({
     <Box
       sx={{
         display: "flex",
-        bgcolor: colors.incomeExpenseCard,
+        bgcolor: colors.card,
         p: 0.2,
         borderRadius: 3,
         border: `1px solid ${colors.border}`,
