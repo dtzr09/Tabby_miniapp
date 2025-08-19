@@ -254,7 +254,7 @@ const ExpenseDetail = () => {
           flexDirection: "row",
           gap: 1,
           p: 2,
-          mb: 16,
+          mb: 8,
           background: colors.background,
         }}
       >
