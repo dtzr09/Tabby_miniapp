@@ -3,8 +3,6 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 import { getCategoryData } from "../../utils/getCategoryData";
 import { Budget, Expense } from "../../utils/types";
 import { getProgressColor } from "../balance/BalanceCard";
-import { useQuery } from "@tanstack/react-query";
-import { fetchUserCount } from "../../services/userCount";
 
 interface BudgetBreakdownProps {
   expenses: Expense[];
