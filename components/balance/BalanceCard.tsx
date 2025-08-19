@@ -125,8 +125,6 @@ export default function BalanceCard({
       }}
     >
       <CardContent sx={{ px: 3, pb: "4px !important" }}>
-        {" "}
-        {/* Override default CardContent padding */}
         {/* Header */}
         <Box
           sx={{
