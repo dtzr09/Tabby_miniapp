@@ -107,7 +107,7 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
             sx: {
               width: anchorEl?.offsetWidth,
               mt: 0.2,
-              backgroundColor: colors.incomeExpenseCard,
+              backgroundColor: colors.card,
               borderColor: colors.border,
               boxShadow: `0 2px 4px -1px ${colors.border}`,
               borderRadius: 2.5,
@@ -131,7 +131,7 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
               backgroundColor:
                 group.id === props.selectedGroupId ||
                 (group.id === null && props.selectedGroupId === null)
-                  ? colors.card
+                  ? colors.incomeExpenseCard
                   : "transparent",
               borderRadius: 3,
               py: 0.5,
