@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import BalanceCard from "../balance/BalanceCard";
 import { Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { TelegramWebApp, ViewMode } from "../../utils/types";
+import { Expense, TelegramWebApp, ViewMode } from "../../utils/types";
 import {
   backButton,
   init,
@@ -19,9 +19,22 @@ import { isSameMonth } from "../../utils/isSameMonth";
 import { calculateSummaryData } from "../../utils/calculateSummaryData";
 import { getDashboardData } from "../../utils/getDashboardData";
 import { useAllEntries } from "../../hooks/useAllEntries";
+import { useQuery } from "@tanstack/react-query";
+import GroupSwitcher from "./GroupSwitcher";
+import { GroupOutlined, PersonOutlineOutlined } from "@mui/icons-material";
+import GroupPersonalToggle from "./GroupPersonalToggle";
+import { fetchGroups } from "../../services/group";
+import { useUser } from "../../hooks/useUser";
+import { getPersonalExpensesFromGroup } from "../../utils/getPersonalExpensesFromGroup";
 
 export interface TelegramUser {
   id: string;
+}
+
+interface Group {
+  chat_id: string;
+  name: string;
+  telegram_id?: string;
 }
 
 const Dashboard = () => {
@@ -30,35 +43,71 @@ const Dashboard = () => {
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | null>(null);
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>("weekly");
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [isGroupView, setIsGroupView] = useState<boolean>(true);
+
+  // Fetch user data from database
+  const { data: dbUser, isLoading: isUserLoading } = useUser(
+    tgUser?.id,
+    initData || undefined,
+    selectedGroupId || undefined
+  );
 
   const { data: allEntries, isLoading: isAllEntriesLoading } = useAllEntries(
     tgUser?.id,
-    initData || undefined
+    initData || undefined,
+    selectedGroupId || undefined
   );
 
+  const { data: groups } = useQuery({
+    queryKey: ["groupsWithExpenses", tgUser?.id],
+    queryFn: () => {
+      if (tgUser && initData) {
+        return fetchGroups(tgUser.id, initData);
+      }
+      return Promise.resolve(null);
+    },
+    enabled: !!tgUser && !!initData,
+  });
+
+  // Filter entries based on group and personal view settings
+  const getPersonalFilteredExpenses = useCallback(
+    (expenses: Expense[]) => {
+      if (selectedGroupId && !isGroupView && dbUser?.id) {
+        return getPersonalExpensesFromGroup(expenses, dbUser.id);
+      }
+      return expenses;
+    },
+    [selectedGroupId, isGroupView, dbUser?.id]
+  );
+
+  const filteredAllEntries = useMemo(() => {
+    if (!allEntries) return allEntries;
+    return {
+      ...allEntries,
+      expenses: getPersonalFilteredExpenses(allEntries.expenses),
+    };
+  }, [allEntries, getPersonalFilteredExpenses]);
+
   const currentMonthExpenses = useMemo(() => {
+    if (!filteredAllEntries) return { expenses: [], income: [], budgets: [] };
+
     const currentDate = new Date();
+    const isCurrentMonth = (date: string) =>
+      isSameMonth(new Date(date), currentDate);
 
-    const expenses =
-      allEntries?.expenses.filter((expense) => {
-        const expenseDate = new Date(expense.date);
-        return isSameMonth(expenseDate, currentDate);
-      }) || [];
-
-    const income =
-      allEntries?.income.filter((income) => {
-        const incomeDate = new Date(income.date);
-        return isSameMonth(incomeDate, currentDate);
-      }) || [];
-
-    const budgets =
-      allEntries?.budgets.filter((budget) => {
-        const budgetDate = new Date(budget.created_at);
-        return isSameMonth(budgetDate, currentDate);
-      }) || [];
-
-    return { expenses, income, budgets };
-  }, [allEntries]);
+    return {
+      expenses: filteredAllEntries.expenses.filter((expense) =>
+        isCurrentMonth(expense.date)
+      ),
+      income: filteredAllEntries.income.filter((income) =>
+        isCurrentMonth(income.date)
+      ),
+      budgets: filteredAllEntries.budgets.filter((budget) =>
+        isCurrentMonth(budget.created_at)
+      ),
+    };
+  }, [filteredAllEntries]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -103,30 +152,32 @@ const Dashboard = () => {
 
   // Only show loading when we have user data and are actually fetching
   if (
-    !allEntries ||
-    (tgUser && initData && isAllEntriesLoading)
-    // (tgUser && initData && isExpensesWithBudgetLoading)
+    !filteredAllEntries ||
+    (tgUser && initData && (isAllEntriesLoading || isUserLoading))
   ) {
     return <LoadingSkeleton />;
   }
 
-  // Show welcome screen if no data
-  if (allEntries.expenses.length === 0 && allEntries.budgets.length === 0) {
-    return <WelcomeScreen />;
-  }
-
-  // Calculate summary data from real expenses
-  const { totalIncome, totalExpenses, totalBudget } =
-    calculateSummaryData(currentMonthExpenses);
-
-  // Generate real data based on expenses
-  const data = getDashboardData(
+  // Derived values
+  const hasData =
+    filteredAllEntries?.expenses.length > 0 ||
+    filteredAllEntries?.budgets.length > 0;
+  const hasGroups = groups && groups.length > 0;
+  const summaryData = calculateSummaryData(currentMonthExpenses);
+  const dashboardData = getDashboardData(
     currentMonthExpenses.expenses,
     currentMonthExpenses.budgets,
     internalViewMode
   );
+  const hasBudget =
+    currentMonthExpenses.budgets.length > 0 && summaryData.totalBudget > 0;
 
-  const hasBudget = currentMonthExpenses.budgets.length > 0 && totalBudget > 0;
+  const handleViewToggle = () => setIsGroupView(!isGroupView);
+
+  // Show welcome screen if no data and no groups
+  if (!hasData && !hasGroups) {
+    return <WelcomeScreen />;
+  }
 
   return (
     <Box
@@ -156,16 +207,51 @@ const Dashboard = () => {
             flexDirection: "column",
             alignItems: "center",
             mt: 2,
-            gap: 1,
+            gap: 1.5,
           }}
         >
+          {/* Group Switcher and Toggle - only show when has groups */}
+          {hasGroups && (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+                width: "100%",
+              }}
+            >
+              <GroupSwitcher
+                groups={[
+                  {
+                    id: null,
+                    name: "Personal",
+                    icon: <PersonOutlineOutlined sx={{ fontSize: "1.2rem" }} />,
+                  },
+                  ...(groups?.map((group: Group) => ({
+                    id: group.chat_id,
+                    name: group.name,
+                    icon: <GroupOutlined sx={{ fontSize: "1.2rem" }} />,
+                  })) || []),
+                ]}
+                selectedGroupId={selectedGroupId}
+                setSelectedGroupId={setSelectedGroupId}
+              />
+              {selectedGroupId !== null && (
+                <GroupPersonalToggle
+                  isGroup={isGroupView}
+                  onToggle={handleViewToggle}
+                />
+              )}
+            </Box>
+          )}
+
           {/* Balance Card */}
           {hasBudget && (
             <Box sx={{ width: "100%" }}>
               <BalanceCard
                 expensesWithBudget={currentMonthExpenses.expenses}
                 budgets={currentMonthExpenses.budgets}
-                totalBudget={totalBudget}
+                totalBudget={summaryData.totalBudget}
               />
             </Box>
           )}
@@ -173,15 +259,15 @@ const Dashboard = () => {
           {/* Expense Summary Card */}
           <Box sx={{ width: "100%" }}>
             <ExpenseSummaryCard
-              totalIncome={totalIncome}
-              totalExpenses={totalExpenses}
+              totalIncome={summaryData.totalIncome}
+              totalExpenses={summaryData.totalExpenses}
             />
           </Box>
 
           {/* Budget Overview Card */}
           <Box sx={{ width: "100%" }}>
             <ExpensesAndBudgetOverview
-              data={data}
+              data={dashboardData}
               viewMode={internalViewMode}
               onViewModeChange={setInternalViewMode}
             />
@@ -189,7 +275,11 @@ const Dashboard = () => {
 
           {/* Recent Transactions Card */}
           <Box sx={{ width: "100%", mb: 4 }}>
-            <ExpenseList allEntries={allEntries} tgUser={tgUser} />
+            <ExpenseList
+              allEntries={filteredAllEntries}
+              tgUser={tgUser}
+              isGroupView={isGroupView}
+            />
           </Box>
         </Box>
       </Box>

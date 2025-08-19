@@ -8,6 +8,7 @@ import { TelegramUser } from "../../dashboard";
 export interface ExpenseListCardProps {
   entries: UnifiedEntry[];
   tgUser: TelegramUser | null;
+  isGroupView?: boolean;
 }
 
 interface GroupedEntries {
@@ -65,7 +66,9 @@ const ExpenseListCard = (props: ExpenseListCardProps) => {
 
       grouped[key].entries.push(entry);
       // Add to net amount (positive for income, negative for expenses)
-      grouped[key].netAmount += entry.isIncome ? entry.amount : -entry.amount;
+      // For personal shares, use the share amount; for regular expenses, use the full amount
+      const amountToAdd = entry.isIncome ? entry.amount : -entry.amount;
+      grouped[key].netAmount += amountToAdd;
     });
 
     return grouped;
@@ -147,7 +150,7 @@ const ExpenseListCard = (props: ExpenseListCardProps) => {
             }}
           />
           {groupedEntries[date].entries.map((tx) => (
-            <ExpenseRow key={tx.id} tx={tx} tgUser={props.tgUser} />
+            <ExpenseRow key={tx.id} tx={tx} tgUser={props.tgUser} isGroupView={props.isGroupView} />
           ))}
           <Box sx={{ mb: 2}} />
         </React.Fragment>

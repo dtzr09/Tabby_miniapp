@@ -7,6 +7,7 @@ interface UseExpenseProps {
   isIncome: boolean;
   userId?: string;
   initData?: string;
+  chat_id?: string;
 }
 
 export const useExpense = ({
@@ -14,6 +15,7 @@ export const useExpense = ({
   isIncome,
   userId,
   initData,
+  chat_id,
 }: UseExpenseProps) => {
   const queryClient = useQueryClient();
 
@@ -22,6 +24,7 @@ export const useExpense = ({
     const allEntriesData = queryClient.getQueryData<AllEntriesResponse>([
       "allEntries",
       userId,
+      chat_id,
     ]);
 
     if (!allEntriesData) return undefined;
@@ -38,12 +41,12 @@ export const useExpense = ({
   const updateExpenseInCache = (updatedExpense: UnifiedEntry) => {
     // Update in allEntries cache
     queryClient.setQueryData<AllEntriesResponse>(
-      ["allEntries", userId],
+      ["allEntries", userId, chat_id],
       (oldData) => {
         if (!oldData) return oldData;
 
-        const targetArray = isIncome ? 'income' : 'expenses';
-        const otherArray = isIncome ? 'expenses' : 'income';
+        const targetArray = isIncome ? "income" : "expenses";
+        const otherArray = isIncome ? "expenses" : "income";
 
         return {
           ...oldData,
@@ -63,7 +66,7 @@ export const useExpense = ({
   const deleteExpenseFromCache = () => {
     // Remove from allEntries cache
     queryClient.setQueryData<AllEntriesResponse>(
-      ["allEntries", userId],
+      ["allEntries", userId, chat_id],
       (oldData) => {
         if (!oldData) return oldData;
 
@@ -91,13 +94,13 @@ export const useExpense = ({
       }
 
       const params = new URLSearchParams({
-        telegram_id: userId,
+        chat_id: chat_id ? chat_id : userId,
         initData,
         isIncome: isIncome.toString(),
       });
 
       const response = await fetch(`/api/entries/${id}?${params.toString()}`);
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error("Expense not found");

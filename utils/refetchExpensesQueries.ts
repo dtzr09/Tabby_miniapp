@@ -4,10 +4,7 @@ export const refetchExpensesQueries = async (
   queryClient: QueryClient,
   userId: string
 ) => {
-  const keys = [
-    ["expensesWithBudget", userId] as const,
-    ["allEntries", userId] as const,
-  ];
+  const keys = [["allEntries", userId] as const];
 
   // First invalidate the queries to mark them as stale
   keys.forEach((key) => {

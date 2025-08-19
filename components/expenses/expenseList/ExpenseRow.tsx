@@ -15,9 +15,11 @@ import { refetchExpensesQueries } from "../../../utils/refetchExpensesQueries";
 const ExpenseRow = ({
   tx,
   tgUser,
+  isGroupView,
 }: {
   tx: UnifiedEntry;
   tgUser: TelegramUser | null;
+  isGroupView?: boolean;
 }) => {
   const { colors } = useTheme();
   const router = useRouter();
@@ -37,10 +39,7 @@ const ExpenseRow = ({
     // Optimistically update the cache
     if (tgUser) {
       const userId = tgUser.id.toString();
-      const queryKeys = [
-        ["expensesWithBudget", userId],
-        ["allEntries", userId],
-      ];
+      const queryKeys = [["allEntries", userId, tx.chat_id]];
 
       // Update each query's data optimistically
       queryKeys.forEach((queryKey) => {
@@ -129,9 +128,11 @@ const ExpenseRow = ({
             justifyContent: "space-between",
             cursor: "pointer",
           }}
-          onClick={() =>
-            router.push(`/expenses/${tx.id}?isIncome=${tx.isIncome}`)
-          }
+          onClick={() => {
+            router.push(
+              `/expenses/${tx.id}?isIncome=${tx.isIncome}&chat_id=${tx.chat_id}&isGroupView=${isGroupView}`
+            );
+          }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             {/* Category Icon */}
@@ -152,17 +153,40 @@ const ExpenseRow = ({
 
             {/* Description and Time */}
             <Box>
-              <Typography
+              <Box
                 sx={{
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                  color: colors.text,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
                   mb: 0.25,
-                  lineHeight: 1.2,
                 }}
               >
-                {tx.description}
-              </Typography>
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                    color: colors.text,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {tx.description}
+                </Typography>
+                {tx.isPersonalShare && (
+                  <Box
+                    sx={{
+                      fontSize: "0.6rem",
+                      bgcolor: colors.primary,
+                      color: "white",
+                      px: 0.5,
+                      py: 0.1,
+                      borderRadius: 0.5,
+                      fontWeight: 600,
+                    }}
+                  >
+                    SHARE
+                  </Box>
+                )}
+              </Box>
               <Typography
                 sx={{
                   color: colors.textSecondary,
@@ -176,19 +200,37 @@ const ExpenseRow = ({
           </Box>
 
           {/* Amount */}
-          <Typography
-            sx={{
-              fontWeight: 600,
-              color: tx.isIncome ? colors.income : colors.expense,
-              fontSize: "0.95rem",
-            }}
-          >
-            {tx.isIncome ? "+" : "-"}$
-            {Math.abs(tx.amount).toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </Typography>
+          <Box sx={{ textAlign: "right" }}>
+            <Typography
+              sx={{
+                fontWeight: 600,
+                color: tx.isIncome ? colors.income : colors.expense,
+                fontSize: "0.95rem",
+              }}
+            >
+              {tx.isIncome ? "+" : "-"}$
+              {Math.abs(tx.amount).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </Typography>
+
+            {/* Show share information for personal expenses */}
+            {tx.isPersonalShare &&
+              tx.originalAmount &&
+              tx.originalAmount !== tx.amount && (
+                <Typography
+                  sx={{
+                    fontSize: "0.7rem",
+                    color: colors.textSecondary,
+                    opacity: 0.7,
+                    lineHeight: 1,
+                  }}
+                >
+                  Share of ${tx.originalAmount}
+                </Typography>
+              )}
+          </Box>
         </Box>
       </Box>
     </Box>
