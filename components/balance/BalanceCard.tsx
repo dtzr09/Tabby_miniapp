@@ -20,6 +20,9 @@ interface BalanceCardProps {
   expensesWithBudget: Expense[];
   budgets: Budget[];
   totalBudget: number;
+  selectedGroupId?: string | null;
+  isGroupView?: boolean;
+  userCount?: number;
 }
 
 type ViewType = "weekly" | "monthly";
@@ -36,6 +39,9 @@ export default function BalanceCard({
   expensesWithBudget,
   budgets,
   totalBudget,
+  selectedGroupId,
+  isGroupView,
+  userCount,
 }: BalanceCardProps) {
   const { colors } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -107,12 +113,15 @@ export default function BalanceCard({
   const monthInfo = getMonthInfo();
   const weeklyBudget = totalBudget / monthInfo.weeksInMonth;
   const currentBudget = viewType === "weekly" ? weeklyBudget : totalBudget;
-  const availableBalance = currentBudget - periodExpenses;
+  const budget =
+    selectedGroupId && !isGroupView && userCount
+      ? currentBudget / userCount
+      : currentBudget;
+
+  const availableBalance = budget - periodExpenses;
 
   // Calculate budget usage percentage based on current period
-  const usagePercentage = hasBudget
-    ? (periodExpenses / currentBudget) * 100
-    : 0;
+  const usagePercentage = hasBudget ? (periodExpenses / budget) * 100 : 0;
   const dailyBudget = availableBalance / daysRemaining;
 
   return (
@@ -201,7 +210,7 @@ export default function BalanceCard({
                       marginLeft: "8px",
                     }}
                   >
-                    of ${currentBudget.toFixed(2)}
+                    of ${budget.toFixed(2)}
                   </span>
                 </>
               );
@@ -273,6 +282,9 @@ export default function BalanceCard({
               expenses={expensesWithBudget}
               budgets={budgets}
               viewType={viewType}
+              selectedGroupId={selectedGroupId}
+              isGroupView={isGroupView}
+              userCount={userCount}
             />
           </Collapse>
         </Box>

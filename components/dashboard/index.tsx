@@ -26,6 +26,7 @@ import GroupPersonalToggle from "./GroupPersonalToggle";
 import { fetchGroups } from "../../services/group";
 import { useUser } from "../../hooks/useUser";
 import { getPersonalExpensesFromGroup } from "../../utils/getPersonalExpensesFromGroup";
+import { fetchUserCount } from "../../services/userCount";
 
 export interface TelegramUser {
   id: string;
@@ -150,6 +151,19 @@ const Dashboard = () => {
     initializeApp();
   }, [router]);
 
+  const { data: userCountData } = useQuery({
+    queryKey: ["userCount", selectedGroupId],
+    queryFn: () => {
+      if (tgUser?.id && initData && selectedGroupId) {
+        return fetchUserCount(tgUser.id, initData, selectedGroupId);
+      }
+      return Promise.resolve(1);
+    },
+    enabled: !!(selectedGroupId && !isGroupView && tgUser?.id && initData),
+  });
+
+  const userCount = userCountData || 1;
+
   // Only show loading when we have user data and are actually fetching
   if (
     !filteredAllEntries ||
@@ -252,6 +266,9 @@ const Dashboard = () => {
                 expensesWithBudget={currentMonthExpenses.expenses}
                 budgets={currentMonthExpenses.budgets}
                 totalBudget={summaryData.totalBudget}
+                selectedGroupId={selectedGroupId}
+                isGroupView={isGroupView}
+                userCount={userCount}
               />
             </Box>
           )}
