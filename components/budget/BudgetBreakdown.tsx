@@ -27,6 +27,7 @@ export default function BudgetBreakdown({
         viewType === "weekly" ? category.budget / 4 : category.budget;
       const adjustedSpent =
         viewType === "weekly" ? category.spent : category.spent;
+
       return {
         ...category,
         budget: adjustedBudget,
@@ -34,6 +35,7 @@ export default function BudgetBreakdown({
         isFlexible: category.name.toLowerCase().includes("flexible"),
       };
     })
+    .filter((category) => category.budget > 0)
     .sort((a, b) => {
       if (a.isFlexible === b.isFlexible) return 0;
       return a.isFlexible ? 1 : -1;
