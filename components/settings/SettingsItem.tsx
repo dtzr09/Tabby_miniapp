@@ -9,6 +9,7 @@ interface SettingsItemProps {
   value?: string;
   onClick: () => void;
   showBorder?: boolean;
+  onMouseEnter?: () => void;
 }
 
 export const SettingsItem: React.FC<SettingsItemProps> = ({
@@ -17,12 +18,14 @@ export const SettingsItem: React.FC<SettingsItemProps> = ({
   value,
   onClick,
   showBorder = true,
+  onMouseEnter,
 }) => {
   const { colors } = useTheme();
 
   return (
     <Box
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
       sx={{
         display: "flex",
         alignItems: "center",

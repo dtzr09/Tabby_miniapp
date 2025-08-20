@@ -356,7 +356,8 @@ const Settings = () => {
             </Box>
           }
           title={item.title}
-          onClick={() => router.push(item.route)}
+          onClick={() => router.push(item.route, undefined, { shallow: false })}
+          onMouseEnter={() => router.prefetch(item.route)}
           showBorder={!isLast}
         />
       );
@@ -392,7 +393,10 @@ const Settings = () => {
                 ? item.getValue(field, filteredCountries)
                 : field.value
             }
-            onClick={() => router.push(item.route)}
+            onClick={() =>
+              router.push(item.route, undefined, { shallow: false })
+            }
+            onMouseEnter={() => router.prefetch(item.route)}
             showBorder={!isLast}
           />
         )}

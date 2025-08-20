@@ -14,7 +14,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
   const { colors } = useTheme();
 
   return (
-    <Box sx={{ mt: 2 }}>
+    <Box sx={{ mt: 1 }}>
       <Typography
         variant="h3"
         sx={{
@@ -32,6 +32,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
           background: colors.background,
           px: 1.5,
           pb: 1,
+          mt: 2,
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>

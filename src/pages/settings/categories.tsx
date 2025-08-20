@@ -25,6 +25,7 @@ import {
 } from "../../../services/categories";
 import { DeleteOutline, EditOutlined } from "@mui/icons-material";
 import BottomSheet from "../../../components/common/BottomSheet";
+import { SettingsLayout } from "../../../components/settings/SettingsLayout";
 
 const CategoriesSettings = () => {
   const router = useRouter();
@@ -85,10 +86,9 @@ const CategoriesSettings = () => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      init();
-
-      setTimeout(() => {
+      const initializeApp = () => {
         try {
+          init();
           backButton.mount();
           backButton.show();
           backButton.onClick(() => router.back());
@@ -102,7 +102,10 @@ const CategoriesSettings = () => {
         } catch (err) {
           console.error("Error setting up page:", err);
         }
-      }, 0);
+      };
+
+      // Initialize immediately instead of using setTimeout
+      initializeApp();
     }
   }, [router, loadCategories]);
 
@@ -241,27 +244,7 @@ const CategoriesSettings = () => {
 
   if (isLoading) {
     return (
-      <Box
-        sx={{
-          px: 1.5,
-          pb: 1,
-          minHeight: "100vh",
-          background: colors.background,
-        }}
-      >
-        <Typography
-          variant="h3"
-          sx={{
-            color: colors.text,
-            mb: 1.5,
-            fontWeight: 600,
-            fontSize: "1.1rem",
-            textAlign: "center",
-            py: 0.5,
-          }}
-        >
-          Categories
-        </Typography>
+      <SettingsLayout title="Categories">
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
           {[...Array(4)].map((_, i) => (
             <Skeleton
@@ -271,27 +254,12 @@ const CategoriesSettings = () => {
             />
           ))}
         </Box>
-      </Box>
+      </SettingsLayout>
     );
   }
 
   return (
-    <Box
-      sx={{ px: 1.5, pb: 1, minHeight: "100vh", background: colors.background }}
-    >
-      <Typography
-        variant="h3"
-        sx={{
-          color: colors.text,
-          mb: 1.5,
-          fontWeight: 600,
-          fontSize: "1.1rem",
-          textAlign: "center",
-          py: 0.5,
-        }}
-      >
-        Categories
-      </Typography>
+    <SettingsLayout title="Categories">
 
       {/* User Categories - Show First */}
       <Box sx={{ mb: userCategories.length > 0 ? 2 : 1.5 }}>
@@ -547,7 +515,7 @@ const CategoriesSettings = () => {
           },
         ]}
       />
-    </Box>
+    </SettingsLayout>
   );
 };
 
