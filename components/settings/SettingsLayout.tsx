@@ -16,7 +16,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
   return (
     <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       {/* Fixed Header */}
-      <Box sx={{ px: 1.5, pt: 1, pb: 1 }}>
+      <Box sx={{ px: 1.5, pt: 1, mb: 2 }}>
         <Typography
           variant="h3"
           sx={{
@@ -30,14 +30,14 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
           {title}
         </Typography>
       </Box>
-      
+
       {/* Scrollable Content */}
       <Box
         sx={{
           flex: 1,
           overflow: "auto",
           background: colors.background,
-          px: 1.5,
+          px: 2,
           pb: 2,
         }}
       >
