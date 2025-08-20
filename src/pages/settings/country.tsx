@@ -67,80 +67,83 @@ const CountrySettings = () => {
     }
   }, []);
 
-  const handleCountrySelect = useCallback(async (countryId: string) => {
-    setSelectedCountry(countryId);
-    
-    try {
-      const webApp = window.Telegram?.WebApp as TelegramWebApp;
-      const user = webApp?.initDataUnsafe?.user;
-      const initData = webApp?.initData;
+  const handleCountrySelect = useCallback(
+    async (countryId: string) => {
+      setSelectedCountry(countryId);
 
-      if (!user?.id || !initData) {
-        console.error("Missing Telegram user/init data");
-        return;
-      }
+      try {
+        const webApp = window.Telegram?.WebApp as TelegramWebApp;
+        const user = webApp?.initDataUnsafe?.user;
+        const initData = webApp?.initData;
 
-      const country = getCountry(countryId);
-      let updateData: {
-        telegram_id: string;
-        initData: string;
-        country: string;
-        timezone?: string;
-        currency?: string;
-      } = {
-        telegram_id: user.id.toString(),
-        initData,
-        country: countryId,
-      };
+        if (!user?.id || !initData) {
+          console.error("Missing Telegram user/init data");
+          return;
+        }
 
-      // Auto-update timezone and currency based on country
-      if (country && country.timezones && country.timezones.length > 0) {
-        updateData = {
-          ...updateData,
-          timezone: country.timezones[0],
+        const country = getCountry(countryId);
+        let updateData: {
+          telegram_id: string;
+          initData: string;
+          country: string;
+          timezone?: string;
+          currency?: string;
+        } = {
+          telegram_id: user.id.toString(),
+          initData,
+          country: countryId,
         };
 
-        // Auto-update currency based on country
-        const countryCurrency =
-          countryToCurrency[countryId as keyof typeof countryToCurrency];
-        if (countryCurrency) {
-          const isCurrencySupported = currencies.some(
-            (c) => c.code === countryCurrency
-          );
-          if (isCurrencySupported) {
-            updateData = {
-              ...updateData,
-              currency: countryCurrency,
-            };
+        // Auto-update timezone and currency based on country
+        if (country && country.timezones && country.timezones.length > 0) {
+          updateData = {
+            ...updateData,
+            timezone: country.timezones[0],
+          };
+
+          // Auto-update currency based on country
+          const countryCurrency =
+            countryToCurrency[countryId as keyof typeof countryToCurrency];
+          if (countryCurrency) {
+            const isCurrencySupported = currencies.some(
+              (c) => c.code === countryCurrency
+            );
+            if (isCurrencySupported) {
+              updateData = {
+                ...updateData,
+                currency: countryCurrency,
+              };
+            }
           }
         }
-      }
 
-      const response = await fetch("/api/preferences", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
-      });
+        const response = await fetch("/api/preferences", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updateData),
+        });
 
-      if (response.ok) {
-        router.push("/settings");
-      } else {
-        console.error("Failed to save preferences:", await response.text());
+        if (response.ok) {
+          router.push("/settings");
+        } else {
+          console.error("Failed to save preferences:", await response.text());
+          showPopup({
+            title: "Error",
+            message: "Failed to update country",
+            buttons: [{ type: "ok" }],
+          });
+        }
+      } catch (err) {
+        console.error("Error saving country:", err);
         showPopup({
           title: "Error",
           message: "Failed to update country",
           buttons: [{ type: "ok" }],
         });
       }
-    } catch (err) {
-      console.error("Error saving country:", err);
-      showPopup({
-        title: "Error",
-        message: "Failed to update country",
-        buttons: [{ type: "ok" }],
-      });
-    }
-  }, [router]);
+    },
+    [router]
+  );
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -150,9 +153,7 @@ const CountrySettings = () => {
         try {
           backButton.mount();
           backButton.show();
-          backButton.onClick(() => {
-            router.push("/settings");
-          });
+          backButton.onClick(() => router.back());
 
           mainButton.mount();
           setMainButtonParams({
@@ -165,12 +166,9 @@ const CountrySettings = () => {
         }
       }, 0);
     }
-  }, [
-    router,
-    loadPreferences,
-  ]);
+  }, [router, loadPreferences]);
 
-  const countryItems = validCountries.map(country => ({
+  const countryItems = validCountries.map((country) => ({
     id: country.id,
     label: country.name,
   }));

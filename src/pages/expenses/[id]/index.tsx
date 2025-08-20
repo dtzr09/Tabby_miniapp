@@ -12,12 +12,14 @@ import { useExpense } from "../../../../hooks/useExpense";
 import { useAllEntries } from "../../../../hooks/useAllEntries";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUser } from "../../../../hooks/useUser";
+import BottomSheet from "../../../../components/common/BottomSheet";
 
 const ExpenseDetail = () => {
   const router = useRouter();
   const { id: entryId, isIncome, chat_id, isGroupView } = router.query;
   const { colors } = useTheme();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | undefined>(undefined);
   // Get categories from useAllEntries
@@ -77,7 +79,7 @@ const ExpenseDetail = () => {
         { keepDirty: false }
       );
     }
-  }, [expense, reset, user, isGroupView]);
+  }, [expense, reset, user, isGroupView, hasExpenseShares]);
 
   // Initialize Telegram WebApp
   useEffect(() => {
@@ -88,7 +90,7 @@ const ExpenseDetail = () => {
         init(); // Initialize Telegram WebApp
         backButton.mount(); // Mount back button
         backButton.show(); // Show back button
-        backButton.onClick(() => router.back()); // Set back button click handler
+        backButton.onClick(() => router.back());
 
         const webApp = window.Telegram?.WebApp as TelegramWebApp;
         if (!webApp?.initData) {
@@ -113,7 +115,7 @@ const ExpenseDetail = () => {
     };
 
     initializeApp();
-  }, [entryId]);
+  }, [entryId, router]);
 
   const onSubmit = useCallback(
     async (data: ExpenseFormData) => {
@@ -177,7 +179,7 @@ const ExpenseDetail = () => {
         });
       }
     },
-    [entryId, isIncome, expense, categories, updateExpenseInCache, router]
+    [entryId, isIncome, expense, categories, updateExpenseInCache]
   );
 
   // Handle loading and error states
@@ -285,7 +287,7 @@ const ExpenseDetail = () => {
             },
           }}
           disabled={!isDirty || Object.keys(errors).length > 0}
-          onClick={handleSubmit(onSubmit)}
+          onClick={() => setShowSaveDialog(true)}
         >
           {isSubmitting ? "Saving..." : "Save Changes"}
         </Button>
@@ -298,6 +300,30 @@ const ExpenseDetail = () => {
         setShowConfirm={setShowDeleteDialog}
         tgUser={tgUser}
         deleteFromCache={deleteExpenseFromCache}
+      />
+
+      {/* Save Changes Bottom Sheet */}
+      <BottomSheet
+        open={showSaveDialog}
+        onClose={() => setShowSaveDialog(false)}
+        title={`Save ${isIncome === "true" ? "Income" : "Expense"} Changes`}
+        description="Are you sure you want to save these changes?"
+        buttons={[
+          {
+            text: isSubmitting ? "Saving..." : "Save Changes",
+            onClick: () => {
+              setShowSaveDialog(false);
+              handleSubmit(onSubmit)();
+            },
+            variant: "primary",
+            disabled: isSubmitting,
+          },
+          {
+            text: "Cancel",
+            onClick: () => setShowSaveDialog(false),
+            variant: "secondary",
+          },
+        ]}
       />
     </Box>
   );

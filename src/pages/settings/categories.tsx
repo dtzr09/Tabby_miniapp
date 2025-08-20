@@ -14,11 +14,6 @@ import {
   CardContent,
   IconButton,
   Skeleton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   TextField,
 } from "@mui/material";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -29,6 +24,7 @@ import {
   deleteCategory,
 } from "../../../services/categories";
 import { DeleteOutline, EditOutlined } from "@mui/icons-material";
+import BottomSheet from "../../../components/common/BottomSheet";
 
 const CategoriesSettings = () => {
   const router = useRouter();
@@ -95,9 +91,7 @@ const CategoriesSettings = () => {
         try {
           backButton.mount();
           backButton.show();
-          backButton.onClick(() => {
-            router.push("/settings");
-          });
+          backButton.onClick(() => router.back());
 
           mainButton.mount();
           setMainButtonParams({
@@ -228,14 +222,14 @@ const CategoriesSettings = () => {
       });
     } catch (error) {
       setDeleteDialog({ open: false, category: null });
-      
+
       let errorMessage = "Failed to delete category";
       if (error instanceof Error) {
         if (error.message.includes("Cannot delete category that is in use")) {
           errorMessage = "Cannot delete category that is in use";
         }
       }
-      
+
       setErrorDialog({
         open: true,
         message: errorMessage,
@@ -455,130 +449,104 @@ const CategoriesSettings = () => {
         </Box>
       )}
 
-      {/* Edit Dialog */}
-      <Dialog
+      {/* Edit Bottom Sheet */}
+      <BottomSheet
         open={editDialog.open}
         onClose={() =>
           setEditDialog({ open: false, category: null, newName: "" })
         }
-        PaperProps={{
-          sx: {
-            bgcolor: colors.card,
-            borderRadius: 2,
+        title="Edit Category"
+        buttons={[
+          {
+            text: "Save Changes",
+            onClick: confirmEdit,
+            variant: "primary",
+            disabled: !editDialog.newName.trim(),
           },
-        }}
+          {
+            text: "Cancel",
+            onClick: () =>
+              setEditDialog({ open: false, category: null, newName: "" }),
+            variant: "secondary",
+          },
+        ]}
       >
-        <DialogTitle sx={{ color: colors.text }}>Edit Category</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="Category Name"
-            value={editDialog.newName}
-            onChange={(e) =>
-              setEditDialog((prev) => ({ ...prev, newName: e.target.value }))
-            }
-            sx={{
-              mt: 1,
-              "& .MuiOutlinedInput-root": {
-                bgcolor: colors.inputBg,
-                color: colors.text,
+        <TextField
+          fullWidth
+          value={editDialog.newName}
+          onChange={(e) =>
+            setEditDialog((prev) => ({ ...prev, newName: e.target.value }))
+          }
+          placeholder="Enter category name"
+          autoFocus
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              bgcolor: colors.inputBg || colors.surface,
+              color: colors.text,
+              borderRadius: 2,
+              fontSize: "1rem",
+              minHeight: "auto",
+              border: `2px solid transparent`,
+              transition: "all 0.2s ease",
+              "&:hover": {
+                borderColor: "#007AFF40",
               },
-              "& .MuiInputLabel-root": {
-                color: colors.textSecondary,
+              "&.Mui-focused": {
+                borderColor: "#007AFF",
+                boxShadow: "0 0 0 3px rgba(0, 122, 255, 0.1)",
               },
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() =>
-              setEditDialog({ open: false, category: null, newName: "" })
-            }
-            sx={{ color: colors.textSecondary }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={confirmEdit}
-            disabled={!editDialog.newName.trim()}
-            sx={{ color: colors.primary }}
-          >
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
+              "& input": {
+                py: 1,
+                px: 1.75,
+                fontWeight: 500,
+              },
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+            "& .MuiInputBase-input::placeholder": {
+              color: colors.textSecondary,
+              opacity: 0.6,
+              fontWeight: 400,
+            },
+          }}
+        />
+      </BottomSheet>
 
-      {/* Delete Dialog */}
-      <Dialog
+      {/* Delete Bottom Sheet */}
+      <BottomSheet
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, category: null })}
-        PaperProps={{
-          sx: {
-            bgcolor: colors.card,
-            borderRadius: 2,
+        title="Delete Category"
+        description={`Are you sure you want to delete "${deleteDialog.category?.name}"? This action cannot be undone.`}
+        buttons={[
+          {
+            text: "Delete",
+            onClick: confirmDelete,
+            variant: "destructive",
           },
-        }}
-      >
-        <DialogTitle sx={{ color: colors.text }}>Delete Category</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ color: colors.text }}>
-            Are you sure you want to delete &quot;{deleteDialog.category?.name}
-            &quot;? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setDeleteDialog({ open: false, category: null })}
-            sx={{ color: colors.textSecondary }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={confirmDelete}
-            sx={{ color: colors.error || "#ff4444" }}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+          {
+            text: "Cancel",
+            onClick: () => setDeleteDialog({ open: false, category: null }),
+            variant: "secondary",
+          },
+        ]}
+      />
 
-      {/* Error Dialog */}
-      <Dialog
+      {/* Error Bottom Sheet */}
+      <BottomSheet
         open={errorDialog.open}
         onClose={() => setErrorDialog({ open: false, message: "" })}
-        PaperProps={{
-          sx: {
-            bgcolor: colors.card,
-            borderRadius: 2,
-            maxWidth: "400px",
+        title="Error"
+        description={errorDialog.message}
+        buttons={[
+          {
+            text: "OK",
+            onClick: () => setErrorDialog({ open: false, message: "" }),
+            variant: "primary",
           },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            color: colors.error || "#ff4444",
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
-          <Typography sx={{ fontSize: "1.2rem" }}>⚠️</Typography>
-          Error
-        </DialogTitle>
-        <DialogContent>
-          <Typography sx={{ color: colors.text, lineHeight: 1.5 }}>
-            {errorDialog.message}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setErrorDialog({ open: false, message: "" })}
-            sx={{ color: colors.primary }}
-          >
-            OK
-          </Button>
-        </DialogActions>
-      </Dialog>
+        ]}
+      />
     </Box>
   );
 };

@@ -167,11 +167,12 @@ const Settings = () => {
           backButton.mount();
           backButton.show();
 
-          backButton.onClick(() => {
-            router.push("/");
-          });
+          backButton.onClick(() => router.back());
 
-          // mainButton.mount();
+          mainButton.mount();
+          setMainButtonParams({
+            isVisible: false,
+          });
 
           // Load preferences from backend only once
           const webApp = window.Telegram?.WebApp as TelegramWebApp;
