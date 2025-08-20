@@ -14,7 +14,7 @@ import { isSameMonth } from "../../utils/isSameMonth";
 import { calculateSummaryData } from "../../utils/calculateSummaryData";
 import { getDashboardData } from "../../utils/getDashboardData";
 import { useAllEntries } from "../../hooks/useAllEntries";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import GroupSwitcher from "./GroupSwitcher";
 import { GroupOutlined, PersonOutlineOutlined } from "@mui/icons-material";
 import GroupPersonalToggle from "./GroupPersonalToggle";
@@ -23,6 +23,8 @@ import { useUser } from "../../hooks/useUser";
 import { getPersonalExpensesFromGroup } from "../../utils/getPersonalExpensesFromGroup";
 import { fetchUserCount } from "../../services/userCount";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
+import { fetchCategories } from "../../services/categories";
+import { fetchAllEntries } from "../../services/allEntries";
 
 export interface TelegramUser {
   id: string;
@@ -37,6 +39,7 @@ interface Group {
 const Dashboard = () => {
   const { colors, fontFamily } = useTheme();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | null>(null);
 
@@ -74,6 +77,29 @@ const Dashboard = () => {
     },
     enabled: !!tgUser && !!initData,
   });
+
+  // Prefetch data for all groups when groups are loaded
+  useEffect(() => {
+    if (groups && tgUser && initData) {
+      groups.forEach((group: Group) => {
+        // Prefetch allEntries for each group
+        queryClient.prefetchQuery({
+          queryKey: ["allEntries", tgUser.id, group.chat_id],
+          queryFn: () => fetchAllEntries(tgUser.id, initData, group.chat_id),
+          staleTime: 60000,
+        });
+      });
+
+      // Also prefetch personal data (null chat_id)
+      queryClient.prefetchQuery({
+        queryKey: ["allEntries", tgUser.id, null],
+        queryFn: () => fetchAllEntries(tgUser.id, initData, null),
+        staleTime: 60000,
+      });
+
+      console.log("📦 Prefetched data for all groups");
+    }
+  }, [groups, tgUser, initData, queryClient]);
 
   // Filter entries based on group and personal view settings
   const getPersonalFilteredExpenses = useCallback(
@@ -124,6 +150,22 @@ const Dashboard = () => {
       settingsButton.onClick(() => {
         router.push("/settings");
       });
+
+      // Prefetch settings data when settings button is available
+      if (user && telegramInitData) {
+        // Prefetch categories for settings page
+        fetchCategories(user.id.toString(), telegramInitData)
+          .then(() => {
+            console.log("📦 Prefetched categories for settings");
+          })
+          .catch((error) => {
+            console.warn("Failed to prefetch categories:", error);
+          });
+
+        // Mark settings route as prefetched
+        router.prefetch("/settings");
+        router.prefetch("/settings/categories");
+      }
 
       if (backButton.isMounted()) backButton.hide();
       if (mainButton.isMounted()) mainButton.setParams({ isVisible: false });
@@ -240,6 +282,8 @@ const Dashboard = () => {
                 ]}
                 selectedGroupId={selectedGroupId}
                 setSelectedGroupId={setSelectedGroupId}
+                userId={tgUser?.id}
+                initData={initData || undefined}
               />
               {selectedGroupId !== null && (
                 <GroupPersonalToggle

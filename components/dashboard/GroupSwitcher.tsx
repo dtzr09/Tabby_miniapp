@@ -5,6 +5,7 @@ import {
 import { Box, Button, Menu, MenuItem, Typography } from "@mui/material";
 import React, { useState } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { fetchAllEntries } from "../../services/allEntries";
 
 export interface GroupSwitcherProps {
   groups?: Array<{
@@ -14,6 +15,8 @@ export interface GroupSwitcherProps {
   }>;
   selectedGroupId?: string | null;
   setSelectedGroupId?: (groupId: string | null) => void;
+  userId?: string;
+  initData?: string;
 }
 
 const GroupSwitcher = (props: GroupSwitcherProps) => {
@@ -23,6 +26,13 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
+    
+    // Prefetch all group data when dropdown opens
+    if (props.groups && props.userId && props.initData) {
+      props.groups.forEach((group) => {
+        prefetchGroupData(group.id);
+      });
+    }
   };
 
   const handleClose = () => {
@@ -34,6 +44,21 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
       props.setSelectedGroupId(groupId);
     }
     handleClose();
+  };
+
+  const prefetchGroupData = (groupId: string | null) => {
+    if (!props.userId || !props.initData) return;
+    
+    // Only prefetch if not already cached or selected
+    if (groupId !== props.selectedGroupId) {
+      fetchAllEntries(props.userId, props.initData, groupId)
+        .then(() => {
+          console.log(`📦 Prefetched data for group: ${groupId || 'personal'}`);
+        })
+        .catch((error) => {
+          console.warn("Failed to prefetch group data:", error);
+        });
+    }
   };
 
   return (
@@ -121,6 +146,7 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
           <MenuItem
             key={group.id}
             onClick={() => handleGroupSelect(group.id)}
+            onMouseEnter={() => prefetchGroupData(group.id)}
             sx={{
               display: "flex",
               alignItems: "center",

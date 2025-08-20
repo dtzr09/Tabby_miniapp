@@ -2,7 +2,6 @@ import {
   backButton,
   mainButton,
   setMainButtonParams,
-  showPopup,
 } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
@@ -93,8 +92,7 @@ const Settings = () => {
 
   const {
     control,
-    handleSubmit,
-    formState: { isDirty, isSubmitting },
+    formState: {},
     reset,
   } = useForm<UserPreferences>({
     defaultValues,
@@ -148,8 +146,8 @@ const Settings = () => {
           country: data.country || defaultValues.country,
         };
 
-        // Reset the form with the backend data as the new baseline
-        reset(formData, { keepDirty: false });
+        // Reset the form with the backend data
+        reset(formData);
 
         return true;
       } catch (error) {
@@ -205,110 +203,6 @@ const Settings = () => {
     loadPreferencesFromBackend,
   ]);
 
-  // Update button parameters when theme colors change
-  useEffect(() => {
-    if (typeof window !== "undefined" && setMainButtonParams.isAvailable()) {
-      try {
-        const isEnabled = !isSubmitting && !isLoading && isDirty;
-        const baseColor = colors.primary.startsWith("#")
-          ? colors.primary
-          : `#${colors.primary}`;
-
-        const enabledColor = colors.surface.startsWith("#")
-          ? colors.surface
-          : `#${colors.surface}`;
-
-        const enabledTextColor = colors.text.startsWith("#")
-          ? colors.text
-          : `#${colors.text}`;
-
-        const disabledTextColor = colors.disabled.startsWith("#")
-          ? colors.disabled
-          : `#${colors.disabled}`;
-
-        // Make background darker when disabled
-        const backgroundColor = isEnabled
-          ? (baseColor as `#${string}`)
-          : (enabledColor as `#${string}`);
-
-        const textColor = isEnabled
-          ? (enabledTextColor as `#${string}`)
-          : (disabledTextColor as `#${string}`);
-
-        setMainButtonParams({
-          backgroundColor,
-          isEnabled,
-          isLoaderVisible: isSubmitting,
-          isVisible: true,
-          text: isSubmitting ? "Saving..." : isLoading ? "Loading..." : "Save",
-          textColor,
-        });
-      } catch (err) {
-        console.error("Error updating button parameters:", err);
-      }
-    }
-  }, [
-    colors.primary,
-    colors.text,
-    colors.surface,
-    colors.disabled,
-    isSubmitting,
-    isLoading,
-    isDirty,
-  ]);
-
-  const onSubmit = useCallback(
-    async (data: UserPreferences) => {
-      try {
-        if (!user?.id || !initData) {
-          console.error("Missing Telegram user/init data");
-          return;
-        }
-
-        const response = await fetch("/api/preferences", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            telegram_id: user.id.toString(),
-            initData,
-            ...data,
-          }),
-        });
-
-        if (!response.ok) {
-          console.error("Failed to save preferences:", await response.text());
-          return;
-        }
-
-        showPopup({
-          title: "Success",
-          message: "Settings updated successfully",
-          buttons: [
-            {
-              type: "ok",
-            },
-          ],
-        });
-
-        // Mark form as clean after save with the new baseline values
-        reset(data, { keepDirty: false });
-      } catch (err) {
-        console.error("Error saving preferences:", err);
-      }
-    },
-    [reset, user, initData]
-  );
-
-  useEffect(() => {
-    if (mainButton && mainButton.onClick) {
-      const handleClick = handleSubmit(onSubmit);
-      mainButton.onClick(handleClick);
-
-      return () => {
-        mainButton.offClick(handleClick);
-      };
-    }
-  }, [handleSubmit, onSubmit]);
 
   if (!filterDataLoaded || !preferencesLoaded || isLoading) {
     return (
