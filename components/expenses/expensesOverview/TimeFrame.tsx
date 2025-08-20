@@ -1,6 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "@/contexts/ThemeContext";
 import { ViewMode } from "../../../utils/types";
+import { selectionHaptic } from "../../../utils/haptics";
 
 interface TimeFrameProps {
   viewMode?: ViewMode;
@@ -22,7 +23,12 @@ const TimeFrame = ({
         cursor: "pointer",
         py: 0.5,
       }}
-      onClick={() => onViewModeChange?.(currentTimeFrame)}
+      onClick={() => {
+        if (viewMode !== currentTimeFrame) {
+          selectionHaptic();
+          onViewModeChange?.(currentTimeFrame);
+        }
+      }}
     >
       <Typography
         sx={{

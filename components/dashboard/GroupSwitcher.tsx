@@ -6,6 +6,7 @@ import { Box, Button, Menu, MenuItem, Typography } from "@mui/material";
 import React, { useState } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { fetchAllEntries } from "../../services/allEntries";
+import { mediumHaptic } from "../../utils/haptics";
 
 export interface GroupSwitcherProps {
   groups?: Array<{
@@ -40,7 +41,8 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
   };
 
   const handleGroupSelect = (groupId: string | null) => {
-    if (props.setSelectedGroupId) {
+    if (props.setSelectedGroupId && groupId !== props.selectedGroupId) {
+      mediumHaptic();
       props.setSelectedGroupId(groupId);
     }
     handleClose();

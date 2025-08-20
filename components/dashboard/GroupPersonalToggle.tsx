@@ -1,5 +1,6 @@
 import { Box, Button } from "@mui/material";
 import { useTheme } from "@/contexts/ThemeContext";
+import { selectionHaptic } from "../../utils/haptics";
 
 interface GroupPersonalToggleProps {
   isGroup: boolean;
@@ -65,14 +66,24 @@ export default function GroupPersonalToggle({
 
       <Button
         disableRipple
-        onClick={() => !isGroup && onToggle(true)}
+        onClick={() => {
+          if (!isGroup) {
+            selectionHaptic();
+            onToggle(true);
+          }
+        }}
         sx={{ ...buttonStyle, ...(isGroup ? activeStyle : inactiveStyle) }}
       >
         Group
       </Button>
       <Button
         disableRipple
-        onClick={() => isGroup && onToggle(false)}
+        onClick={() => {
+          if (isGroup) {
+            selectionHaptic();
+            onToggle(false);
+          }
+        }}
         sx={{ ...buttonStyle, ...(!isGroup ? activeStyle : inactiveStyle) }}
       >
         Me
