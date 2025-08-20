@@ -200,9 +200,9 @@ const Dashboard = () => {
         minHeight: "100vh",
         color: colors.text,
         fontFamily: fontFamily,
-        m: 0,
         display: "flex",
         justifyContent: "center",
+        mt: 4,
       }}
     >
       <Box

@@ -76,6 +76,14 @@ const ExpenseRow = ({
     }
   };
 
+  const handleDeleteError = () => {
+    // Invalidate queries to revert optimistic update
+    if (tgUser) {
+      const userId = tgUser.id.toString();
+      refetchExpensesQueries(queryClient, userId);
+    }
+  };
+
   return (
     <Box {...handlers}>
       <Box sx={{ position: "relative", overflow: "hidden" }}>
@@ -108,6 +116,8 @@ const ExpenseRow = ({
           setShowConfirm={setShowConfirm}
           tgUser={tgUser}
           isIncome={tx.isIncome}
+          deleteFromCache={handleDeleteSuccess}
+          onError={handleDeleteError}
         />
 
         {/* Main card */}

@@ -8,10 +8,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
   const { telegram_id, initData } = req.query;
   const isValid = await validateTelegramWebApp(initData as string, BOT_TOKEN);
 
@@ -19,16 +15,39 @@ export default async function handler(
     return res.status(400).json({ error: "Missing telegram_id or initData" });
   }
 
+  switch (req.method) {
+    case "GET":
+      return handleGetCategories(req, res, telegram_id as string);
+    case "PUT":
+      return handleUpdateCategory(req, res, telegram_id as string);
+    case "DELETE":
+      return handleDeleteCategory(req, res, telegram_id as string);
+    default:
+      return res.status(405).json({ error: "Method not allowed" });
+  }
+}
+
+async function handleGetCategories(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  telegram_id: string
+) {
   if (isLocal) {
     const static_categories = await postgresClient.query(
-      "SELECT * FROM all_categories WHERE user_id IS NULL AND chat_id IS NULL"
+      "SELECT * FROM all_categories WHERE user_id IS NULL AND chat_id IS NULL ORDER BY name"
     );
     const user_categories = await postgresClient.query(
-      "SELECT * FROM all_categories WHERE chat_id = $1",
+      "SELECT * FROM all_categories WHERE chat_id = $1 ORDER BY name",
       [telegram_id]
     );
     return res.status(200).json({
-      categories: [...static_categories.rows, ...user_categories.rows],
+      userCategories: user_categories.rows,
+      staticCategories: static_categories.rows,
+      // Keep backwards compatibility
+      categories: [
+        ...(user_categories.rows || []),
+        ...(static_categories.rows || []),
+      ],
     });
   } else {
     if (!supabaseAdmin) {
@@ -39,16 +58,199 @@ export default async function handler(
       .from("all_categories")
       .select("*")
       .is("user_id", null)
-      .is("chat_id", null);
+      .is("chat_id", null)
+      .order("name");
 
-    const { data: categories } = await supabaseAdmin
+    const { data: user_categories } = await supabaseAdmin
       .from("all_categories")
       .select("*")
       .eq("chat_id", telegram_id)
       .order("name");
 
     return res.status(200).json({
-      categories: [...(static_categories || []), ...(categories || [])],
+      userCategories: user_categories || [],
+      staticCategories: static_categories || [],
+      // Keep backwards compatibility
+      categories: [...(user_categories || []), ...(static_categories || [])],
     });
+  }
+}
+
+async function handleUpdateCategory(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  telegram_id: string
+) {
+  const { id, name } = req.body;
+
+  if (!id || !name) {
+    return res.status(400).json({ error: "Category ID and name are required" });
+  }
+
+  try {
+    if (isLocal) {
+      // Check if category belongs to user
+      const checkResult = await postgresClient.query(
+        "SELECT * FROM all_categories WHERE id = $1 AND chat_id = $2",
+        [id, telegram_id]
+      );
+
+      if (checkResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json({ error: "Category not found or not owned by user" });
+      }
+
+      // Update category name
+      const result = await postgresClient.query(
+        "UPDATE all_categories SET name = $1 WHERE id = $2 AND chat_id = $3 RETURNING *",
+        [name, id, telegram_id]
+      );
+
+      return res.status(200).json({ category: result.rows[0] });
+    } else {
+      if (!supabaseAdmin) {
+        return res
+          .status(500)
+          .json({ error: "Supabase client not configured" });
+      }
+
+      // Check if category belongs to user
+      const { data: existingCategory } = await supabaseAdmin
+        .from("all_categories")
+        .select("*")
+        .eq("id", id)
+        .eq("chat_id", telegram_id)
+        .single();
+
+      if (!existingCategory) {
+        return res
+          .status(404)
+          .json({ error: "Category not found or not owned by user" });
+      }
+
+      // Update category name
+      const { data: updatedCategory, error } = await supabaseAdmin
+        .from("all_categories")
+        .update({ name, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("chat_id", telegram_id)
+        .select()
+        .single();
+
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      return res.status(200).json({ category: updatedCategory });
+    }
+  } catch (error) {
+    console.error("Error updating category:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+async function handleDeleteCategory(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  telegram_id: string
+) {
+  const { id } = req.query;
+
+  if (!id) {
+    return res.status(400).json({ error: "Category ID is required" });
+  }
+
+  try {
+    if (isLocal) {
+      // Check if category belongs to user and is not static
+      const checkResult = await postgresClient.query(
+        "SELECT * FROM all_categories WHERE id = $1 AND chat_id = $2",
+        [id, telegram_id]
+      );
+
+      if (checkResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json({ error: "Category not found or not owned by user" });
+      }
+
+      // Check if category is in use
+      const usageCheck = await postgresClient.query(
+        "SELECT COUNT(*) as count FROM expenses WHERE category_id = $1 UNION ALL SELECT COUNT(*) as count FROM incomes WHERE category_id = $1",
+        [id]
+      );
+
+      const totalUsage = usageCheck.rows.reduce(
+        (sum, row) => sum + parseInt(row.count),
+        0
+      );
+      if (totalUsage > 0) {
+        return res
+          .status(400)
+          .json({ error: "Cannot delete category that is in use" });
+      }
+
+      // Delete category
+      await postgresClient.query(
+        "DELETE FROM all_categories WHERE id = $1 AND chat_id = $2",
+        [id, telegram_id]
+      );
+
+      return res.status(200).json({ message: "Category deleted successfully" });
+    } else {
+      if (!supabaseAdmin) {
+        return res
+          .status(500)
+          .json({ error: "Supabase client not configured" });
+      }
+
+      // Check if category belongs to user and is not static
+      const { data: existingCategory } = await supabaseAdmin
+        .from("all_categories")
+        .select("*")
+        .eq("id", id)
+        .eq("chat_id", telegram_id)
+        .single();
+
+      if (!existingCategory) {
+        return res
+          .status(404)
+          .json({ error: "Category not found or not owned by user" });
+      }
+
+      // Check if category is in use
+      const { count: expenseCount } = await supabaseAdmin
+        .from("expenses")
+        .select("*", { count: "exact", head: true })
+        .eq("category_id", id);
+
+      const { count: incomeCount } = await supabaseAdmin
+        .from("incomes")
+        .select("*", { count: "exact", head: true })
+        .eq("category_id", id);
+
+      if ((expenseCount || 0) + (incomeCount || 0) > 0) {
+        return res
+          .status(400)
+          .json({ error: "Cannot delete category that is in use" });
+      }
+
+      // Delete category
+      const { error } = await supabaseAdmin
+        .from("all_categories")
+        .delete()
+        .eq("id", id)
+        .eq("chat_id", telegram_id);
+
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      return res.status(200).json({ message: "Category deleted successfully" });
+    }
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 }

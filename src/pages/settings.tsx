@@ -6,21 +6,17 @@ import {
   showPopup,
 } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
-import React, { useCallback, useEffect, useState } from "react";
-import {
-  Box,
-  Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  Skeleton,
-} from "@mui/material";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
+import { Box, Typography, Skeleton } from "@mui/material";
 import { useTheme } from "../contexts/ThemeContext";
 import { currencies } from "../../utils/preferencesData";
-import { Country, getAllCountries, getCountry } from "countries-and-timezones";
+import { Country, getAllCountries } from "countries-and-timezones";
 import { TelegramWebApp } from "../../utils/types";
 import countryToCurrency from "country-to-currency";
 import { useForm, Controller } from "react-hook-form";
+import { SettingsLayout } from "../../components/settings/SettingsLayout";
+import { SettingsSection } from "../../components/settings/SettingsSection";
+import { SettingsItem } from "../../components/settings/SettingsItem";
 
 // Define UserPreferences interface locally since it's not exported from the context
 interface UserPreferences {
@@ -29,21 +25,72 @@ interface UserPreferences {
   country: string;
 }
 
+// Settings configuration for easy maintenance
+interface SettingsItemConfig {
+  key: string;
+  title: string;
+  icon: string;
+  iconBg: string;
+  route: string;
+  getValue?: (
+    field: { value: string },
+    filteredCountries?: Country[]
+  ) => string;
+}
+
+const SETTINGS_CONFIG = {
+  general: [
+    {
+      key: "country",
+      title: "Country",
+      icon: "🌍",
+      iconBg: "#34C759",
+      route: "/settings/country",
+      getValue: (
+        field: { value: string },
+        filteredCountries: Country[] = []
+      ) => {
+        const country = filteredCountries.find((c) => c.id === field.value);
+        return country ? country.name : field.value;
+      },
+    },
+    {
+      key: "currency",
+      title: "Currency",
+      icon: "💰",
+      iconBg: "#007AFF",
+      route: "/settings/currency",
+      getValue: (field: { value: string }) => field.value || "SGD",
+    },
+  ] as SettingsItemConfig[],
+  data: [
+    {
+      key: "categories",
+      title: "Categories",
+      icon: "📋",
+      iconBg: "#5856D6",
+      route: "/settings/categories",
+    },
+  ] as SettingsItemConfig[],
+};
+
 const Settings = () => {
   const router = useRouter();
   const { colors } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
 
-  const defaultValues: UserPreferences = {
-    currency: "SGD",
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    country: "SG",
-  };
+  const defaultValues: UserPreferences = useMemo(
+    () => ({
+      currency: "SGD",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      country: "SG",
+    }),
+    []
+  );
 
   const {
     control,
     handleSubmit,
-    setValue,
     formState: { isDirty, isSubmitting },
     reset,
   } = useForm<UserPreferences>({
@@ -52,22 +99,11 @@ const Settings = () => {
   });
 
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
-
-  // Get all countries and sort them by name
-  const countries = getAllCountries();
-  const sortedCountries = Object.values(countries).sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
-
   const [filterDataLoaded, setFilterDataLoaded] = useState(false);
   const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
-  const [filteredCurrencies, setFilteredCurrencies] = useState<
-    typeof currencies
-  >([]);
 
   useEffect(() => {
     const allCountries = getAllCountries();
-
     const supportedCurrencyCodes = new Set(
       currencies.map((c) => c.code as keyof typeof countryToCurrency)
     );
@@ -81,16 +117,7 @@ const Settings = () => {
       );
     });
 
-    const pairedCurrencyCodes = new Set<string>(
-      Object.values(countryToCurrency)
-    );
-
-    const validCurrencies = currencies.filter((c) =>
-      pairedCurrencyCodes.has(c.code)
-    );
-
     setFilteredCountries(validCountries);
-    setFilteredCurrencies(validCurrencies);
     setFilterDataLoaded(true);
   }, []);
 
@@ -144,7 +171,7 @@ const Settings = () => {
             router.push("/");
           });
 
-          mainButton.mount();
+          // mainButton.mount();
 
           // Load preferences from backend only once
           const webApp = window.Telegram?.WebApp as TelegramWebApp;
@@ -286,13 +313,7 @@ const Settings = () => {
     }
   }, [handleSubmit, onSubmit]);
 
-  if (
-    !countries ||
-    Object.keys(countries).length === 0 ||
-    !filterDataLoaded ||
-    !preferencesLoaded ||
-    isLoading
-  ) {
+  if (!filterDataLoaded || !preferencesLoaded || isLoading) {
     return (
       <Box sx={{ p: 2 }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -309,199 +330,89 @@ const Settings = () => {
     );
   }
 
-  const handleCountryChange = (newCountryCode: string) => {
-    const newCountry = getCountry(newCountryCode);
-
-    if (newCountry && newCountry.timezones && newCountry.timezones.length > 0) {
-      // Use the first timezone of the country
-      const newTimezone = newCountry.timezones[0];
-
-      setValue("country", newCountry.id, { shouldDirty: true });
-      setValue("timezone", newTimezone, { shouldDirty: true });
-
-      // Auto-update currency based on country
-      const countryCurrency =
-        countryToCurrency[newCountryCode as keyof typeof countryToCurrency];
-      if (countryCurrency) {
-        // Check if the currency is available in our supported currencies
-        const isCurrencySupported = currencies.some(
-          (c) => c.code === countryCurrency
-        );
-        if (isCurrencySupported) {
-          setValue("currency", countryCurrency, { shouldDirty: true });
-        }
-      }
+  const renderSettingsItem = (
+    item: SettingsItemConfig,
+    isLast: boolean = false
+  ) => {
+    if (item.key === "categories") {
+      return (
+        <SettingsItem
+          key={item.key}
+          icon={
+            <Box
+              sx={{
+                bgcolor: item.iconBg,
+                width: "100%",
+                borderRadius: 1.2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Typography sx={{ fontSize: "1.1rem", color: "white" }}>
+                {item.icon}
+              </Typography>
+            </Box>
+          }
+          title={item.title}
+          onClick={() => router.push(item.route)}
+          showBorder={!isLast}
+        />
+      );
     }
+
+    return (
+      <Controller
+        key={item.key}
+        name={item.key as keyof UserPreferences}
+        control={control}
+        render={({ field }) => (
+          <SettingsItem
+            icon={
+              <Box
+                sx={{
+                  bgcolor: item.iconBg,
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: 1.2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography sx={{ fontSize: "1.1rem", color: "white" }}>
+                  {item.icon}
+                </Typography>
+              </Box>
+            }
+            title={item.title}
+            value={
+              item.getValue
+                ? item.getValue(field, filteredCountries)
+                : field.value
+            }
+            onClick={() => router.push(item.route)}
+            showBorder={!isLast}
+          />
+        )}
+      />
+    );
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        background: colors.background,
-        px: 2,
-        py: 1,
-      }}
-    >
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <Box>
-          <Typography
-            variant="overline"
-            sx={{
-              color: colors.primary,
-              fontWeight: 600,
-              fontSize: "0.75rem",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              marginBottom: 1,
-            }}
-          >
-            COUNTRY
-          </Typography>
-          <FormControl fullWidth>
-            <Controller
-              name="country"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  value={field.value || "SG"}
-                  onChange={(event) => {
-                    const newCountryCode = event.target.value.toUpperCase();
-                    field.onChange(newCountryCode);
-                    handleCountryChange(newCountryCode);
-                  }}
-                  disabled={isLoading}
-                  displayEmpty
-                  renderValue={(value) => {
-                    const country = filteredCountries.find(
-                      (c) => c.id === value
-                    );
-                    return country ? country.name : value;
-                  }}
-                  sx={{
-                    color: colors.text,
-                    background: colors.inputBg,
-                    borderRadius: 2,
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      border: "none",
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      border: "none",
-                    },
-                    "& .MuiSelect-icon": {
-                      color: colors.textSecondary,
-                    },
-                    "& .MuiSelect-select": {
-                      padding: "12px 16px",
-                    },
-                    "& .MuiMenu-paper": {
-                      background: colors.card,
-                    },
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        background: colors.card,
-                        "& .MuiMenuItem-root": {
-                          color: colors.text,
-                          "&.Mui-selected": {
-                            background: colors.primary,
-                            color: colors.text,
-                          },
-                        },
-                      },
-                    },
-                  }}
-                >
-                  {sortedCountries.map((country) => (
-                    <MenuItem key={country.id} value={country.id}>
-                      <Typography sx={{ color: "inherit" }}>
-                        {country.name}
-                      </Typography>
-                    </MenuItem>
-                  ))}
-                </Select>
-              )}
-            />
-          </FormControl>
-        </Box>
+    <SettingsLayout title="Settings">
+      <SettingsSection title="GENERAL">
+        {SETTINGS_CONFIG.general.map((item, index) =>
+          renderSettingsItem(item, index === SETTINGS_CONFIG.general.length - 1)
+        )}
+      </SettingsSection>
 
-        {/* Currency Section */}
-        <Box>
-          <Typography
-            variant="overline"
-            sx={{
-              color: colors.primary,
-              fontWeight: 600,
-              fontSize: "0.75rem",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              marginBottom: 1,
-            }}
-          >
-            CURRENCY
-          </Typography>
-          <FormControl fullWidth>
-            <Controller
-              name="currency"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  value={field.value || "SGD"}
-                  onChange={field.onChange}
-                  disabled={isLoading}
-                  displayEmpty
-                  sx={{
-                    color: colors.text,
-                    background: colors.inputBg,
-                    borderRadius: 2,
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      border: "none",
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      border: "none",
-                    },
-                    "& .MuiSelect-icon": {
-                      color: colors.textSecondary,
-                    },
-                    "& .MuiSelect-select": {
-                      padding: "12px 16px",
-                    },
-                    "& .MuiMenu-paper": {
-                      background: colors.card,
-                    },
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        background: colors.card,
-                        "& .MuiMenuItem-root": {
-                          color: colors.text,
-                          "&.Mui-selected": {
-                            background: colors.primary,
-                            color: colors.text,
-                          },
-                        },
-                      },
-                    },
-                  }}
-                >
-                  {filteredCurrencies.map((currency) => (
-                    <MenuItem key={currency.code} value={currency.code}>
-                      <Typography sx={{ color: "inherit" }}>
-                        {currency.code} - {currency.name}
-                      </Typography>
-                    </MenuItem>
-                  ))}
-                </Select>
-              )}
-            />
-          </FormControl>
-        </Box>
-      </Box>
-    </Box>
+      <SettingsSection title="DATA">
+        {SETTINGS_CONFIG.data.map((item, index) =>
+          renderSettingsItem(item, index === SETTINGS_CONFIG.data.length - 1)
+        )}
+      </SettingsSection>
+    </SettingsLayout>
   );
 };
 

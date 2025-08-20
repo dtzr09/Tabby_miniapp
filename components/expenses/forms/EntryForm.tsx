@@ -20,6 +20,7 @@ import {
 } from "../../../utils/types";
 import { useUser } from "../../../hooks/useUser";
 import { TelegramUser } from "../../dashboard";
+import { alpha } from "@mui/material/styles";
 
 interface EntryFormProps {
   control: Control<ExpenseFormData>;
@@ -85,19 +86,47 @@ export default function EntryForm({
       color: colors.text,
       background: colors.surface,
       borderRadius: 2,
+      border: `1px solid ${colors.border}`,
+      transition: "all 0.2s ease-in-out",
       "& fieldset": {
         border: "none",
       },
-      "&.Mui-focused fieldset": {
-        border: "none",
+      "&:hover": {
+        borderColor: colors.primary,
+        background: alpha(colors.surface, 0.8),
+      },
+      "&.Mui-focused": {
+        borderColor: colors.primary,
+        background: colors.surface,
+        boxShadow: `0 0 0 2px ${alpha(colors.primary, 0.2)}`,
       },
       "& .MuiInputBase-input": {
         padding: "12px 16px",
+        "&::placeholder": {
+          color: colors.textSecondary,
+          opacity: 0.6,
+        },
       },
     },
     "& .MuiInputBase-input::placeholder": {
       color: colors.textSecondary,
-      opacity: 0.7,
+      opacity: 0.6,
+    },
+    "& .MuiFormHelperText-root": {
+      color: colors.expense,
+      fontSize: "0.75rem",
+      marginLeft: 0,
+      marginTop: 0.5,
+    },
+    "& .MuiInputBase-root.Mui-error": {
+      borderColor: colors.expense,
+      "&:hover": {
+        borderColor: colors.expense,
+      },
+      "&.Mui-focused": {
+        borderColor: colors.expense,
+        boxShadow: `0 0 0 2px ${alpha(colors.expense, 0.2)}`,
+      },
     },
   };
 
@@ -218,6 +247,17 @@ export default function EntryForm({
                   ...inputStyles["& .MuiOutlinedInput-root"],
                   "& .MuiSelect-icon": {
                     color: colors.textSecondary,
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    "&:hover": {
+                      borderColor: colors.primary,
+                      background: alpha(colors.surface, 0.8),
+                    },
+                    "&.Mui-focused": {
+                      borderColor: colors.primary,
+                      background: colors.surface,
+                      boxShadow: `0 0 0 2px ${alpha(colors.primary, 0.2)}`,
+                    },
                   },
                 }}
                 MenuProps={{

@@ -18,6 +18,7 @@ interface DeleteExpenseDialogProps {
   setShowConfirm: (show: boolean) => void;
   tgUser: TelegramUser | null;
   deleteFromCache?: () => void;
+  onError?: () => void;
 }
 
 export default function DeleteExpenseDialog({
@@ -27,6 +28,7 @@ export default function DeleteExpenseDialog({
   showConfirm,
   setShowConfirm,
   deleteFromCache,
+  onError,
 }: DeleteExpenseDialogProps) {
   const { colors } = useTheme();
 
@@ -67,10 +69,16 @@ export default function DeleteExpenseDialog({
       }
     } catch (err) {
       console.error("Delete failed:", err);
-      // Show error message but don't revert UI since we already navigated
+      
+      // Call onError to potentially revert optimistic update
+      if (onError) {
+        onError();
+      }
+      
+      // Show error message
       showPopup({
         title: "Error",
-        message: "Failed to delete. Please refresh the page.",
+        message: "Failed to delete. Please try again.",
         buttons: [{ type: "ok" }],
       });
     }
