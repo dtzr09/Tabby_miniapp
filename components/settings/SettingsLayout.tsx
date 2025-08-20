@@ -14,25 +14,31 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
   const { colors } = useTheme();
 
   return (
-    <Box sx={{ mt: 1 }}>
-      <Typography
-        variant="h3"
-        sx={{
-          color: colors.text,
-          fontWeight: 600,
-          fontSize: "1.1rem",
-          textAlign: "center",
-          py: 0.5,
-        }}
-      >
-        {title}
-      </Typography>
+    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Fixed Header */}
+      <Box sx={{ px: 1.5, pt: 1, pb: 1 }}>
+        <Typography
+          variant="h3"
+          sx={{
+            color: colors.text,
+            fontWeight: 600,
+            fontSize: "1.1rem",
+            textAlign: "center",
+            py: 0.5,
+          }}
+        >
+          {title}
+        </Typography>
+      </Box>
+      
+      {/* Scrollable Content */}
       <Box
         sx={{
+          flex: 1,
+          overflow: "auto",
           background: colors.background,
           px: 1.5,
-          pb: 1,
-          mt: 2,
+          pb: 2,
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
