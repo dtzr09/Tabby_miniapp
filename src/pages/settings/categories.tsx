@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import {
   backButton,
-  init,
   mainButton,
   setMainButtonParams,
   showPopup,
@@ -17,7 +16,7 @@ import {
   TextField,
 } from "@mui/material";
 import { useTheme } from "../../contexts/ThemeContext";
-import { TelegramWebApp, Category } from "../../../utils/types";
+import { Category } from "../../../utils/types";
 import {
   fetchCategories,
   updateCategory,
@@ -26,13 +25,17 @@ import {
 import { DeleteOutline, EditOutlined } from "@mui/icons-material";
 import BottomSheet from "../../../components/common/BottomSheet";
 import { SettingsLayout } from "../../../components/settings/SettingsLayout";
+import { useTelegramWebApp } from "../../../hooks/useTelegramWebApp";
 
 const CategoriesSettings = () => {
   const router = useRouter();
   const { colors } = useTheme();
   const [userCategories, setUserCategories] = useState<Category[]>([]);
   const [staticCategories, setStaticCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Start optimistically
+
+  // Use optimized Telegram WebApp hook
+  const { user, initData, isReady } = useTelegramWebApp();
   const [editDialog, setEditDialog] = useState<{
     open: boolean;
     category: Category | null;
@@ -59,14 +62,13 @@ const CategoriesSettings = () => {
 
   const loadCategories = useCallback(async () => {
     try {
-      setIsLoading(true);
-      const webApp = window.Telegram?.WebApp as TelegramWebApp;
-      const user = webApp?.initDataUnsafe?.user;
-      const initData = webApp?.initData;
-
       if (!user?.id || !initData) {
         console.error("Missing Telegram user/init data");
         return;
+      }
+
+      if (userCategories.length === 0 && staticCategories.length === 0) {
+        setIsLoading(true); // Only show loading if no cached data
       }
 
       const response = await fetchCategories(user.id.toString(), initData);
@@ -82,32 +84,31 @@ const CategoriesSettings = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user, initData, userCategories.length, staticCategories.length]);
 
+  // Optimized initialization using the useTelegramWebApp hook
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const initializeApp = () => {
-        try {
-          init();
-          backButton.mount();
-          backButton.show();
-          backButton.onClick(() => router.back());
+    if (!isReady) return;
 
-          mainButton.mount();
-          setMainButtonParams({
-            isVisible: false,
-          });
+    try {
+      backButton.mount();
+      backButton.show();
+      backButton.onClick(() => router.back());
 
-          loadCategories();
-        } catch (err) {
-          console.error("Error setting up page:", err);
-        }
-      };
-
-      // Initialize immediately instead of using setTimeout
-      initializeApp();
+      mainButton.mount();
+      setMainButtonParams({
+        isVisible: false,
+      });
+    } catch (err) {
+      console.error("Error setting up Telegram UI:", err);
     }
-  }, [router, loadCategories]);
+  }, [isReady, router]);
+
+  // Load categories when Telegram data is ready
+  useEffect(() => {
+    if (!isReady || !user?.id || !initData) return;
+    loadCategories();
+  }, [isReady, user, initData, loadCategories]);
 
   const handleEditCategory = (category: Category) => {
     setEditDialog({
@@ -125,18 +126,15 @@ const CategoriesSettings = () => {
   };
 
   const confirmEdit = async () => {
-    if (!editDialog.category || !editDialog.newName.trim()) return;
+    if (
+      !editDialog.category ||
+      !editDialog.newName.trim() ||
+      !user?.id ||
+      !initData
+    )
+      return;
 
     try {
-      const webApp = window.Telegram?.WebApp as TelegramWebApp;
-      const user = webApp?.initDataUnsafe?.user;
-      const initData = webApp?.initData;
-
-      if (!user?.id || !initData) {
-        console.error("Missing Telegram user/init data");
-        return;
-      }
-
       await updateCategory(
         editDialog.category.id,
         editDialog.newName.trim(),
@@ -184,18 +182,9 @@ const CategoriesSettings = () => {
   };
 
   const confirmDelete = async () => {
-    if (!deleteDialog.category) return;
+    if (!deleteDialog.category || !user?.id || !initData) return;
 
     try {
-      const webApp = window.Telegram?.WebApp as TelegramWebApp;
-      const user = webApp?.initDataUnsafe?.user;
-      const initData = webApp?.initData;
-
-      if (!user?.id || !initData) {
-        console.error("Missing Telegram user/init data");
-        return;
-      }
-
       await deleteCategory(
         deleteDialog.category.id,
         user.id.toString(),
@@ -260,7 +249,6 @@ const CategoriesSettings = () => {
 
   return (
     <SettingsLayout title="Categories">
-
       {/* User Categories - Show First */}
       <Box sx={{ mb: userCategories.length > 0 ? 2 : 1.5 }}>
         <Typography

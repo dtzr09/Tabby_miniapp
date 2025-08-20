@@ -1,4 +1,5 @@
 import { AllEntriesResponse } from "../utils/types";
+import { appCache } from "../utils/cache";
 
 export const fetchAllEntries = async (
   telegram_id: string,
@@ -6,6 +7,13 @@ export const fetchAllEntries = async (
   chat_id?: string | null
 ): Promise<AllEntriesResponse> => {
   try {
+    // Check cache first
+    const cacheKey = `allEntries_${telegram_id}_${chat_id || 'personal'}`;
+    const cachedData = appCache.get<AllEntriesResponse>(cacheKey);
+    
+    if (cachedData) {
+      return cachedData;
+    }
     const params = new URLSearchParams({
       telegram_id,
       initData,
@@ -46,11 +54,16 @@ export const fetchAllEntries = async (
       throw new Error(`Failed to fetch budgets: ${budgetsResponse.statusText}`);
     }
 
-    return {
+    const result = {
       expenses,
       income,
       budgets,
     };
+
+    // Cache for 5 minutes since this data changes frequently
+    appCache.set(cacheKey, result, 5 * 60 * 1000);
+
+    return result;
   } catch (error) {
     console.error("Error fetching all entries:", error);
     return {

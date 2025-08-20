@@ -1,7 +1,17 @@
+import { appCache, invalidateUserCache } from "../utils/cache";
+
 export const fetchCategories = async (
   telegram_id: string,
   initData: string
 ) => {
+  // Check cache first
+  const cacheKey = `categories_${telegram_id}`;
+  const cachedData = appCache.get(cacheKey);
+  
+  if (cachedData) {
+    return cachedData;
+  }
+
   const params = new URLSearchParams({ telegram_id, initData });
   const response = await fetch(`/api/categories?${params.toString()}`);
   
@@ -11,7 +21,12 @@ export const fetchCategories = async (
     throw new Error(`Categories error ${response.status}: ${text}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  
+  // Cache for 10 minutes
+  appCache.set(cacheKey, data, 10 * 60 * 1000);
+  
+  return data;
 };
 
 export const updateCategory = async (
@@ -34,6 +49,10 @@ export const updateCategory = async (
     console.error("❌ Update Category API Error:", text);
     throw new Error(`Update category error ${response.status}: ${text}`);
   }
+
+  // Invalidate all related caches after successful update
+  invalidateUserCache(telegram_id);
+  console.log("🗑️ Cache invalidated after category update");
 
   return response.json();
 };
@@ -65,6 +84,10 @@ export const deleteCategory = async (
     // For non-JSON responses or when JSON doesn't have error field
     throw new Error(`Delete category error ${response.status}: ${text}`);
   }
+
+  // Invalidate all related caches after successful delete
+  invalidateUserCache(telegram_id);
+  console.log("🗑️ Cache invalidated after category delete");
 
   return response.json();
 };

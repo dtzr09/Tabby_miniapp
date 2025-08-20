@@ -13,6 +13,7 @@ import { useAllEntries } from "../../../../hooks/useAllEntries";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUser } from "../../../../hooks/useUser";
 import BottomSheet from "../../../../components/common/BottomSheet";
+import { invalidateExpenseCache } from "../../../../utils/cache";
 
 const ExpenseDetail = () => {
   const router = useRouter();
@@ -95,7 +96,7 @@ const ExpenseDetail = () => {
         const webApp = window.Telegram?.WebApp as TelegramWebApp;
         if (!webApp?.initData) {
           console.log("⏳ Waiting for Telegram WebApp to initialize...");
-          setTimeout(initializeApp, 100);
+          setTimeout(initializeApp, 25);
           return;
         }
 
@@ -162,6 +163,10 @@ const ExpenseDetail = () => {
           });
           return;
         }
+
+        // Invalidate expense cache after successful update
+        invalidateExpenseCache(user.id.toString(), chat_id as string);
+        console.log("🗑️ Cache invalidated after expense update");
 
         showPopup({
           title: "Success",

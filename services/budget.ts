@@ -1,4 +1,14 @@
+import { appCache } from "../utils/cache";
+
 export const fetchBudgets = async (telegram_id: string, initData: string) => {
+  // Check cache first
+  const cacheKey = `budgets_${telegram_id}`;
+  const cachedData = appCache.get(cacheKey);
+  
+  if (cachedData) {
+    return cachedData;
+  }
+
   const params = new URLSearchParams({
     telegram_id,
     initData,
@@ -16,10 +26,10 @@ export const fetchBudgets = async (telegram_id: string, initData: string) => {
     }
   );
 
-  if (!response.ok) {
-    throw new Error(`Budgets error ${response.status}: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return Array.isArray(data) ? data : [];
+  const data = Array.isArray(response) ? response : [];
+  
+  // Cache for 10 minutes
+  appCache.set(cacheKey, data, 10 * 60 * 1000);
+  
+  return data;
 };

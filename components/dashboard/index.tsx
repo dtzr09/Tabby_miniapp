@@ -2,13 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import BalanceCard from "../balance/BalanceCard";
 import { Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { Expense, TelegramWebApp, ViewMode } from "../../utils/types";
-import {
-  backButton,
-  init,
-  mainButton,
-  settingsButton,
-} from "@telegram-apps/sdk";
+import { Expense, ViewMode } from "../../utils/types";
+import { backButton, mainButton, settingsButton } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
 import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
@@ -27,6 +22,7 @@ import { fetchGroups } from "../../services/group";
 import { useUser } from "../../hooks/useUser";
 import { getPersonalExpensesFromGroup } from "../../utils/getPersonalExpensesFromGroup";
 import { fetchUserCount } from "../../services/userCount";
+import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
 
 export interface TelegramUser {
   id: string;
@@ -43,6 +39,14 @@ const Dashboard = () => {
   const router = useRouter();
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | null>(null);
+
+  // Use optimized Telegram WebApp hook
+  const {
+    webApp,
+    user,
+    initData: telegramInitData,
+    isReady,
+  } = useTelegramWebApp();
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>("weekly");
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [isGroupView, setIsGroupView] = useState<boolean>(true);
@@ -110,46 +114,33 @@ const Dashboard = () => {
     };
   }, [filteredAllEntries]);
 
+  // Optimized initialization using the useTelegramWebApp hook
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!isReady || !webApp) return;
 
-    const initializeApp = async () => {
-      const webApp = window.Telegram?.WebApp as TelegramWebApp;
-      if (webApp && webApp.initData) {
-        try {
-          init();
+    try {
+      settingsButton.mount();
+      settingsButton.show();
+      settingsButton.onClick(() => {
+        router.push("/settings");
+      });
 
-          settingsButton.mount();
-          settingsButton.show();
-          settingsButton.onClick(() => {
-            router.push("/settings");
-          });
+      if (backButton.isMounted()) backButton.hide();
+      if (mainButton.isMounted()) mainButton.setParams({ isVisible: false });
 
-          if (backButton.isMounted()) backButton.hide();
-          if (mainButton.isMounted())
-            mainButton.setParams({ isVisible: false });
+      webApp.lockOrientation?.("portrait");
 
-          const user = webApp.initDataUnsafe?.user;
-          const hash = webApp.initDataUnsafe?.hash;
-          const initData = webApp.initData;
-
-          webApp.lockOrientation?.("portrait");
-
-          if (user && hash && initData) {
-            setTgUser(user);
-            setInitData(initData);
-          }
-        } catch (err) {
-          console.error("❌ Telegram Init Failed:", err);
+      if (user && telegramInitData) {
+        setTgUser(user);
+        setInitData(telegramInitData);
+        if (user.id) {
+          setSelectedGroupId(user.id.toString());
         }
-      } else {
-        console.log("⏳ Waiting for Telegram WebApp to initialize...");
-        setTimeout(initializeApp, 100);
       }
-    };
-
-    initializeApp();
-  }, [router]);
+    } catch (err) {
+      console.error("❌ Telegram Setup Failed:", err);
+    }
+  }, [isReady, webApp, user, telegramInitData, router]);
 
   const { data: userCountData } = useQuery({
     queryKey: ["userCount", selectedGroupId],

@@ -1,6 +1,5 @@
 import {
   backButton,
-  init,
   mainButton,
   setMainButtonParams,
   showPopup,
@@ -11,12 +10,13 @@ import { Box, Typography, Skeleton } from "@mui/material";
 import { useTheme } from "../contexts/ThemeContext";
 import { currencies } from "../../utils/preferencesData";
 import { Country, getAllCountries } from "countries-and-timezones";
-import { TelegramWebApp } from "../../utils/types";
 import countryToCurrency from "country-to-currency";
 import { useForm, Controller } from "react-hook-form";
 import { SettingsLayout } from "../../components/settings/SettingsLayout";
 import { SettingsSection } from "../../components/settings/SettingsSection";
 import { SettingsItem } from "../../components/settings/SettingsItem";
+import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
+import { appCache } from "../../utils/cache";
 
 // Define UserPreferences interface locally since it's not exported from the context
 interface UserPreferences {
@@ -78,6 +78,9 @@ const Settings = () => {
   const router = useRouter();
   const { colors } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Use optimized Telegram WebApp hook
+  const { user, initData, isReady } = useTelegramWebApp();
 
   const defaultValues: UserPreferences = useMemo(
     () => ({
@@ -157,53 +160,50 @@ const Settings = () => {
     [reset, defaultValues]
   );
 
-  // Load preferences from backend only once on mount
+  // Optimized initialization using the useTelegramWebApp hook
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      init();
+    if (!isReady) return;
 
-      setTimeout(async () => {
-        try {
-          backButton.mount();
-          backButton.show();
+    try {
+      backButton.mount();
+      backButton.show();
+      backButton.onClick(() => router.back());
 
-          backButton.onClick(() => router.back());
-
-          mainButton.mount();
-          setMainButtonParams({
-            isVisible: false,
-          });
-
-          // Load preferences from backend only once
-          const webApp = window.Telegram?.WebApp as TelegramWebApp;
-          if (webApp && !isLoading && !preferencesLoaded) {
-            const user = webApp.initDataUnsafe?.user;
-            const initData = webApp.initData;
-
-            if (user?.id && initData) {
-              // prevent overwrite if already loaded
-              if (!preferencesLoaded) {
-                setIsLoading(true);
-                try {
-                  await loadPreferencesFromBackend(
-                    user.id.toString(),
-                    initData
-                  );
-                  setPreferencesLoaded(true);
-                } catch (error) {
-                  console.error("Error loading preferences:", error);
-                } finally {
-                  setIsLoading(false);
-                }
-              }
-            }
-          }
-        } catch (err) {
-          console.error("Error showing settings button:", err);
-        }
-      }, 0);
+      mainButton.mount();
+      setMainButtonParams({
+        isVisible: false,
+      });
+    } catch (err) {
+      console.error("Error setting up Telegram UI:", err);
     }
-  }, [loadPreferencesFromBackend, router, isLoading, preferencesLoaded]);
+  }, [isReady, router]);
+
+  // Load preferences from backend when Telegram data is ready
+  useEffect(() => {
+    if (!isReady || !user?.id || !initData || preferencesLoaded || isLoading)
+      return;
+
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await loadPreferencesFromBackend(user.id.toString(), initData);
+        setPreferencesLoaded(true);
+      } catch (error) {
+        console.error("Error loading preferences:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [
+    isReady,
+    user,
+    initData,
+    preferencesLoaded,
+    isLoading,
+    loadPreferencesFromBackend,
+  ]);
 
   // Update button parameters when theme colors change
   useEffect(() => {
@@ -260,10 +260,6 @@ const Settings = () => {
   const onSubmit = useCallback(
     async (data: UserPreferences) => {
       try {
-        const webApp = window.Telegram?.WebApp as TelegramWebApp;
-        const user = webApp.initDataUnsafe?.user;
-        const initData = webApp.initData;
-
         if (!user?.id || !initData) {
           console.error("Missing Telegram user/init data");
           return;
@@ -300,7 +296,7 @@ const Settings = () => {
         console.error("Error saving preferences:", err);
       }
     },
-    [reset]
+    [reset, user, initData]
   );
 
   useEffect(() => {
@@ -357,7 +353,13 @@ const Settings = () => {
           }
           title={item.title}
           onClick={() => router.push(item.route, undefined, { shallow: false })}
-          onMouseEnter={() => router.prefetch(item.route)}
+          onMouseEnter={() => {
+            router.prefetch(item.route);
+            // Pre-cache route data if it's categories
+            if (item.route === '/settings/categories' && user?.id && initData) {
+              appCache.set(`prefetch_${item.route}`, true, 2 * 60 * 1000); // Cache for 2 minutes
+            }
+          }}
           showBorder={!isLast}
         />
       );
@@ -396,7 +398,13 @@ const Settings = () => {
             onClick={() =>
               router.push(item.route, undefined, { shallow: false })
             }
-            onMouseEnter={() => router.prefetch(item.route)}
+            onMouseEnter={() => {
+            router.prefetch(item.route);
+            // Pre-cache route data if it's categories
+            if (item.route === '/settings/categories' && user?.id && initData) {
+              appCache.set(`prefetch_${item.route}`, true, 2 * 60 * 1000); // Cache for 2 minutes
+            }
+          }}
             showBorder={!isLast}
           />
         )}
