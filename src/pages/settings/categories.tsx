@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import {
-  backButton,
-  mainButton,
-  setMainButtonParams,
-  showPopup,
-} from "@telegram-apps/sdk";
+import { showPopup } from "@telegram-apps/sdk";
 import {
   Box,
   Typography,
@@ -28,7 +22,6 @@ import { SettingsLayout } from "../../../components/settings/SettingsLayout";
 import { useTelegramWebApp } from "../../../hooks/useTelegramWebApp";
 
 const CategoriesSettings = () => {
-  const router = useRouter();
   const { colors } = useTheme();
   const [userCategories, setUserCategories] = useState<Category[]>([]);
   const [staticCategories, setStaticCategories] = useState<Category[]>([]);
@@ -86,23 +79,7 @@ const CategoriesSettings = () => {
     }
   }, [user, initData, userCategories.length, staticCategories.length]);
 
-  // Optimized initialization using the useTelegramWebApp hook
-  useEffect(() => {
-    if (!isReady) return;
-
-    try {
-      backButton.mount();
-      backButton.show();
-      backButton.onClick(() => router.back());
-
-      mainButton.mount();
-      setMainButtonParams({
-        isVisible: false,
-      });
-    } catch (err) {
-      console.error("Error setting up Telegram UI:", err);
-    }
-  }, [isReady, router]);
+  // No need to handle Telegram UI setup when embedded
 
   // Load categories when Telegram data is ready
   useEffect(() => {
@@ -248,7 +225,7 @@ const CategoriesSettings = () => {
   }
 
   return (
-    <SettingsLayout title="Categories">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
       {/* User Categories - Show First */}
       <Box sx={{ mb: userCategories.length > 0 ? 2 : 1.5 }}>
         <Typography
@@ -503,7 +480,7 @@ const CategoriesSettings = () => {
           },
         ]}
       />
-    </SettingsLayout>
+    </Box>
   );
 };
 
