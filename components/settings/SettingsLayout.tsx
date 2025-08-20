@@ -14,7 +14,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
   const { colors } = useTheme();
 
   return (
-    <Box sx={{ mt: 8 }}>
+    <Box sx={{ mt: 2 }}>
       <Typography
         variant="h3"
         sx={{
