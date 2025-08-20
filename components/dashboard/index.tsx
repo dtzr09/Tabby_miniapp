@@ -270,7 +270,7 @@ const Dashboard = () => {
               <GroupSwitcher
                 groups={[
                   {
-                    id: null,
+                    id: tgUser?.id?.toString() || null,
                     name: "Personal",
                     icon: <PersonOutlineOutlined sx={{ fontSize: "1.2rem" }} />,
                   },
@@ -285,12 +285,14 @@ const Dashboard = () => {
                 userId={tgUser?.id}
                 initData={initData || undefined}
               />
-              {selectedGroupId !== null && (
-                <GroupPersonalToggle
-                  isGroup={isGroupView}
-                  onToggle={handleViewToggle}
-                />
-              )}
+
+              {selectedGroupId !== null &&
+                selectedGroupId !== tgUser?.id?.toString() && (
+                  <GroupPersonalToggle
+                    isGroup={isGroupView}
+                    onToggle={handleViewToggle}
+                  />
+                )}
             </Box>
           )}
 

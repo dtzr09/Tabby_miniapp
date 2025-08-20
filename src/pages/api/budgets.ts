@@ -9,7 +9,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === "GET") {
-    const { telegram_id, initData } = req.query;
+    const { telegram_id, initData, chat_id } = req.query;
     // Validate Telegram WebApp data
     const isValid = validateTelegramWebApp(initData as string, BOT_TOKEN);
 
@@ -32,7 +32,6 @@ export default async function handler(
         return res.status(404).json({ error: "User not found" });
       }
 
-      const userId = userResult.rows[0].id;
       const timezone = userResult.rows[0].timezone;
 
       // Get current month budgets for this user with category names
@@ -43,6 +42,7 @@ export default async function handler(
       const currentMonth = timeNow.getMonth() + 1;
       const currentYear = timeNow.getFullYear();
 
+      const budgetChatId = chat_id || telegram_id;
       const budgetsResult = await postgresClient.query(
         `SELECT 
           b.id, 
@@ -53,8 +53,8 @@ export default async function handler(
           json_build_object('id', c.id, 'name', c.name) as category
         FROM budgets b
         LEFT JOIN all_categories c ON b.category_id = c.id
-        WHERE b.user_id = $1 AND b.month = $2 AND b.year = $3`,
-        [userId, currentMonth, currentYear]
+        WHERE b.chat_id = $1 AND b.month = $2 AND b.year = $3`,
+        [budgetChatId, currentMonth, currentYear]
       );
 
       return res.status(200).json(budgetsResult.rows);
@@ -75,7 +75,6 @@ export default async function handler(
       if (userError || !users || users.length === 0) {
         return res.status(404).json({ error: "User not found" });
       }
-      const userId = users[0].id;
       const timezone = users[0].timezone;
 
       // Get current month budgets for this user
@@ -86,6 +85,7 @@ export default async function handler(
       const currentMonth = timeNow.getMonth() + 1;
       const currentYear = timeNow.getFullYear();
 
+      const budgetChatId = chat_id || telegram_id;
       const { data, error } = await supabaseAdmin
         .from("budgets")
         .select(
@@ -101,7 +101,7 @@ export default async function handler(
           )
         `
         )
-        .eq("user_id", userId)
+        .eq("chat_id", budgetChatId)
         .eq("month", currentMonth)
         .eq("year", currentYear);
 
