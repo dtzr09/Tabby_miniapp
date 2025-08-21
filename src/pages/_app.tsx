@@ -18,7 +18,7 @@ const queryClient = new QueryClient({
       // Keep unused data in cache for 5 minutes
       gcTime: 300000,
       // Only refetch on mount if data is stale
-      refetchOnMount: 'always',
+      refetchOnMount: "always",
       // Only refetch on window focus if data is stale
       refetchOnWindowFocus: true,
       // Retry failed queries once
@@ -50,7 +50,10 @@ declare global {
         };
         onEvent?: (eventType: string, eventHandler: () => void) => void;
         lockOrientation?: (orientation: string) => void;
-        setViewportSettings?: (settings: { viewport_height?: boolean; expand_media_previews?: boolean }) => void;
+        setViewportSettings?: (settings: {
+          viewport_height?: boolean;
+          expand_media_previews?: boolean;
+        }) => void;
       };
     };
   }
@@ -77,7 +80,6 @@ function MyApp({ Component, pageProps }: AppProps) {
           viewport_height: true,
           expand_media_previews: true,
         });
-
         if (viewport.mount.isAvailable()) {
           await viewport.mount();
           viewport.expand();
@@ -101,12 +103,13 @@ function MyApp({ Component, pageProps }: AppProps) {
         );
         window.visualViewport?.addEventListener("resize", applyViewportHeight);
       } else {
-        // Browser fallback
-        const setFromVV = () =>
+        // Browser fallback - skip on desktop
+        const setFromVV = () => {
           document.documentElement.style.setProperty(
             "--app-height",
             `${window.visualViewport?.height || window.innerHeight}px`
           );
+        };
         setFromVV();
         window.addEventListener("resize", setFromVV);
         window.visualViewport?.addEventListener("resize", setFromVV);

@@ -260,7 +260,7 @@ export default function EntryForm({
         sx={{
           display: "flex",
           alignItems: "center",
-          py: 1.5,
+          py: 1,
           gap: 1,
           position: "relative",
           zIndex: 1000,
@@ -348,7 +348,8 @@ export default function EntryForm({
       {/* Keypad */}
       <Box
         sx={{
-          p: 0,
+          pt: 1, // Only top padding
+          pb: 6, // Extra bottom padding for safe area
         }}
       >
         <Box

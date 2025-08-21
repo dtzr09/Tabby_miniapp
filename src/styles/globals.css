@@ -33,16 +33,23 @@ a {
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --app-height: 100dvh; /* will be replaced by JS with TG viewport */
+  --min-app-height: 568px; /* Minimum app height */
 }
 
 /* Single source of truth for height; DO NOT subtract safe areas here */
 .app {
   box-sizing: border-box;
-  height: var(--app-height);
+  height: max(
+    var(--app-height),
+    var(--min-app-height)
+  ); /* Use larger of dynamic or minimum height */
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   overflow: auto;
   /* Ensure content doesn't overlap with safe areas */
   width: 100%;
   max-width: 100%;
   position: relative;
+  /* Add minimum dimensions for Telegram desktop */
+  min-width: 320px; /* Minimum phone width */
+  min-height: var(--min-app-height); /* Use CSS variable for consistency */
 }
