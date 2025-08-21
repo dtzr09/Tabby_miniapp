@@ -32,13 +32,16 @@ async function handleGetCategories(
   res: NextApiResponse,
   telegram_id: string
 ) {
+  const { chat_id } = req.query;
+  const effectiveChatId = chat_id || telegram_id; // Use group chat_id if provided, otherwise use telegram_id for personal
+
   if (isLocal) {
     const static_categories = await postgresClient.query(
       "SELECT * FROM all_categories WHERE user_id IS NULL AND chat_id IS NULL ORDER BY name"
     );
     const user_categories = await postgresClient.query(
       "SELECT * FROM all_categories WHERE chat_id = $1 ORDER BY name",
-      [telegram_id]
+      [effectiveChatId]
     );
     return res.status(200).json({
       userCategories: user_categories.rows,
@@ -64,7 +67,7 @@ async function handleGetCategories(
     const { data: user_categories } = await supabaseAdmin
       .from("all_categories")
       .select("*")
-      .eq("chat_id", telegram_id)
+      .eq("chat_id", effectiveChatId)
       .order("name");
 
     return res.status(200).json({
@@ -82,6 +85,8 @@ async function handleUpdateCategory(
   telegram_id: string
 ) {
   const { id, name } = req.body;
+  const { chat_id } = req.query;
+  const effectiveChatId = chat_id || telegram_id; // Use group chat_id if provided, otherwise use telegram_id for personal
 
   if (!id || !name) {
     return res.status(400).json({ error: "Category ID and name are required" });
@@ -89,22 +94,22 @@ async function handleUpdateCategory(
 
   try {
     if (isLocal) {
-      // Check if category belongs to user
+      // Check if category belongs to user/group
       const checkResult = await postgresClient.query(
         "SELECT * FROM all_categories WHERE id = $1 AND chat_id = $2",
-        [id, telegram_id]
+        [id, effectiveChatId]
       );
 
       if (checkResult.rows.length === 0) {
         return res
           .status(404)
-          .json({ error: "Category not found or not owned by user" });
+          .json({ error: "Category not found or not owned by user/group" });
       }
 
       // Update category name
       const result = await postgresClient.query(
         "UPDATE all_categories SET name = $1 WHERE id = $2 AND chat_id = $3 RETURNING *",
-        [name, id, telegram_id]
+        [name, id, effectiveChatId]
       );
 
       return res.status(200).json({ category: result.rows[0] });
@@ -115,18 +120,18 @@ async function handleUpdateCategory(
           .json({ error: "Supabase client not configured" });
       }
 
-      // Check if category belongs to user
+      // Check if category belongs to user/group
       const { data: existingCategory } = await supabaseAdmin
         .from("all_categories")
         .select("*")
         .eq("id", id)
-        .eq("chat_id", telegram_id)
+        .eq("chat_id", effectiveChatId)
         .single();
 
       if (!existingCategory) {
         return res
           .status(404)
-          .json({ error: "Category not found or not owned by user" });
+          .json({ error: "Category not found or not owned by user/group" });
       }
 
       // Update category name
@@ -134,7 +139,7 @@ async function handleUpdateCategory(
         .from("all_categories")
         .update({ name, updated_at: new Date().toISOString() })
         .eq("id", id)
-        .eq("chat_id", telegram_id)
+        .eq("chat_id", effectiveChatId)
         .select()
         .single();
 
@@ -155,7 +160,8 @@ async function handleDeleteCategory(
   res: NextApiResponse,
   telegram_id: string
 ) {
-  const { id } = req.query;
+  const { id, chat_id } = req.query;
+  const effectiveChatId = chat_id || telegram_id; // Use group chat_id if provided, otherwise use telegram_id for personal
 
   if (!id) {
     return res.status(400).json({ error: "Category ID is required" });
@@ -163,16 +169,16 @@ async function handleDeleteCategory(
 
   try {
     if (isLocal) {
-      // Check if category belongs to user and is not static
+      // Check if category belongs to user/group and is not static
       const checkResult = await postgresClient.query(
         "SELECT * FROM all_categories WHERE id = $1 AND chat_id = $2",
-        [id, telegram_id]
+        [id, effectiveChatId]
       );
 
       if (checkResult.rows.length === 0) {
         return res
           .status(404)
-          .json({ error: "Category not found or not owned by user" });
+          .json({ error: "Category not found or not owned by user/group" });
       }
 
       // Check if category is in use
@@ -194,7 +200,7 @@ async function handleDeleteCategory(
       // Delete category
       await postgresClient.query(
         "DELETE FROM all_categories WHERE id = $1 AND chat_id = $2",
-        [id, telegram_id]
+        [id, effectiveChatId]
       );
 
       return res.status(200).json({ message: "Category deleted successfully" });
@@ -205,18 +211,18 @@ async function handleDeleteCategory(
           .json({ error: "Supabase client not configured" });
       }
 
-      // Check if category belongs to user and is not static
+      // Check if category belongs to user/group and is not static
       const { data: existingCategory } = await supabaseAdmin
         .from("all_categories")
         .select("*")
         .eq("id", id)
-        .eq("chat_id", telegram_id)
+        .eq("chat_id", effectiveChatId)
         .single();
 
       if (!existingCategory) {
         return res
           .status(404)
-          .json({ error: "Category not found or not owned by user" });
+          .json({ error: "Category not found or not owned by user/group" });
       }
 
       // Check if category is in use
@@ -241,7 +247,7 @@ async function handleDeleteCategory(
         .from("all_categories")
         .delete()
         .eq("id", id)
-        .eq("chat_id", telegram_id);
+        .eq("chat_id", effectiveChatId);
 
       if (error) {
         return res.status(500).json({ error: error.message });

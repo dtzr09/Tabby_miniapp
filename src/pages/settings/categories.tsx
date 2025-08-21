@@ -21,7 +21,11 @@ import BottomSheet from "../../../components/common/BottomSheet";
 import { SettingsLayout } from "../../../components/settings/SettingsLayout";
 import { useTelegramWebApp } from "../../../hooks/useTelegramWebApp";
 
-const CategoriesSettings = () => {
+interface CategoriesSettingsProps {
+  chat_id?: string | null;
+}
+
+const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
   const { colors } = useTheme();
   const [userCategories, setUserCategories] = useState<Category[]>([]);
   const [staticCategories, setStaticCategories] = useState<Category[]>([]);
@@ -64,7 +68,7 @@ const CategoriesSettings = () => {
         setIsLoading(true); // Only show loading if no cached data
       }
 
-      const response = await fetchCategories(user.id.toString(), initData);
+      const response = await fetchCategories(user.id.toString(), initData, chat_id);
       setUserCategories(response.userCategories || []);
       setStaticCategories(response.staticCategories || []);
     } catch (error) {
@@ -77,7 +81,7 @@ const CategoriesSettings = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, initData, userCategories.length, staticCategories.length]);
+  }, [user, initData, chat_id, userCategories.length, staticCategories.length]);
 
   // No need to handle Telegram UI setup when embedded
 
@@ -116,7 +120,8 @@ const CategoriesSettings = () => {
         editDialog.category.id,
         editDialog.newName.trim(),
         user.id.toString(),
-        initData
+        initData,
+        chat_id
       );
 
       // Update the appropriate category list
@@ -165,7 +170,8 @@ const CategoriesSettings = () => {
       await deleteCategory(
         deleteDialog.category.id,
         user.id.toString(),
-        initData
+        initData,
+        chat_id
       );
 
       // Remove from the appropriate category list
@@ -391,59 +397,61 @@ const CategoriesSettings = () => {
         title="Edit Category"
         buttons={[
           {
-            text: "Save Changes",
-            onClick: confirmEdit,
-            variant: "primary",
-            disabled: !editDialog.newName.trim(),
-          },
-          {
             text: "Cancel",
             onClick: () =>
               setEditDialog({ open: false, category: null, newName: "" }),
+            variant: "primary",
+          },
+          {
+            text: "Save Changes",
+            onClick: confirmEdit,
             variant: "secondary",
+            disabled: !editDialog.newName.trim(),
           },
         ]}
       >
-        <TextField
-          fullWidth
-          value={editDialog.newName}
-          onChange={(e) =>
-            setEditDialog((prev) => ({ ...prev, newName: e.target.value }))
-          }
-          placeholder="Enter category name"
-          autoFocus
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              bgcolor: colors.inputBg || colors.surface,
-              color: colors.text,
-              borderRadius: 2,
-              fontSize: "1rem",
-              minHeight: "auto",
-              border: `2px solid transparent`,
-              transition: "all 0.2s ease",
-              "&:hover": {
-                borderColor: "#007AFF40",
+        <Box sx={{ pt: 2 }}>
+          <TextField
+            fullWidth
+            value={editDialog.newName}
+            onChange={(e) =>
+              setEditDialog((prev) => ({ ...prev, newName: e.target.value }))
+            }
+            placeholder="Enter category name"
+            autoFocus
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                bgcolor: colors.inputBg || colors.surface,
+                color: colors.text,
+                borderRadius: 2,
+                fontSize: "1rem",
+                minHeight: "auto",
+                border: `1px solid ${colors.border || '#e0e0e0'}`,
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  borderColor: colors.border || '#e0e0e0',
+                },
+                "&.Mui-focused": {
+                  borderColor: colors.border || '#e0e0e0',
+                  boxShadow: "none",
+                },
+                "& input": {
+                  py: 1,
+                  px: 1.75,
+                  fontWeight: 500,
+                },
               },
-              "&.Mui-focused": {
-                borderColor: "#007AFF",
-                boxShadow: "0 0 0 3px rgba(0, 122, 255, 0.1)",
+              "& .MuiOutlinedInput-notchedOutline": {
+                border: "none",
               },
-              "& input": {
-                py: 1,
-                px: 1.75,
-                fontWeight: 500,
+              "& .MuiInputBase-input::placeholder": {
+                color: colors.textSecondary,
+                opacity: 0.6,
+                fontWeight: 400,
               },
-            },
-            "& .MuiOutlinedInput-notchedOutline": {
-              border: "none",
-            },
-            "& .MuiInputBase-input::placeholder": {
-              color: colors.textSecondary,
-              opacity: 0.6,
-              fontWeight: 400,
-            },
-          }}
-        />
+            }}
+          />
+        </Box>
       </BottomSheet>
 
       {/* Delete Bottom Sheet */}

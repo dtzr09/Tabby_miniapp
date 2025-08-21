@@ -4,7 +4,6 @@ import { Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Expense, ViewMode } from "../../utils/types";
 import { backButton, mainButton, settingsButton } from "@telegram-apps/sdk";
-import { useRouter } from "next/router";
 import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
@@ -36,9 +35,12 @@ interface Group {
   telegram_id?: string;
 }
 
-const Dashboard = () => {
+interface DashboardProps {
+  onViewChange: (view: "dashboard" | "settings") => void;
+}
+
+const Dashboard = ({ onViewChange }: DashboardProps) => {
   const { colors, fontFamily } = useTheme();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | null>(null);
@@ -148,7 +150,7 @@ const Dashboard = () => {
       settingsButton.mount();
       settingsButton.show();
       settingsButton.onClick(() => {
-        router.push("/settings");
+        onViewChange("settings");
       });
 
       // Prefetch settings data when settings button is available
@@ -161,10 +163,6 @@ const Dashboard = () => {
           .catch((error) => {
             console.warn("Failed to prefetch categories:", error);
           });
-
-        // Mark settings route as prefetched
-        router.prefetch("/settings");
-        router.prefetch("/settings/categories");
       }
 
       if (backButton.isMounted()) backButton.hide();
@@ -182,7 +180,7 @@ const Dashboard = () => {
     } catch (err) {
       console.error("❌ Telegram Setup Failed:", err);
     }
-  }, [isReady, webApp, user, telegramInitData, router]);
+  }, [isReady, webApp, user, telegramInitData, onViewChange]);
 
   const { data: userCountData } = useQuery({
     queryKey: ["userCount", selectedGroupId],

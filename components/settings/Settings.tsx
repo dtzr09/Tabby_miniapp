@@ -4,20 +4,19 @@ import {
   setMainButtonParams,
   showPopup,
 } from "@telegram-apps/sdk";
-import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { Box, Typography, Skeleton, Chip, Menu, MenuItem } from "@mui/material";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme } from "../../src/contexts/ThemeContext";
 import { currencies } from "../../utils/preferencesData";
 import { Country, getAllCountries } from "countries-and-timezones";
 import countryToCurrency from "country-to-currency";
 import { useForm, Controller } from "react-hook-form";
-import { SettingsLayout } from "../../components/settings/SettingsLayout";
-import { SettingsSection } from "../../components/settings/SettingsSection";
-import { SettingsItem } from "../../components/settings/SettingsItem";
+import { SettingsLayout } from "./SettingsLayout";
+import { SettingsSection } from "./SettingsSection";
+import { SettingsItem } from "./SettingsItem";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
-import { SelectionList } from "../../components/settings/SelectionList";
-import CategoriesSettings from "./settings/categories";
+import { SelectionList } from "./SelectionList";
+import CategoriesSettings from "../../src/pages/settings/categories";
 import { Group } from "../../utils/types";
 
 // Types
@@ -43,6 +42,10 @@ type SettingsView = "main" | "country" | "currency" | "categories";
 interface ViewConfig {
   title: string;
   component: React.ReactNode;
+}
+
+interface SettingsProps {
+  onViewChange: (view: "dashboard" | "settings") => void;
 }
 
 // Configuration
@@ -79,16 +82,14 @@ const SETTINGS_CONFIG = {
   ] as SettingsItemConfig[],
 };
 
-const Settings = () => {
-  const router = useRouter();
-  const [chat_id, setChatId] = useState<string | null>(null);
+const Settings = ({ onViewChange }: SettingsProps) => {
   const { colors } = useTheme();
+  const [chat_id, setChatId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentView, setCurrentView] = useState<SettingsView>("main");
   const [selectedCountry, setSelectedCountry] = useState("SG");
   const [selectedCurrency, setSelectedCurrency] = useState("SGD");
   const [initialLoad, setInitialLoad] = useState(true);
-  // const [isGroupSettings, setIsGroupSettings] = useState(false);
   const [groupName, setGroupName] = useState<string | null>(null);
   const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
 
@@ -113,16 +114,11 @@ const Settings = () => {
   const [filterDataLoaded, setFilterDataLoaded] = useState(false);
   const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
 
-  // Initialize chat_id from URL query on mount
-  useEffect(() => {
-    if (router.isReady && router.query.chat_id) {
-      setChatId(router.query.chat_id as string);
-    }
-  }, [router.isReady, router.query.chat_id]);
+  // Initialize chat_id from URL query on mount (if we still need this)
+  // For now, we'll start with null and handle group switching internally
 
   // Update isGroupSettings when chat_id changes
   useEffect(() => {
-    // setIsGroupSettings(!!chat_id);
     // Reset state when switching between personal and group
     setPreferencesLoaded(false);
     setGroupName(null);
@@ -264,7 +260,7 @@ const Settings = () => {
 
     const handleBack = () => {
       if (currentView === "main") {
-        router.push("/");
+        onViewChange("dashboard");
       } else {
         setCurrentView("main");
       }
@@ -283,7 +279,7 @@ const Settings = () => {
         // Ignore cleanup errors
       }
     };
-  }, [isReady, router, currentView]);
+  }, [isReady, onViewChange, currentView]);
 
   // Load preferences when ready
   useEffect(() => {
@@ -486,21 +482,6 @@ const Settings = () => {
     null
   );
 
-  // Handler for switching between personal and group settings
-  // const handleSettingsTypeToggle = useCallback(() => {
-  //   const newIsGroupSettings = !isGroupSettings;
-  //   setIsGroupSettings(newIsGroupSettings);
-
-  //   if (newIsGroupSettings && availableGroups.length > 0) {
-  //     // Switch to first available group
-  //     const firstGroup = availableGroups[0];
-  //     router.push(`/settings?chat_id=${firstGroup.id}`);
-  //   } else {
-  //     // Switch to personal
-  //     router.push('/settings');
-  //   }
-  // }, [isGroupSettings, availableGroups, router]);
-
   // Handler for group selection
   const handleGroupMenuOpen = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
@@ -578,6 +559,7 @@ const Settings = () => {
     initialLoad,
     selectedCurrency,
     handleCurrencySelect,
+    chat_id,
   ]);
 
   // Render settings item
@@ -658,8 +640,11 @@ const Settings = () => {
     if (availableGroups.length === 0) return null;
 
     // Get the current group name
-    const currentGroupName = chat_id 
-      ? groupName || availableGroups.find(g => g.chat_id === chat_id)?.name || availableGroups.find(g => g.chat_id === chat_id)?.title || "Group"
+    const currentGroupName = chat_id
+      ? groupName ||
+        availableGroups.find((g) => g.chat_id === chat_id)?.name ||
+        availableGroups.find((g) => g.chat_id === chat_id)?.title ||
+        "Group"
       : "Personal";
 
     return (

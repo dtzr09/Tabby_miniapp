@@ -2,10 +2,11 @@ import { appCache, invalidateUserCache } from "../utils/cache";
 
 export const fetchCategories = async (
   telegram_id: string,
-  initData: string
+  initData: string,
+  chat_id?: string | null
 ) => {
-  // Check cache first
-  const cacheKey = `categories_${telegram_id}`;
+  // Check cache first - include chat_id in cache key for group-specific caching
+  const cacheKey = `categories_${telegram_id}${chat_id ? `_${chat_id}` : ''}`;
   const cachedData = appCache.get(cacheKey);
   
   if (cachedData) {
@@ -13,6 +14,9 @@ export const fetchCategories = async (
   }
 
   const params = new URLSearchParams({ telegram_id, initData });
+  if (chat_id) {
+    params.append('chat_id', chat_id);
+  }
   const response = await fetch(`/api/categories?${params.toString()}`);
   
   if (!response.ok) {
@@ -33,9 +37,13 @@ export const updateCategory = async (
   categoryId: number | string,
   name: string,
   telegram_id: string,
-  initData: string
+  initData: string,
+  chat_id?: string | null
 ) => {
   const params = new URLSearchParams({ telegram_id, initData });
+  if (chat_id) {
+    params.append('chat_id', chat_id);
+  }
   const response = await fetch(`/api/categories?${params.toString()}`, {
     method: "PUT",
     headers: {
@@ -60,9 +68,13 @@ export const updateCategory = async (
 export const deleteCategory = async (
   categoryId: number | string,
   telegram_id: string,
-  initData: string
+  initData: string,
+  chat_id?: string | null
 ) => {
   const params = new URLSearchParams({ telegram_id, initData, id: categoryId.toString() });
+  if (chat_id) {
+    params.append('chat_id', chat_id);
+  }
   const response = await fetch(`/api/categories?${params.toString()}`, {
     method: "DELETE",
   });
