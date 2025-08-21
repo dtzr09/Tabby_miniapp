@@ -348,7 +348,7 @@ export default function EntryForm({
       <Box
         sx={{
           p: 0,
-          pb: 6,
+          mb: 6,
         }}
       >
         <Box
