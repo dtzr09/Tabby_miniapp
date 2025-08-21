@@ -3,7 +3,7 @@ import BalanceCard from "../balance/BalanceCard";
 import { Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Expense, ViewMode } from "../../utils/types";
-import { mainButton, settingsButton } from "@telegram-apps/sdk";
+import { backButton, mainButton, settingsButton } from "@telegram-apps/sdk";
 import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
@@ -25,6 +25,7 @@ import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
 import { fetchCategories } from "../../services/categories";
 import { fetchAllEntries } from "../../services/allEntries";
 import { fetchPreferences } from "../../services/preferences";
+import Navbar from "../navbar/Navbar";
 
 export interface TelegramUser {
   id: string;
@@ -216,6 +217,11 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
 
       if (mainButton.isMounted()) mainButton.setParams({ isVisible: false });
 
+      // Hide back button in dashboard
+      if (backButton.isMounted()) {
+        backButton.hide();
+      }
+
       webApp.lockOrientation?.("portrait");
 
       if (user && telegramInitData) {
@@ -273,117 +279,121 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   }
 
   return (
-    <Box
-      sx={{
-        bgcolor: colors.background,
-        minHeight: "100vh",
-        color: colors.text,
-        fontFamily: fontFamily,
-        display: "flex",
-        justifyContent: "center",
-        mt: 5,
-      }}
-    >
+    <>
+      <Navbar />
       <Box
         sx={{
-          width: "100%",
-          maxWidth: "24rem",
-          minWidth: "24rem",
           bgcolor: colors.background,
-          mx: "auto", // Center the content
-          px: { xs: 2, sm: 2, md: 2 }, // Consistent padding
+          minHeight: "100vh",
+          color: colors.text,
+          fontFamily: fontFamily,
+          display: "flex",
+          justifyContent: "center",
         }}
       >
         <Box
           sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            mt: 2,
-            gap: 1.5,
+            width: "100%",
+            maxWidth: "24rem",
+            minWidth: "24rem",
+            bgcolor: colors.background,
+            mx: "auto", // Center the content
+            px: { xs: 2, sm: 2, md: 2 }, // Consistent padding
           }}
         >
-          {/* Group Switcher and Toggle - only show when has groups */}
-          {hasGroups && (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 1,
-                width: "100%",
-              }}
-            >
-              <GroupSwitcher
-                groups={[
-                  {
-                    id: tgUser?.id?.toString() || null,
-                    name: "Personal",
-                    icon: <PersonOutlineOutlined sx={{ fontSize: "1.2rem" }} />,
-                  },
-                  ...(groups?.map((group: Group) => ({
-                    id: group.chat_id,
-                    name: group.name,
-                    icon: <GroupOutlined sx={{ fontSize: "1.2rem" }} />,
-                  })) || []),
-                ]}
-                selectedGroupId={selectedGroupId}
-                setSelectedGroupId={setSelectedGroupId}
-                userId={tgUser?.id}
-                initData={initData || undefined}
-              />
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              mt: 2,
+              gap: 1.5,
+            }}
+          >
+            {/* Group Switcher and Toggle - only show when has groups */}
+            {hasGroups && (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1,
+                  width: "100%",
+                }}
+              >
+                <GroupSwitcher
+                  groups={[
+                    {
+                      id: tgUser?.id?.toString() || null,
+                      name: "Personal",
+                      icon: (
+                        <PersonOutlineOutlined sx={{ fontSize: "1.2rem" }} />
+                      ),
+                    },
+                    ...(groups?.map((group: Group) => ({
+                      id: group.chat_id,
+                      name: group.name,
+                      icon: <GroupOutlined sx={{ fontSize: "1.2rem" }} />,
+                    })) || []),
+                  ]}
+                  selectedGroupId={selectedGroupId}
+                  setSelectedGroupId={setSelectedGroupId}
+                  userId={tgUser?.id}
+                  initData={initData || undefined}
+                />
 
-              {selectedGroupId !== null &&
-                selectedGroupId !== tgUser?.id?.toString() && (
-                  <GroupPersonalToggle
-                    isGroup={isGroupView}
-                    onToggle={handleViewToggle}
-                  />
-                )}
-            </Box>
-          )}
+                {selectedGroupId !== null &&
+                  selectedGroupId !== tgUser?.id?.toString() && (
+                    <GroupPersonalToggle
+                      isGroup={isGroupView}
+                      onToggle={handleViewToggle}
+                    />
+                  )}
+              </Box>
+            )}
 
-          {/* Balance Card */}
-          {hasBudget && (
+            {/* Balance Card */}
+            {hasBudget && (
+              <Box sx={{ width: "100%" }}>
+                <BalanceCard
+                  expensesWithBudget={currentMonthExpenses.expenses}
+                  budgets={currentMonthExpenses.budgets}
+                  totalBudget={summaryData.totalBudget}
+                  selectedGroupId={selectedGroupId}
+                  isGroupView={isGroupView}
+                  userCount={userCount}
+                />
+              </Box>
+            )}
+
+            {/* Expense Summary Card */}
             <Box sx={{ width: "100%" }}>
-              <BalanceCard
-                expensesWithBudget={currentMonthExpenses.expenses}
-                budgets={currentMonthExpenses.budgets}
-                totalBudget={summaryData.totalBudget}
-                selectedGroupId={selectedGroupId}
-                isGroupView={isGroupView}
-                userCount={userCount}
+              <ExpenseSummaryCard
+                totalIncome={summaryData.totalIncome}
+                totalExpenses={summaryData.totalExpenses}
               />
             </Box>
-          )}
 
-          {/* Expense Summary Card */}
-          <Box sx={{ width: "100%" }}>
-            <ExpenseSummaryCard
-              totalIncome={summaryData.totalIncome}
-              totalExpenses={summaryData.totalExpenses}
-            />
-          </Box>
+            {/* Budget Overview Card */}
+            <Box sx={{ width: "100%" }}>
+              <ExpensesAndBudgetOverview
+                data={dashboardData}
+                viewMode={internalViewMode}
+                onViewModeChange={setInternalViewMode}
+              />
+            </Box>
 
-          {/* Budget Overview Card */}
-          <Box sx={{ width: "100%" }}>
-            <ExpensesAndBudgetOverview
-              data={dashboardData}
-              viewMode={internalViewMode}
-              onViewModeChange={setInternalViewMode}
-            />
-          </Box>
-
-          {/* Recent Transactions Card */}
-          <Box sx={{ width: "100%", mb: 4 }}>
-            <ExpenseList
-              allEntries={filteredAllEntries}
-              tgUser={tgUser}
-              isGroupView={isGroupView}
-            />
+            {/* Recent Transactions Card */}
+            <Box sx={{ width: "100%", mb: 4 }}>
+              <ExpenseList
+                allEntries={filteredAllEntries}
+                tgUser={tgUser}
+                isGroupView={isGroupView}
+              />
+            </Box>
           </Box>
         </Box>
       </Box>
-    </Box>
+    </>
   );
 };
 

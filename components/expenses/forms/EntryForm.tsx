@@ -28,6 +28,7 @@ import {
 } from "../../../utils/types";
 // import { TelegramUser } from "../../dashboard";
 import { alpha } from "@mui/material/styles";
+import Navbar from "../../navbar/Navbar";
 
 interface EntryFormProps {
   // control: Control<ExpenseFormData>;
@@ -149,8 +150,10 @@ export default function EntryForm({
         flexDirection: "column",
         position: "relative",
         overflow: "hidden",
+        height: "100vh",
       }}
     >
+      <Navbar />
       {/* Main Display Area */}
       <Box
         sx={{
@@ -347,8 +350,9 @@ export default function EntryForm({
       {/* Keypad */}
       <Box
         sx={{
-          pt: 1, // Only top padding
-          pb: 6, // Extra bottom padding for safe area
+          mt: "auto", // Push to bottom
+          pt: 1,
+          pb: 3, // Bottom padding
         }}
       >
         <Box

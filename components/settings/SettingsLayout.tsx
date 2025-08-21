@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import Navbar from "../navbar/Navbar";
 
 interface SettingsLayoutProps {
   title: string;
@@ -18,8 +19,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
   return (
     <Box sx={{ display: "flex", flexDirection: "column" }}>
       {/* Invisible Navbar Area - matches Dashboard mt: 5 */}
-      <Box sx={{ mt: 5, flexShrink: 0 }} />
-
+      <Navbar />
       {/* Fixed Header */}
       <Box
         sx={{
