@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { init } from "@telegram-apps/sdk";
-import { TelegramWebApp, TelegramUser } from "../utils/types";
+import { TelegramWebApp } from "../utils/types";
 import { appCache } from "../utils/cache";
+
+// Import the TelegramUser interface from dashboard to maintain consistency
+interface TelegramUser {
+  id: string;
+}
 
 interface TelegramWebAppData {
   webApp: TelegramWebApp | null;

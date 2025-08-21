@@ -53,15 +53,16 @@ const ExpenseRow = ({
           }
 
           // Handle the allEntries structure
-          if (oldData.expenses || oldData.income) {
+          if (oldData && typeof oldData === 'object' && ('expenses' in oldData || 'income' in oldData)) {
+            const typedData = oldData as QueryData;
             return {
-              ...oldData,
+              ...typedData,
               expenses: tx.isIncome
-                ? oldData.expenses
-                : (oldData as QueryData).expenses?.filter((e) => e.id !== tx.id) || [],
+                ? typedData.expenses
+                : typedData.expenses?.filter((e) => e.id !== tx.id) || [],
               income: tx.isIncome
-                ? (oldData as QueryData).income?.filter((i) => i.id !== tx.id) || []
-                : oldData.income,
+                ? typedData.income?.filter((i) => i.id !== tx.id) || []
+                : typedData.income,
             };
           }
 
