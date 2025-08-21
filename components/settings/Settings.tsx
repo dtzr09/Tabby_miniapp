@@ -12,7 +12,7 @@ import { currencies } from "../../utils/preferencesData";
 import { Country, getAllCountries } from "countries-and-timezones";
 import countryToCurrency from "country-to-currency";
 import { useForm, Controller } from "react-hook-form";
-import { SettingsLayout } from "./SettingsLayout";
+import { AppLayout } from "../AppLayout";
 import { SettingsSection } from "./SettingsSection";
 import { SettingsItem } from "./SettingsItem";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
@@ -756,18 +756,18 @@ const Settings = ({ onViewChange }: SettingsProps) => {
   const viewConfig = getViewConfig();
   if (viewConfig) {
     return (
-      <SettingsLayout
+      <AppLayout
         title={viewConfig.title}
         headerExtra={currentView === "main" ? groupSwitcherChip : null}
       >
         {viewConfig.component}
-      </SettingsLayout>
+      </AppLayout>
     );
   }
 
   // Main settings view
   return (
-    <SettingsLayout title="Settings" headerExtra={groupSwitcherChip}>
+    <AppLayout title="Settings" headerExtra={groupSwitcherChip}>
       <SettingsSection title="GENERAL">
         {SETTINGS_CONFIG.general.map((item, index) =>
           renderSettingsItem(item, index === SETTINGS_CONFIG.general.length - 1)
@@ -779,7 +779,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
           renderSettingsItem(item, index === SETTINGS_CONFIG.data.length - 1)
         )}
       </SettingsSection>
-    </SettingsLayout>
+    </AppLayout>
   );
 };
 

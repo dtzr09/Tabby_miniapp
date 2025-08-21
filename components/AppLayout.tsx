@@ -1,14 +1,14 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
-import { useTheme } from "../../src/contexts/ThemeContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
-interface SettingsLayoutProps {
-  title: string;
+interface AppLayoutProps {
+  title?: string;
   children: React.ReactNode;
   headerExtra?: React.ReactNode;
 }
 
-export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
+export const AppLayout: React.FC<AppLayoutProps> = ({
   title,
   children,
   headerExtra,
@@ -30,18 +30,20 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
           justifyContent: "center",
         }}
       >
-        <Typography
-          variant="h3"
-          sx={{
-            color: colors.text,
-            fontWeight: 600,
-            fontSize: "1.1rem",
-            textAlign: "center",
-            py: 0.5,
-          }}
-        >
-          {title}
-        </Typography>
+        {title && (
+          <Typography
+            variant="h3"
+            sx={{
+              color: colors.text,
+              fontWeight: 600,
+              fontSize: "1.1rem",
+              textAlign: "center",
+              py: 0.5,
+            }}
+          >
+            {title}
+          </Typography>
+        )}
         {headerExtra && <Box sx={{ mt: 1 }}>{headerExtra}</Box>}
       </Box>
 

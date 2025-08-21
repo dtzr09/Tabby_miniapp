@@ -19,15 +19,14 @@ import EntryForm from "../../../../components/expenses/forms/EntryForm";
 import LoadingSkeleton from "../../../../components/dashboard/LoadingSkeleton";
 import { useExpense } from "../../../../hooks/useExpense";
 import { useAllEntries } from "../../../../hooks/useAllEntries";
-import { useTheme } from "@/contexts/ThemeContext";
 import { useUser } from "../../../../hooks/useUser";
 import BottomSheet from "../../../../components/common/BottomSheet";
 import { invalidateExpenseCache } from "../../../../utils/cache";
+import { AppLayout } from "../../../../components/AppLayout";
 
 const ExpenseDetail = () => {
   const router = useRouter();
   const { id: entryId, isIncome, chat_id, isGroupView } = router.query;
-  const { colors } = useTheme();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
@@ -290,17 +289,7 @@ const ExpenseDetail = () => {
   }
 
   return (
-    <Box
-      sx={{
-        background: colors.background,
-        px: 2,
-        display: "flex",
-        flexDirection: "column",
-        pt: 4,
-        height: "var(--app-height)",
-        overflow: "hidden",
-      }}
-    >
+    <AppLayout>
       <EntryForm
         // control={control}
         categories={categories}
@@ -359,7 +348,7 @@ const ExpenseDetail = () => {
           },
         ]}
       />
-    </Box>
+    </AppLayout>
   );
 };
 

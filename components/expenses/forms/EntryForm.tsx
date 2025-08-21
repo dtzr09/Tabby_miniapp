@@ -28,7 +28,6 @@ import {
 } from "../../../utils/types";
 // import { TelegramUser } from "../../dashboard";
 import { alpha } from "@mui/material/styles";
-import Navbar from "../../navbar/Navbar";
 
 interface EntryFormProps {
   // control: Control<ExpenseFormData>;
@@ -149,10 +148,9 @@ export default function EntryForm({
         display: "flex",
         flexDirection: "column",
         height: "100%",
+        mb: 8,
       }}
     >
-      <Navbar />
-
       {/* Scrollable Content */}
       <Box
         sx={{
@@ -361,7 +359,6 @@ export default function EntryForm({
           sx={{
             mt: "auto", // Push to bottom
             pt: 1,
-            mb: 6, // Bottom padding
           }}
         >
           <Box

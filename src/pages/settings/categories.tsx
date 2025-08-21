@@ -18,8 +18,8 @@ import {
 } from "../../../services/categories";
 import { DeleteOutline, EditOutlined } from "@mui/icons-material";
 import BottomSheet from "../../../components/common/BottomSheet";
-import { SettingsLayout } from "../../../components/settings/SettingsLayout";
 import { useTelegramWebApp } from "../../../hooks/useTelegramWebApp";
+import { AppLayout } from "../../../components/AppLayout";
 
 interface CategoriesSettingsProps {
   chat_id?: string | null;
@@ -68,7 +68,11 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
         setIsLoading(true); // Only show loading if no cached data
       }
 
-      const response = await fetchCategories(user.id.toString(), initData, chat_id);
+      const response = await fetchCategories(
+        user.id.toString(),
+        initData,
+        chat_id
+      );
       setUserCategories(response.userCategories || []);
       setStaticCategories(response.staticCategories || []);
     } catch (error) {
@@ -216,7 +220,7 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
 
   if (isLoading) {
     return (
-      <SettingsLayout title="Categories">
+      <AppLayout title="Categories">
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
           {[...Array(4)].map((_, i) => (
             <Skeleton
@@ -226,7 +230,7 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
             />
           ))}
         </Box>
-      </SettingsLayout>
+      </AppLayout>
     );
   }
 
@@ -426,13 +430,13 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
                 borderRadius: 2,
                 fontSize: "1rem",
                 minHeight: "auto",
-                border: `1px solid ${colors.border || '#e0e0e0'}`,
+                border: `1px solid ${colors.border || "#e0e0e0"}`,
                 transition: "all 0.2s ease",
                 "&:hover": {
-                  borderColor: colors.border || '#e0e0e0',
+                  borderColor: colors.border || "#e0e0e0",
                 },
                 "&.Mui-focused": {
-                  borderColor: colors.border || '#e0e0e0',
+                  borderColor: colors.border || "#e0e0e0",
                   boxShadow: "none",
                 },
                 "& input": {

@@ -22,7 +22,7 @@ import { useUser } from "../../hooks/useUser";
 import { getPersonalExpensesFromGroup } from "../../utils/getPersonalExpensesFromGroup";
 import { fetchUserCount } from "../../services/userCount";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
-import Navbar from "../navbar/Navbar";
+import { AppLayout } from "../AppLayout";
 
 export interface TelegramUser {
   id: string;
@@ -192,9 +192,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   }
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <Navbar title={"Dashboard"} />
-
+    <AppLayout title={"Dashboard"}>
       {/* Scrollable Content */}
       <Box
         sx={{
@@ -309,7 +307,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
           </Box>
         </Box>
       </Box>
-    </Box>
+    </AppLayout>
   );
 };
 
