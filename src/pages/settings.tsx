@@ -486,21 +486,6 @@ const Settings = () => {
     null
   );
 
-  // Handler for switching between personal and group settings
-  // const handleSettingsTypeToggle = useCallback(() => {
-  //   const newIsGroupSettings = !isGroupSettings;
-  //   setIsGroupSettings(newIsGroupSettings);
-
-  //   if (newIsGroupSettings && availableGroups.length > 0) {
-  //     // Switch to first available group
-  //     const firstGroup = availableGroups[0];
-  //     router.push(`/settings?chat_id=${firstGroup.id}`);
-  //   } else {
-  //     // Switch to personal
-  //     router.push('/settings');
-  //   }
-  // }, [isGroupSettings, availableGroups, router]);
-
   // Handler for group selection
   const handleGroupMenuOpen = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
@@ -658,8 +643,11 @@ const Settings = () => {
     if (availableGroups.length === 0) return null;
 
     // Get the current group name
-    const currentGroupName = chat_id 
-      ? groupName || availableGroups.find(g => g.chat_id === chat_id)?.name || availableGroups.find(g => g.chat_id === chat_id)?.title || "Group"
+    const currentGroupName = chat_id
+      ? groupName ||
+        availableGroups.find((g) => g.chat_id === chat_id)?.name ||
+        availableGroups.find((g) => g.chat_id === chat_id)?.title ||
+        "Group"
       : "Personal";
 
     return (

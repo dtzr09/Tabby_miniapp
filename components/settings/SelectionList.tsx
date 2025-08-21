@@ -37,9 +37,7 @@ export const SelectionList: React.FC<SelectionListProps> = ({
                 py: 1.5,
                 px: 2,
                 borderBottom:
-                  i < skeletonCount - 1
-                    ? `1px solid ${colors.surface}`
-                    : "none",
+                  i < skeletonCount - 1 ? `1px solid ${colors.border}` : "none",
               }}
             >
               <Box
@@ -61,13 +59,13 @@ export const SelectionList: React.FC<SelectionListProps> = ({
                     variant="text"
                     width={60}
                     height={20}
-                    sx={{ bgcolor: colors.surface }}
+                    sx={{ bgcolor: colors.border }}
                   />
                   <Skeleton
                     variant="text"
                     width="60%"
                     height={20}
-                    sx={{ bgcolor: colors.surface }}
+                    sx={{ bgcolor: colors.border }}
                   />
                 </Box>
               </Box>
@@ -93,12 +91,9 @@ export const SelectionList: React.FC<SelectionListProps> = ({
               px: 2,
               borderBottom:
                 index < items.length - 1
-                  ? `1px solid ${colors.surface}`
+                  ? `1px solid ${colors.border}`
                   : "none",
               cursor: "pointer",
-              "&:hover": {
-                bgcolor: colors.surface,
-              },
             }}
           >
             <Box
