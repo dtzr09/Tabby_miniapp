@@ -16,10 +16,10 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
   const { colors } = useTheme();
 
   return (
-    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ display: "flex", flexDirection: "column" }}>
       {/* Invisible Navbar Area - matches Dashboard mt: 5 */}
       <Box sx={{ mt: 5, flexShrink: 0 }} />
-      
+
       {/* Fixed Header */}
       <Box
         sx={{
