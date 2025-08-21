@@ -193,7 +193,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <Navbar />
+      <Navbar title={"Dashboard"} />
 
       {/* Scrollable Content */}
       <Box

@@ -148,7 +148,7 @@ export default function EntryForm({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        height: "100%",
       }}
     >
       <Navbar />
