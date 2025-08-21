@@ -11,13 +11,16 @@ const MainPage = () => {
     setCurrentView(view);
   };
 
-  switch (currentView) {
-    case "settings":
-      return <Settings onViewChange={handleViewChange} />;
-    case "dashboard":
-    default:
-      return <Dashboard onViewChange={handleViewChange} />;
-  }
+  return (
+    <>
+      <div style={{ display: currentView === "dashboard" ? "block" : "none" }}>
+        <Dashboard onViewChange={handleViewChange} />
+      </div>
+      <div style={{ display: currentView === "settings" ? "block" : "none" }}>
+        <Settings onViewChange={handleViewChange} />
+      </div>
+    </>
+  );
 };
 
 export default MainPage;

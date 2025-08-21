@@ -1,4 +1,4 @@
-import { backButton, init, showPopup } from "@telegram-apps/sdk";
+import { backButton, init, showPopup, settingsButton } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, Button, Alert } from "@mui/material";
@@ -103,6 +103,11 @@ const ExpenseDetail = () => {
         backButton.show(); // Show back button
         backButton.onClick(() => router.back());
 
+        // Hide settings button on entries page
+        if (settingsButton.isMounted()) {
+          settingsButton.hide();
+        }
+
         const webApp = window.Telegram?.WebApp as TelegramWebApp;
         if (!webApp?.initData) {
           console.log("⏳ Waiting for Telegram WebApp to initialize...");
@@ -126,6 +131,17 @@ const ExpenseDetail = () => {
     };
 
     initializeApp();
+
+    // Cleanup function to restore settings button when leaving entries page
+    return () => {
+      try {
+        if (settingsButton.isMounted()) {
+          settingsButton.show();
+        }
+      } catch {
+        // Ignore cleanup errors
+      }
+    };
   }, [entryId, router]);
 
   const onSubmit = useCallback(
@@ -194,7 +210,7 @@ const ExpenseDetail = () => {
         });
       }
     },
-    [entryId, isIncome, expense, categories, updateExpenseInCache]
+    [entryId, isIncome, expense, categories, updateExpenseInCache, chat_id]
   );
 
   // Handler functions for the new EntryForm
@@ -276,6 +292,8 @@ const ExpenseDetail = () => {
         display: "flex",
         flexDirection: "column",
         pt: 4,
+        height: "var(--app-height)",
+        overflow: "hidden",
       }}
     >
       <EntryForm

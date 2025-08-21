@@ -148,7 +148,8 @@ export default function EntryForm({
         display: "flex",
         flexDirection: "column",
         position: "relative",
-        height: "100vh",
+        height: "100%",
+        overflow: "hidden",
       }}
     >
       {/* Main Display Area */}
@@ -348,7 +349,6 @@ export default function EntryForm({
       <Box
         sx={{
           p: 0,
-          mb: 6,
         }}
       >
         <Box

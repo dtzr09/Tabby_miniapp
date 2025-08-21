@@ -17,6 +17,9 @@ import { SettingsItem } from "./SettingsItem";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
 import { SelectionList } from "./SelectionList";
 import CategoriesSettings from "../../src/pages/settings/categories";
+import { useQuery } from "@tanstack/react-query";
+import { fetchPreferences } from "../../services/preferences";
+import { fetchGroups } from "../../services/group";
 import { Group } from "../../utils/types";
 
 // Types
@@ -85,13 +88,12 @@ const SETTINGS_CONFIG = {
 const Settings = ({ onViewChange }: SettingsProps) => {
   const { colors } = useTheme();
   const [chat_id, setChatId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [currentView, setCurrentView] = useState<SettingsView>("main");
   const [selectedCountry, setSelectedCountry] = useState("SG");
   const [selectedCurrency, setSelectedCurrency] = useState("SGD");
   const [initialLoad, setInitialLoad] = useState(true);
   const [groupName, setGroupName] = useState<string | null>(null);
-  const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
 
   // Use optimized Telegram WebApp hook
   const { user, initData, isReady } = useTelegramWebApp();
@@ -110,20 +112,55 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     mode: "onChange",
   });
 
-  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [filterDataLoaded, setFilterDataLoaded] = useState(false);
   const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
+
+  // Use React Query for data fetching to leverage prefetched data
+  const { data: preferencesData, isLoading: preferencesLoading } = useQuery({
+    queryKey: ["preferences", user?.id, chat_id],
+    queryFn: () => fetchPreferences(user!.id.toString(), initData!, chat_id),
+    enabled: !!(user?.id && initData && isReady),
+    staleTime: 600000, // 10 minutes
+  });
+
+  const { data: groupsData, isLoading: groupsLoading } = useQuery({
+    queryKey: ["groupsWithExpenses", user?.id],
+    queryFn: () => fetchGroups(user!.id.toString(), initData!),
+    enabled: !!(user?.id && initData && isReady),
+    staleTime: 300000, // 5 minutes
+  });
+
+  // Use grouped data directly from React Query with useMemo to prevent re-renders
+  const availableGroups = useMemo(() => groupsData || [], [groupsData]);
 
   // Initialize chat_id from URL query on mount (if we still need this)
   // For now, we'll start with null and handle group switching internally
 
-  // Update isGroupSettings when chat_id changes
+  // Update form data when preferences are loaded
   useEffect(() => {
-    // Reset state when switching between personal and group
-    setPreferencesLoaded(false);
-    setGroupName(null);
-    setInitialLoad(true);
-  }, [chat_id]);
+    if (preferencesData) {
+      const formData = {
+        currency: preferencesData.currency || defaultValues.currency,
+        timezone: preferencesData.timezone || defaultValues.timezone,
+        country: preferencesData.country || defaultValues.country,
+      };
+
+      reset(formData);
+      setSelectedCountry(formData.country);
+      setSelectedCurrency(formData.currency);
+      setInitialLoad(false);
+    }
+  }, [preferencesData, defaultValues, reset]);
+
+  // Update group name when groups change or chat_id changes
+  useEffect(() => {
+    if (chat_id && availableGroups.length > 0) {
+      const currentGroup = availableGroups.find((g: Group) => g.chat_id === chat_id);
+      setGroupName(currentGroup?.name || currentGroup?.title || "Group");
+    } else {
+      setGroupName(null);
+    }
+  }, [chat_id, availableGroups]);
 
   // Initialize filtered countries
   useEffect(() => {
@@ -144,98 +181,6 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     setFilteredCountries(validCountries);
     setFilterDataLoaded(true);
   }, []);
-
-  // Load available groups
-  const loadAvailableGroups = useCallback(
-    async (telegram_id: string, initData: string): Promise<void> => {
-      try {
-        const params = new URLSearchParams({
-          telegram_id,
-          initData,
-        });
-
-        const response = await fetch(`/api/groups?${params.toString()}`);
-        if (response.ok) {
-          const groups = await response.json();
-          setAvailableGroups(groups);
-        }
-      } catch (error) {
-        console.error("❌ Error loading groups:", error);
-      }
-    },
-    []
-  );
-
-  // Load group name if in group mode
-  const loadGroupName = useCallback(
-    async (
-      chatId: string,
-      telegram_id: string,
-      initData: string
-    ): Promise<void> => {
-      try {
-        const params = new URLSearchParams({
-          telegram_id,
-          initData,
-        });
-
-        const response = await fetch(
-          `/api/groups/${chatId}?${params.toString()}`
-        );
-        if (response.ok) {
-          const group = await response.json();
-          if (group && group.length > 0) {
-            setGroupName(group[0].name || group[0].title || "Group");
-          }
-        }
-      } catch (error) {
-        console.error("❌ Error loading group name:", error);
-      }
-    },
-    []
-  );
-
-  // Load preferences from backend
-  const loadPreferencesFromBackend = useCallback(
-    async (telegram_id: string, initData: string): Promise<boolean> => {
-      try {
-        const params = new URLSearchParams({
-          telegram_id,
-          initData,
-        });
-
-        if (chat_id) {
-          params.append("chat_id", chat_id as string);
-        }
-
-        const response = await fetch(`/api/preferences?${params.toString()}`);
-
-        if (!response.ok) {
-          console.error("Failed to load preferences:", response.statusText);
-          return false;
-        }
-
-        const data = await response.json();
-
-        const formData = {
-          currency: data.currency || defaultValues.currency,
-          timezone: data.timezone || defaultValues.timezone,
-          country: data.country || defaultValues.country,
-        };
-
-        reset(formData);
-        setSelectedCountry(formData.country);
-        setSelectedCurrency(formData.currency);
-        setInitialLoad(false);
-
-        return true;
-      } catch (error) {
-        console.error("❌ Error loading preferences:", error);
-        return false;
-      }
-    },
-    [reset, defaultValues, chat_id]
-  );
 
   // Telegram UI setup
   useEffect(() => {
@@ -280,46 +225,6 @@ const Settings = ({ onViewChange }: SettingsProps) => {
       }
     };
   }, [isReady, onViewChange, currentView]);
-
-  // Load preferences when ready
-  useEffect(() => {
-    if (!isReady || !user?.id || !initData || preferencesLoaded || isLoading)
-      return;
-
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        // Load preferences
-        await loadPreferencesFromBackend(user.id.toString(), initData);
-
-        // Load available groups
-        await loadAvailableGroups(user.id.toString(), initData);
-
-        // Load current group name if in group mode
-        if (chat_id) {
-          await loadGroupName(chat_id as string, user.id.toString(), initData);
-        }
-
-        setPreferencesLoaded(true);
-      } catch (error) {
-        console.error("Error loading preferences:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, [
-    isReady,
-    user,
-    initData,
-    preferencesLoaded,
-    isLoading,
-    loadPreferencesFromBackend,
-    loadAvailableGroups,
-    loadGroupName,
-    chat_id,
-  ]);
 
   // Selection handlers
   const handleCountrySelect = useCallback(
@@ -642,8 +547,8 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     // Get the current group name
     const currentGroupName = chat_id
       ? groupName ||
-        availableGroups.find((g) => g.chat_id === chat_id)?.name ||
-        availableGroups.find((g) => g.chat_id === chat_id)?.title ||
+        availableGroups.find((g: Group) => g.chat_id === chat_id)?.name ||
+        availableGroups.find((g: Group) => g.chat_id === chat_id)?.title ||
         "Group"
       : "Personal";
 
@@ -715,7 +620,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
           >
             Personal
           </MenuItem>
-          {availableGroups.map((group) => (
+          {availableGroups.map((group: Group) => (
             <MenuItem
               key={group.chat_id}
               onClick={() => handleGroupSelect(group.chat_id)}
@@ -758,7 +663,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
   ]);
 
   // Loading state
-  if (!filterDataLoaded || !preferencesLoaded || isLoading) {
+  if (!filterDataLoaded || preferencesLoading || groupsLoading || isLoading) {
     return (
       <Box sx={{ p: 2 }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>

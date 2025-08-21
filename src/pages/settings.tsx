@@ -563,6 +563,7 @@ const Settings = () => {
     initialLoad,
     selectedCurrency,
     handleCurrencySelect,
+    chat_id,
   ]);
 
   // Render settings item

@@ -24,6 +24,7 @@ import { fetchUserCount } from "../../services/userCount";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
 import { fetchCategories } from "../../services/categories";
 import { fetchAllEntries } from "../../services/allEntries";
+import { fetchPreferences } from "../../services/preferences";
 
 export interface TelegramUser {
   id: string;
@@ -80,26 +81,82 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     enabled: !!tgUser && !!initData,
   });
 
-  // Prefetch data for all groups when groups are loaded
+  // Comprehensive data prefetching for all groups when groups are loaded
   useEffect(() => {
     if (groups && tgUser && initData) {
+      const prefetchPromises: Promise<unknown>[] = [];
+
       groups.forEach((group: Group) => {
         // Prefetch allEntries for each group
-        queryClient.prefetchQuery({
-          queryKey: ["allEntries", tgUser.id, group.chat_id],
-          queryFn: () => fetchAllEntries(tgUser.id, initData, group.chat_id),
-          staleTime: 60000,
-        });
+        prefetchPromises.push(
+          queryClient.prefetchQuery({
+            queryKey: ["allEntries", tgUser.id, group.chat_id],
+            queryFn: () => fetchAllEntries(tgUser.id, initData, group.chat_id),
+            staleTime: 60000,
+          })
+        );
+
+        // Prefetch categories for each group (for settings)
+        prefetchPromises.push(
+          queryClient.prefetchQuery({
+            queryKey: ["categories", tgUser.id, group.chat_id],
+            queryFn: () => fetchCategories(tgUser.id, initData, group.chat_id),
+            staleTime: 300000, // 5 minutes
+          })
+        );
+
+        // Prefetch user count for each group
+        prefetchPromises.push(
+          queryClient.prefetchQuery({
+            queryKey: ["userCount", group.chat_id],
+            queryFn: () => fetchUserCount(tgUser.id, initData, group.chat_id),
+            staleTime: 300000, // 5 minutes
+          })
+        );
+
+        // Prefetch preferences for each group (for settings)
+        prefetchPromises.push(
+          queryClient.prefetchQuery({
+            queryKey: ["preferences", tgUser.id, group.chat_id],
+            queryFn: () => fetchPreferences(tgUser.id, initData, group.chat_id),
+            staleTime: 600000, // 10 minutes
+          })
+        );
       });
 
       // Also prefetch personal data (null chat_id)
-      queryClient.prefetchQuery({
-        queryKey: ["allEntries", tgUser.id, null],
-        queryFn: () => fetchAllEntries(tgUser.id, initData, null),
-        staleTime: 60000,
-      });
+      prefetchPromises.push(
+        queryClient.prefetchQuery({
+          queryKey: ["allEntries", tgUser.id, null],
+          queryFn: () => fetchAllEntries(tgUser.id, initData, null),
+          staleTime: 60000,
+        })
+      );
 
-      console.log("📦 Prefetched data for all groups");
+      // Prefetch personal categories (for settings)
+      prefetchPromises.push(
+        queryClient.prefetchQuery({
+          queryKey: ["categories", tgUser.id, null],
+          queryFn: () => fetchCategories(tgUser.id, initData, null),
+          staleTime: 300000, // 5 minutes
+        })
+      );
+
+      // Prefetch personal preferences (for settings)
+      prefetchPromises.push(
+        queryClient.prefetchQuery({
+          queryKey: ["preferences", tgUser.id, null],
+          queryFn: () => fetchPreferences(tgUser.id, initData, null),
+          staleTime: 600000, // 10 minutes
+        })
+      );
+
+      // Execute all prefetch operations
+      Promise.allSettled(prefetchPromises).then((results) => {
+        const successful = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+        console.log(`📦 Prefetch completed: ${successful} successful, ${failed} failed`);
+      });
     }
   }, [groups, tgUser, initData, queryClient]);
 
@@ -152,18 +209,6 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
       settingsButton.onClick(() => {
         onViewChange("settings");
       });
-
-      // Prefetch settings data when settings button is available
-      if (user && telegramInitData) {
-        // Prefetch categories for settings page
-        fetchCategories(user.id.toString(), telegramInitData)
-          .then(() => {
-            console.log("📦 Prefetched categories for settings");
-          })
-          .catch((error) => {
-            console.warn("Failed to prefetch categories:", error);
-          });
-      }
 
       if (backButton.isMounted()) backButton.hide();
       if (mainButton.isMounted()) mainButton.setParams({ isVisible: false });
