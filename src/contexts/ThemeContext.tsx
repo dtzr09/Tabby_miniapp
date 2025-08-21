@@ -122,81 +122,49 @@ interface ThemeContextType {
   colors: ColorScheme;
   fontFamily: string;
   toggleTheme: () => void;
+  currentTheme: "light" | "dark" | "auto";
+  setTheme: (theme: "light" | "dark" | "auto") => void;
 }
 
-// Helper functions
+// Helper functions - Always use fixed themes based on light/dark mode
 const getThemeColors = (
   isDark: boolean,
   theme: TelegramTheme,
   manualTheme: "light" | "dark" | "auto"
 ): ColorScheme => {
-  // If manual theme is set, use those colors
-  if (manualTheme === "dark" || manualTheme === "light") {
-    const palette = COLORS[manualTheme];
-    return {
-      background:
-        manualTheme === "dark" ? palette.primary[100] : palette.primary[50],
-      surface: palette.surface.main,
-      text:
-        manualTheme === "dark" ? palette.primary[900] : palette.primary[800],
-      textSecondary:
-        manualTheme === "dark" ? palette.primary[600] : palette.primary[400],
-      primary: palette.accent.blue,
-      accent: palette.accent.lightBlue,
-      border: palette.surface.border,
-      card: palette.surface.card,
-      income: palette.status.income,
-      incomeBg: palette.status.incomeBg,
-      expense: palette.status.expense,
-      expenseBg: palette.status.expenseBg,
-      incomeExpenseCard: palette.surface.incomeExpenseCard,
-      cardBg: palette.surface.cardBg,
-      disabled: palette.primary[600],
-      inputBg: palette.surface.input,
-      error: palette.status.expense,
-      };
+  // Determine the theme mode to use
+  let themeMode: "light" | "dark";
+  
+  if (manualTheme === "light" || manualTheme === "dark") {
+    // Use manual theme selection
+    themeMode = manualTheme;
+  } else {
+    // Use detected light/dark mode (auto mode)
+    themeMode = isDark ? "dark" : "light";
   }
-
-  // If no theme or auto theme, use Telegram theme or fallback
+  
+  // Always use our fixed color palette based on the theme mode
+  const palette = COLORS[themeMode];
+  
   return {
-    background: theme.bg_color || COLORS.light.primary[50],
-    surface: isDark
-      ? theme.secondary_bg_color ||
-        theme.section_bg_color ||
-        COLORS.dark.surface.main
-      : COLORS.light.surface.secondary,
-    text:
-      theme.text_color ||
-      (isDark ? COLORS.dark.primary[900] : COLORS.light.primary[800]),
-    textSecondary:
-      theme.subtitle_text_color ||
-      theme.hint_color ||
-      (isDark ? COLORS.dark.primary[500] : COLORS.light.primary[400]),
-    primary:
-      theme.accent_text_color || theme.link_color || COLORS.light.accent.blue,
-    accent:
-      theme.button_color || theme.link_color || COLORS.light.accent.lightBlue,
-    border: theme.section_separator_color || COLORS.light.surface.border,
-    card:
-      theme.secondary_bg_color ||
-      theme.section_bg_color ||
-      COLORS.light.surface.card,
-    income: COLORS.light.status.income,
-    incomeBg: isDark
-      ? COLORS.dark.status.incomeBg
-      : COLORS.light.status.incomeBg,
-    expense: COLORS.light.status.expense,
-    expenseBg: isDark
-      ? COLORS.dark.status.expenseBg
-      : COLORS.light.status.expenseBg,
-    incomeExpenseCard: isDark
-      ? COLORS.dark.surface.incomeExpenseCard
-      : COLORS.light.surface.incomeExpenseCard,
-    cardBg: isDark ? COLORS.dark.surface.cardBg : COLORS.light.surface.cardBg,
-    disabled: isDark ? COLORS.dark.primary[300] : COLORS.light.primary[600],
-    inputBg: isDark ? COLORS.dark.surface.input : COLORS.light.surface.input,
-    error: isDark ? COLORS.dark.status.expense : COLORS.light.status.expense,
-    };
+    background: themeMode === "dark" ? palette.primary[100] : palette.primary[50],
+    surface: palette.surface.main,
+    text: themeMode === "dark" ? palette.primary[900] : palette.primary[800],
+    textSecondary: themeMode === "dark" ? palette.primary[600] : palette.primary[400],
+    primary: palette.accent.blue,
+    accent: palette.accent.lightBlue,
+    border: palette.surface.border,
+    card: palette.surface.card,
+    income: palette.status.income,
+    incomeBg: palette.status.incomeBg,
+    expense: palette.status.expense,
+    expenseBg: palette.status.expenseBg,
+    incomeExpenseCard: palette.surface.incomeExpenseCard,
+    cardBg: palette.surface.cardBg,
+    disabled: themeMode === "dark" ? palette.primary[300] : palette.primary[600],
+    inputBg: palette.surface.input,
+    error: palette.status.expense,
+  };
 };
 
 const DEFAULT_FONT_FAMILY =
@@ -214,6 +182,8 @@ export const useTheme = () => {
       colors: getThemeColors(false, {}, "light"),
       fontFamily: DEFAULT_FONT_FAMILY,
       toggleTheme: () => {},
+      currentTheme: "auto" as const,
+      setTheme: () => {},
     };
   }
   return context;
@@ -266,15 +236,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [manualTheme, mounted]);
 
-  const toggleTheme = () => {
-    if (manualTheme === "auto") {
-      setManualTheme("dark");
-      setIsDark(true);
-    } else if (manualTheme === "dark") {
-      setManualTheme("light");
+  const setThemeMode = (newTheme: "light" | "dark" | "auto") => {
+    setManualTheme(newTheme);
+    if (newTheme === "light") {
       setIsDark(false);
+    } else if (newTheme === "dark") {
+      setIsDark(true);
     } else {
-      setManualTheme("auto");
+      // Auto mode - detect from system/Telegram
       if (
         typeof window !== "undefined" &&
         window.Telegram?.WebApp?.themeParams
@@ -292,23 +261,30 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const toggleTheme = () => {
+    if (manualTheme === "auto") {
+      setThemeMode("dark");
+    } else if (manualTheme === "dark") {
+      setThemeMode("light");
+    } else {
+      setThemeMode("auto");
+    }
+  };
+
   const contextValue = {
     theme,
     isDark,
     colors: getThemeColors(isDark, theme, manualTheme),
     fontFamily: DEFAULT_FONT_FAMILY,
     toggleTheme,
+    currentTheme: manualTheme,
+    setTheme: setThemeMode,
   };
 
   useEffect(() => {
     if (!mounted) return;
-    let bgColor = contextValue.colors.background;
-    if (
-      typeof window !== "undefined" &&
-      window.Telegram?.WebApp?.themeParams?.bg_color
-    ) {
-      bgColor = window.Telegram.WebApp.themeParams.bg_color;
-    }
+    // Always use our fixed theme background color
+    const bgColor = contextValue.colors.background;
     if (typeof document !== "undefined") {
       document.body.style.backgroundColor = bgColor;
       document.body.style.color = contextValue.colors.text;
@@ -316,7 +292,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [
     manualTheme,
     isDark,
-    theme,
     mounted,
     contextValue.colors.background,
     contextValue.colors.text,

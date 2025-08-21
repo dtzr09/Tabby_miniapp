@@ -1,5 +1,6 @@
 import {
   backButton,
+  init,
   mainButton,
   setMainButtonParams,
   showPopup,
@@ -40,7 +41,7 @@ interface SettingsItemConfig {
   ) => string;
 }
 
-type SettingsView = "main" | "country" | "currency" | "categories";
+type SettingsView = "main" | "country" | "currency" | "categories" | "theme";
 
 interface ViewConfig {
   title: string;
@@ -74,6 +75,12 @@ const SETTINGS_CONFIG = {
       iconBg: "#007AFF",
       getValue: (field: { value: string }) => field.value || "SGD",
     },
+    {
+      key: "theme",
+      title: "Appearance",
+      icon: "🎨",
+      iconBg: "#FF9500",
+    },
   ] as SettingsItemConfig[],
   data: [
     {
@@ -86,7 +93,7 @@ const SETTINGS_CONFIG = {
 };
 
 const Settings = ({ onViewChange }: SettingsProps) => {
-  const { colors } = useTheme();
+  const { colors, isDark, currentTheme, setTheme } = useTheme();
   const [chat_id, setChatId] = useState<string | null>(null);
   const [isLoading] = useState(false);
   const [currentView, setCurrentView] = useState<SettingsView>("main");
@@ -155,7 +162,9 @@ const Settings = ({ onViewChange }: SettingsProps) => {
   // Update group name when groups change or chat_id changes
   useEffect(() => {
     if (chat_id && availableGroups.length > 0) {
-      const currentGroup = availableGroups.find((g: Group) => g.chat_id === chat_id);
+      const currentGroup = availableGroups.find(
+        (g: Group) => g.chat_id === chat_id
+      );
       setGroupName(currentGroup?.name || currentGroup?.title || "Group");
     } else {
       setGroupName(null);
@@ -182,21 +191,37 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     setFilterDataLoaded(true);
   }, []);
 
-  // Telegram UI setup
+  // Telegram UI setup - mount and show back button in settings
   useEffect(() => {
     if (!isReady) return;
 
     try {
-      backButton.mount();
-      backButton.show();
+      init(); // Initialize Telegram WebApp
+      backButton.mount(); // Mount back button
+      backButton.show(); // Show back button
 
-      mainButton.mount();
+      // Hide main button in settings
+      if (!mainButton.isMounted()) {
+        mainButton.mount();
+      }
       setMainButtonParams({
         isVisible: false,
       });
     } catch (err) {
       console.error("Error setting up Telegram UI:", err);
     }
+
+    // Cleanup when leaving settings - unmount back button
+    return () => {
+      try {
+        if (backButton.isMounted()) {
+          backButton.unmount();
+          backButton.hide();
+        }
+      } catch {
+        // Ignore cleanup errors
+      }
+    };
   }, [isReady]);
 
   // Back button handler
@@ -453,6 +478,29 @@ const Settings = ({ onViewChange }: SettingsProps) => {
           component: <CategoriesSettings chat_id={chat_id} />,
         };
 
+      case "theme":
+        const themeItems = [
+          { id: "auto", label: "System", subtitle: "Follow system setting" },
+          { id: "light", label: "Light", subtitle: "Light appearance" },
+          { id: "dark", label: "Dark", subtitle: "Dark appearance" },
+        ];
+        return {
+          title: "Appearance",
+          component: (
+            <SelectionList
+              items={themeItems}
+              selectedId={currentTheme}
+              onSelect={(themeId) => {
+                // Handle theme selection
+                setTheme(themeId as "light" | "dark" | "auto");
+                setCurrentView("main");
+              }}
+              isLoading={false}
+              skeletonCount={3}
+            />
+          ),
+        };
+
       default:
         return null;
     }
@@ -465,6 +513,8 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     selectedCurrency,
     handleCurrencySelect,
     chat_id,
+    currentTheme,
+    setTheme,
   ]);
 
   // Render settings item
@@ -492,6 +542,40 @@ const Settings = ({ onViewChange }: SettingsProps) => {
             }
             title={item.title}
             onClick={() => handleViewChange("categories")}
+            showBorder={!isLast}
+          />
+        );
+      }
+
+      if (item.key === "theme") {
+        return (
+          <SettingsItem
+            key={item.key}
+            icon={
+              <Box
+                sx={{
+                  bgcolor: item.iconBg,
+                  width: "100%",
+                  borderRadius: 1.2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography sx={{ fontSize: "1.1rem", color: "white" }}>
+                  {item.icon}
+                </Typography>
+              </Box>
+            }
+            title={item.title}
+            value={
+              currentTheme === "auto"
+                ? `System (${isDark ? "Dark" : "Light"})`
+                : currentTheme === "dark"
+                ? "Dark"
+                : "Light"
+            } // Show current theme
+            onClick={() => handleViewChange("theme")}
             showBorder={!isLast}
           />
         );
@@ -537,7 +621,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
         />
       );
     },
-    [control, filteredCountries, handleViewChange]
+    [control, filteredCountries, handleViewChange, isDark, currentTheme]
   );
 
   // Create the group switcher chip

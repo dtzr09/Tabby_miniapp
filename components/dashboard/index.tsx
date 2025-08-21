@@ -3,7 +3,7 @@ import BalanceCard from "../balance/BalanceCard";
 import { Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Expense, ViewMode } from "../../utils/types";
-import { backButton, mainButton, settingsButton } from "@telegram-apps/sdk";
+import { mainButton, settingsButton } from "@telegram-apps/sdk";
 import ExpenseSummaryCard from "../currentExpenses/ExpenseSummaryCard";
 import LoadingSkeleton from "./LoadingSkeleton";
 import ExpenseList from "../expenses/expenseList/ExpenseList";
@@ -153,9 +153,13 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
 
       // Execute all prefetch operations
       Promise.allSettled(prefetchPromises).then((results) => {
-        const successful = results.filter(r => r.status === 'fulfilled').length;
-        const failed = results.filter(r => r.status === 'rejected').length;
-        console.log(`📦 Prefetch completed: ${successful} successful, ${failed} failed`);
+        const successful = results.filter(
+          (r) => r.status === "fulfilled"
+        ).length;
+        const failed = results.filter((r) => r.status === "rejected").length;
+        console.log(
+          `📦 Prefetch completed: ${successful} successful, ${failed} failed`
+        );
       });
     }
   }, [groups, tgUser, initData, queryClient]);
@@ -210,7 +214,6 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
         onViewChange("settings");
       });
 
-      if (backButton.isMounted()) backButton.hide();
       if (mainButton.isMounted()) mainButton.setParams({ isVisible: false });
 
       webApp.lockOrientation?.("portrait");

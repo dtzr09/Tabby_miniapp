@@ -246,9 +246,6 @@ const Settings = () => {
     if (!isReady) return;
 
     try {
-      backButton.mount();
-      backButton.show();
-
       mainButton.mount();
       setMainButtonParams({
         isVisible: false,
