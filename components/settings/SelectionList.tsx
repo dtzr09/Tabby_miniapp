@@ -92,7 +92,7 @@ export const SelectionList: React.FC<SelectionListProps> = ({
         boxShadow: 0,
       }}
     >
-      <CardContent sx={{ p: 0 }}>
+      <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
         {items.map((item, index) => (
           <Box
             key={item.id}

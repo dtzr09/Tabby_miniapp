@@ -17,6 +17,9 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
 
   return (
     <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Invisible Navbar Area - matches Dashboard mt: 5 */}
+      <Box sx={{ mt: 5, flexShrink: 0 }} />
+      
       {/* Fixed Header */}
       <Box
         sx={{
@@ -52,7 +55,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
           overflow: "auto",
           background: colors.background,
           px: 2,
-          pb: 2,
+          pb: 0,
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>

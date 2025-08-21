@@ -134,7 +134,7 @@ const getThemeColors = (
 ): ColorScheme => {
   // Determine the theme mode to use
   let themeMode: "light" | "dark";
-  
+
   if (manualTheme === "light" || manualTheme === "dark") {
     // Use manual theme selection
     themeMode = manualTheme;
@@ -142,15 +142,17 @@ const getThemeColors = (
     // Use detected light/dark mode (auto mode)
     themeMode = isDark ? "dark" : "light";
   }
-  
+
   // Always use our fixed color palette based on the theme mode
   const palette = COLORS[themeMode];
-  
+
   return {
-    background: themeMode === "dark" ? palette.primary[100] : palette.primary[50],
+    background:
+      themeMode === "dark" ? palette.primary[100] : palette.primary[50],
     surface: palette.surface.main,
     text: themeMode === "dark" ? palette.primary[900] : palette.primary[800],
-    textSecondary: themeMode === "dark" ? palette.primary[600] : palette.primary[400],
+    textSecondary:
+      themeMode === "dark" ? palette.primary[600] : palette.primary[400],
     primary: palette.accent.blue,
     accent: palette.accent.lightBlue,
     border: palette.surface.border,
@@ -161,7 +163,8 @@ const getThemeColors = (
     expenseBg: palette.status.expenseBg,
     incomeExpenseCard: palette.surface.incomeExpenseCard,
     cardBg: palette.surface.cardBg,
-    disabled: themeMode === "dark" ? palette.primary[300] : palette.primary[600],
+    disabled:
+      themeMode === "dark" ? palette.primary[300] : palette.primary[600],
     inputBg: palette.surface.input,
     error: palette.status.expense,
   };

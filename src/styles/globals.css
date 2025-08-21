@@ -43,7 +43,7 @@ a {
     var(--app-height),
     var(--min-app-height)
   ); /* Use larger of dynamic or minimum height */
-  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  padding: var(--safe-top) var(--safe-right) 0 var(--safe-left);
   overflow: auto;
   /* Ensure content doesn't overlap with safe areas */
   width: 100%;

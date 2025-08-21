@@ -210,18 +210,6 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     } catch (err) {
       console.error("Error setting up Telegram UI:", err);
     }
-
-    // Cleanup when leaving settings - unmount back button
-    return () => {
-      try {
-        if (backButton.isMounted()) {
-          backButton.unmount();
-          backButton.hide();
-        }
-      } catch {
-        // Ignore cleanup errors
-      }
-    };
   }, [isReady]);
 
   // Back button handler
@@ -480,9 +468,9 @@ const Settings = ({ onViewChange }: SettingsProps) => {
 
       case "theme":
         const themeItems = [
-          { id: "auto", label: "System", subtitle: "Follow system setting" },
-          { id: "light", label: "Light", subtitle: "Light appearance" },
-          { id: "dark", label: "Dark", subtitle: "Dark appearance" },
+          { id: "auto", label: "System" },
+          { id: "light", label: "Light" },
+          { id: "dark", label: "Dark" },
         ];
         return {
           title: "Appearance",

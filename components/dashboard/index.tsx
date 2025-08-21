@@ -281,7 +281,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
         fontFamily: fontFamily,
         display: "flex",
         justifyContent: "center",
-        mt: 4,
+        mt: 5,
       }}
     >
       <Box
