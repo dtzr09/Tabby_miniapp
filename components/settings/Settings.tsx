@@ -470,7 +470,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
         const themeItems = [
           { id: "auto", label: "System" },
           { id: "light", label: "Light" },
-          { id: "dark", label: "Dark" },
+          { id: "dark", label: "Dark", subtitle: "Dark appearance" },
         ];
         return {
           title: "Appearance",

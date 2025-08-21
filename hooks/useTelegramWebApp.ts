@@ -35,7 +35,7 @@ export const useTelegramWebApp = (): TelegramWebAppData => {
         // Check cache first
         const cachedData = appCache.get<TelegramWebAppData>(TELEGRAM_CACHE_KEY);
         const isInitialized = appCache.has(TELEGRAM_INIT_FLAG);
-        
+
         if (cachedData && isInitialized) {
           setState(cachedData);
           return;
@@ -48,7 +48,7 @@ export const useTelegramWebApp = (): TelegramWebAppData => {
         }
 
         const webApp = window.Telegram?.WebApp as TelegramWebApp;
-        
+
         if (webApp?.initData) {
           const telegramData = {
             webApp,
@@ -56,7 +56,7 @@ export const useTelegramWebApp = (): TelegramWebAppData => {
             initData: webApp.initData,
             isReady: true,
           };
-          
+
           // Cache the data for 15 minutes
           appCache.set(TELEGRAM_CACHE_KEY, telegramData, 15 * 60 * 1000);
           setState(telegramData);
@@ -71,7 +71,7 @@ export const useTelegramWebApp = (): TelegramWebAppData => {
                 initData: webApp.initData,
                 isReady: true,
               };
-              
+
               // Cache the data for 15 minutes
               appCache.set(TELEGRAM_CACHE_KEY, telegramData, 15 * 60 * 1000);
               setState(telegramData);
@@ -84,11 +84,12 @@ export const useTelegramWebApp = (): TelegramWebAppData => {
         }
       } catch (err) {
         console.error("❌ Telegram Init Failed:", err);
-        setState(prev => ({ ...prev, isReady: true })); // Still mark as ready to prevent infinite loading
+        setState((prev) => ({ ...prev, isReady: true })); // Still mark as ready to prevent infinite loading
       }
     };
 
     initializeTelegram();
+
   }, []);
 
   return state;

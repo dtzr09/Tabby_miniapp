@@ -148,146 +148,166 @@ export default function EntryForm({
       sx={{
         display: "flex",
         flexDirection: "column",
-        position: "relative",
-        overflow: "hidden",
         height: "100vh",
       }}
     >
       <Navbar />
-      {/* Main Display Area */}
+
+      {/* Scrollable Content */}
       <Box
         sx={{
           flex: 1,
+          overflow: "auto",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          px: 4,
-          gap: 3,
-          pt: 4,
         }}
       >
-        {/* Category Selector Chip*/}
-        <Chip
-          label={
-            categories.find((category) => category.id === expense?.category?.id)
-              ?.name
-          }
-          sx={{
-            backgroundColor: colors.border,
-            color: colors.text,
-            fontSize: "0.8rem",
-            fontWeight: 500,
-            borderRadius: 2,
-            padding: "2px 4px",
-            height: "auto",
-            textTransform: "none",
-            cursor: "pointer",
-            width: "fit-content",
-          }}
-          onClick={() => {
-            // setShowCategoryPicker(true);
-          }}
-        />
-        {/* Amount Display with Delete Button */}
+        {/* Main Display Area */}
         <Box
           sx={{
-            textAlign: "center",
+            flex: 1,
             display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
             alignItems: "center",
-            gap: 2,
+            px: 4,
+            gap: 3,
+            pt: 4,
           }}
         >
-          <Typography
-            sx={{
-              fontSize: "4rem",
-              fontWeight: 300,
-              color: colors.text,
-              lineHeight: 1,
-            }}
-          >
-            {currentAmount}
-          </Typography>
-
-          {/* Backspace Button to the right of amount */}
-          <IconButton
-            onClick={handleBackspace}
+          {/* Category Selector Chip*/}
+          <Chip
+            label={
+              categories.find(
+                (category) => category.id === expense?.category?.id
+              )?.name
+            }
             sx={{
               backgroundColor: colors.border,
-              color: colors.textSecondary,
-              width: 32,
-              height: 32,
+              color: colors.text,
+              fontSize: "0.8rem",
+              fontWeight: 500,
+              borderRadius: 2,
+              padding: "2px 4px",
+              height: "auto",
+              textTransform: "none",
+              cursor: "pointer",
+              width: "fit-content",
+            }}
+            onClick={() => {
+              // setShowCategoryPicker(true);
+            }}
+          />
+          {/* Amount Display with Delete Button */}
+          <Box
+            sx={{
+              textAlign: "center",
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
             }}
           >
-            <Backspace fontSize="small" />
-          </IconButton>
-        </Box>
-        {/* Description Input Field */}
-        <TextField
-          value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
-          placeholder="Enter description"
-          variant="standard"
-          sx={{
-            width: "70%",
-            "& .MuiInput-root": {
-              fontSize: "1.1rem",
-              fontWeight: 500,
-              "&:before": {
-                borderBottom: `1px solid ${alpha(colors.textSecondary, 0.3)}`,
-              },
-              "&:hover:not(.Mui-disabled):before": {
-                borderBottom: `1px solid ${alpha(colors.textSecondary, 0.6)}`,
-              },
-              "&:after": {
-                borderBottom: `2px solid ${colors.primary}`,
-              },
-            },
-            "& .MuiInputBase-input": {
-              textAlign: "center",
-              color: colors.text,
-              backgroundColor: "transparent",
-              padding: "8px 0",
-              "&::placeholder": {
-                color: colors.textSecondary,
-                opacity: 0.7,
-              },
-            },
-          }}
-        />
-      </Box>
+            <Typography
+              sx={{
+                fontSize: "4rem",
+                fontWeight: 300,
+                color: colors.text,
+                lineHeight: 1,
+              }}
+            >
+              {currentAmount}
+            </Typography>
 
-      {/* Date/Time Bar with Right-Aligned Icons */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          py: 1,
-          gap: 1,
-          position: "relative",
-          zIndex: 1000,
-        }}
-      >
-        {/* Date and Time */}
-        <Button
-          onClick={() => setShowDateTimePicker(false)}
+            {/* Backspace Button to the right of amount */}
+            <IconButton
+              onClick={handleBackspace}
+              sx={{
+                backgroundColor: colors.border,
+                color: colors.textSecondary,
+                width: 32,
+                height: 32,
+              }}
+            >
+              <Backspace fontSize="small" />
+            </IconButton>
+          </Box>
+          {/* Description Input Field */}
+          <TextField
+            value={description}
+            onChange={(e) => onDescriptionChange(e.target.value)}
+            placeholder="Enter description"
+            variant="standard"
+            sx={{
+              width: "70%",
+              "& .MuiInput-root": {
+                fontSize: "1.1rem",
+                fontWeight: 500,
+                "&:before": {
+                  borderBottom: `1px solid ${alpha(colors.textSecondary, 0.3)}`,
+                },
+                "&:hover:not(.Mui-disabled):before": {
+                  borderBottom: `1px solid ${alpha(colors.textSecondary, 0.6)}`,
+                },
+                "&:after": {
+                  borderBottom: `2px solid ${colors.primary}`,
+                },
+              },
+              "& .MuiInputBase-input": {
+                textAlign: "center",
+                color: colors.text,
+                backgroundColor: "transparent",
+                padding: "8px 0",
+                "&::placeholder": {
+                  color: colors.textSecondary,
+                  opacity: 0.7,
+                },
+              },
+            }}
+          />
+        </Box>
+
+        {/* Date/Time Bar with Right-Aligned Icons */}
+        <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            backgroundColor: colors.border,
-            px: 2.5,
             py: 1,
-            borderRadius: 3,
-            textTransform: "none",
-            flex: 1,
-            justifyContent: "space-between",
+            gap: 1,
+            position: "relative",
+            zIndex: 1000,
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <CalendarMonth
-              fontSize="small"
-              sx={{ mr: 1, color: colors.text }}
-            />
+          {/* Date and Time */}
+          <Button
+            onClick={() => setShowDateTimePicker(false)}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              backgroundColor: colors.border,
+              px: 2.5,
+              py: 1,
+              borderRadius: 3,
+              textTransform: "none",
+              flex: 1,
+              justifyContent: "space-between",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <CalendarMonth
+                fontSize="small"
+                sx={{ mr: 1, color: colors.text }}
+              />
+              <Typography
+                sx={{
+                  color: colors.text,
+                  fontSize: "0.9rem",
+                  fontWeight: 500,
+                }}
+              >
+                {formatDate(selectedDateTime.toISOString())}
+              </Typography>
+            </Box>
+
             <Typography
               sx={{
                 color: colors.text,
@@ -295,254 +315,243 @@ export default function EntryForm({
                 fontWeight: 500,
               }}
             >
-              {formatDate(selectedDateTime.toISOString())}
+              {formatTime(selectedDateTime.toISOString())}
             </Typography>
-          </Box>
+          </Button>
 
-          <Typography
+          {/* Recurring Icon */}
+          <IconButton
+            onClick={onToggleRecurring}
+            disabled={!onToggleRecurring}
             sx={{
+              backgroundColor: colors.border,
               color: colors.text,
-              fontSize: "0.9rem",
-              fontWeight: 500,
-            }}
-          >
-            {formatTime(selectedDateTime.toISOString())}
-          </Typography>
-        </Button>
-
-        {/* Recurring Icon */}
-        <IconButton
-          onClick={onToggleRecurring}
-          disabled={!onToggleRecurring}
-          sx={{
-            backgroundColor: colors.border,
-            color: colors.text,
-            width: 32,
-            height: 32,
-            borderRadius: 3,
-            "&:disabled": {
-              color: colors.textSecondary,
-            },
-          }}
-        >
-          <RepeatOutlined fontSize="small" />
-        </IconButton>
-        {/* Delete Icon */}
-        <IconButton
-          onClick={onDelete}
-          disabled={!onDelete}
-          sx={{
-            backgroundColor: colors.expense,
-            color: colors.background,
-            width: 32,
-            height: 32,
-            borderRadius: 3,
-            cursor: "pointer",
-            "&:hover": {
-              backgroundColor: colors.expense,
-            },
-          }}
-        >
-          <DeleteOutline fontSize="small" />
-        </IconButton>
-      </Box>
-
-      {/* Keypad */}
-      <Box
-        sx={{
-          mt: "auto", // Push to bottom
-          pt: 1,
-          pb: 3, // Bottom padding
-        }}
-      >
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
-            gap: 1.5,
-          }}
-        >
-          {/* Row 1 */}
-          {renderKeypadButton("1")}
-          {renderKeypadButton("2")}
-          {renderKeypadButton("3")}
-
-          {/* Row 2 */}
-          {renderKeypadButton("4")}
-          {renderKeypadButton("5")}
-          {renderKeypadButton("6")}
-
-          {/* Row 3 */}
-          {renderKeypadButton("7")}
-          {renderKeypadButton("8")}
-          {renderKeypadButton("9")}
-
-          {/* Row 4 */}
-          {renderKeypadButton(".")}
-          {renderKeypadButton("0")}
-
-          {/* Submit Button (Save) */}
-          <Button
-            onClick={onSubmit}
-            disabled={!onSubmit || currentAmount === "0"}
-            sx={{
-              height: 72,
+              width: 32,
+              height: 32,
               borderRadius: 3,
-              backgroundColor: colors.background,
-              color: colors.text,
-              border: `2px solid ${colors.text}`,
               "&:disabled": {
-                backgroundColor: colors.border,
                 color: colors.textSecondary,
-                border: `2px solid ${colors.textSecondary}`,
               },
             }}
           >
-            <CheckOutlined sx={{ fontSize: "2rem" }} />
-          </Button>
+            <RepeatOutlined fontSize="small" />
+          </IconButton>
+          {/* Delete Icon */}
+          <IconButton
+            onClick={onDelete}
+            disabled={!onDelete}
+            sx={{
+              backgroundColor: colors.expense,
+              color: colors.background,
+              width: 32,
+              height: 32,
+              borderRadius: 3,
+              cursor: "pointer",
+              "&:hover": {
+                backgroundColor: colors.expense,
+              },
+            }}
+          >
+            <DeleteOutline fontSize="small" />
+          </IconButton>
         </Box>
-      </Box>
 
-      {/* Inline DateTime Picker */}
-      {showDateTimePicker && (
+        {/* Keypad */}
         <Box
           sx={{
-            position: "absolute",
-            backgroundColor: colors.surface,
-            borderRadius: 3,
-            boxShadow: `0 8px 32px ${alpha(colors.text, 0.2)}`,
-            border: `1px solid ${colors.border}`,
-            zIndex: 1000,
-            mb: 2,
-            overflow: "hidden",
+            mt: "auto", // Push to bottom
+            pt: 1,
+            mb: 6, // Bottom padding
           }}
         >
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DateTimePicker
-              value={selectedDateTime}
-              onChange={(newValue: Date | null) => {
-                if (newValue) {
-                  setSelectedDateTime(newValue);
-                }
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 1.5,
+            }}
+          >
+            {/* Row 1 */}
+            {renderKeypadButton("1")}
+            {renderKeypadButton("2")}
+            {renderKeypadButton("3")}
+
+            {/* Row 2 */}
+            {renderKeypadButton("4")}
+            {renderKeypadButton("5")}
+            {renderKeypadButton("6")}
+
+            {/* Row 3 */}
+            {renderKeypadButton("7")}
+            {renderKeypadButton("8")}
+            {renderKeypadButton("9")}
+
+            {/* Row 4 */}
+            {renderKeypadButton(".")}
+            {renderKeypadButton("0")}
+
+            {/* Submit Button (Save) */}
+            <Button
+              onClick={onSubmit}
+              disabled={!onSubmit || currentAmount === "0"}
+              sx={{
+                height: 72,
+                borderRadius: 3,
+                backgroundColor: colors.background,
+                color: colors.text,
+                border: `2px solid ${colors.text}`,
+                "&:disabled": {
+                  backgroundColor: colors.border,
+                  color: colors.textSecondary,
+                  border: `2px solid ${colors.textSecondary}`,
+                },
               }}
-              slotProps={{
-                textField: {
-                  sx: {
-                    "& .MuiOutlinedInput-root": {
-                      backgroundColor: colors.surface,
-                      border: "none",
-                      "& fieldset": {
+            >
+              <CheckOutlined sx={{ fontSize: "2rem" }} />
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Inline DateTime Picker */}
+        {showDateTimePicker && (
+          <Box
+            sx={{
+              position: "absolute",
+              backgroundColor: colors.surface,
+              borderRadius: 3,
+              boxShadow: `0 8px 32px ${alpha(colors.text, 0.2)}`,
+              border: `1px solid ${colors.border}`,
+              zIndex: 1000,
+              mb: 2,
+              overflow: "hidden",
+            }}
+          >
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DateTimePicker
+                value={selectedDateTime}
+                onChange={(newValue: Date | null) => {
+                  if (newValue) {
+                    setSelectedDateTime(newValue);
+                  }
+                }}
+                slotProps={{
+                  textField: {
+                    sx: {
+                      "& .MuiOutlinedInput-root": {
+                        backgroundColor: colors.surface,
                         border: "none",
+                        "& fieldset": {
+                          border: "none",
+                        },
+                        "&:hover": {
+                          backgroundColor: colors.surface,
+                        },
+                        "&.Mui-focused": {
+                          backgroundColor: colors.surface,
+                        },
                       },
-                      "&:hover": {
-                        backgroundColor: colors.surface,
+                      "& .MuiInputBase-input": {
+                        color: colors.text,
+                        fontSize: "0.9rem",
+                        padding: "8px 12px",
                       },
-                      "&.Mui-focused": {
-                        backgroundColor: colors.surface,
-                      },
-                    },
-                    "& .MuiInputBase-input": {
-                      color: colors.text,
-                      fontSize: "0.9rem",
-                      padding: "8px 12px",
                     },
                   },
-                },
-                popper: {
-                  sx: {
-                    "& .MuiPaper-root": {
-                      backgroundColor: colors.surface,
-                      boxShadow: `0 8px 32px ${alpha(colors.text, 0.2)}`,
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: 3,
-                    },
-                    "& .MuiPickersLayout-root": {
-                      backgroundColor: colors.surface,
-                      "& .MuiPickersLayout-toolbar": {
+                  popper: {
+                    sx: {
+                      "& .MuiPaper-root": {
                         backgroundColor: colors.surface,
-                        "& .MuiPickersLayout-toolbarText": {
-                          color: colors.text,
-                          fontSize: "1rem",
-                          fontWeight: 600,
-                        },
+                        boxShadow: `0 8px 32px ${alpha(colors.text, 0.2)}`,
+                        border: `1px solid ${colors.border}`,
+                        borderRadius: 3,
                       },
-                      "& .MuiPickersLayout-actionBar": {
+                      "& .MuiPickersLayout-root": {
                         backgroundColor: colors.surface,
-                        "& .MuiButton-root": {
-                          color: colors.primary,
-                          fontSize: "0.9rem",
-                          fontWeight: 500,
-                          textTransform: "none",
-                        },
-                      },
-                      "& .MuiDayCalendar-root": {
-                        backgroundColor: colors.surface,
-                        "& .MuiPickersCalendarHeader-root": {
+                        "& .MuiPickersLayout-toolbar": {
                           backgroundColor: colors.surface,
-                          "& .MuiPickersCalendarHeader-label": {
+                          "& .MuiPickersLayout-toolbarText": {
                             color: colors.text,
-                            fontSize: "0.9rem",
+                            fontSize: "1rem",
                             fontWeight: 600,
                           },
-                          "& .MuiIconButton-root": {
+                        },
+                        "& .MuiPickersLayout-actionBar": {
+                          backgroundColor: colors.surface,
+                          "& .MuiButton-root": {
+                            color: colors.primary,
+                            fontSize: "0.9rem",
+                            fontWeight: 500,
+                            textTransform: "none",
+                          },
+                        },
+                        "& .MuiDayCalendar-root": {
+                          backgroundColor: colors.surface,
+                          "& .MuiPickersCalendarHeader-root": {
+                            backgroundColor: colors.surface,
+                            "& .MuiPickersCalendarHeader-label": {
+                              color: colors.text,
+                              fontSize: "0.9rem",
+                              fontWeight: 600,
+                            },
+                            "& .MuiIconButton-root": {
+                              color: colors.text,
+                              "&:hover": {
+                                backgroundColor: alpha(colors.primary, 0.1),
+                              },
+                            },
+                          },
+                          "& .MuiDayCalendar-weekDayLabel": {
+                            color: colors.textSecondary,
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                          },
+                          "& .MuiPickersDay-root": {
                             color: colors.text,
+                            fontSize: "0.8rem",
+                            width: "28px",
+                            height: "28px",
+                            margin: "1px",
+                            "&.Mui-selected": {
+                              backgroundColor: colors.primary,
+                              color: colors.background,
+                            },
                             "&:hover": {
                               backgroundColor: alpha(colors.primary, 0.1),
                             },
+                            "&.MuiPickersDay-today": {
+                              border: `1px solid ${colors.primary}`,
+                            },
                           },
                         },
-                        "& .MuiDayCalendar-weekDayLabel": {
-                          color: colors.textSecondary,
-                          fontSize: "0.75rem",
-                          fontWeight: 500,
-                        },
-                        "& .MuiPickersDay-root": {
-                          color: colors.text,
-                          fontSize: "0.8rem",
-                          width: "28px",
-                          height: "28px",
-                          margin: "1px",
-                          "&.Mui-selected": {
+                        "& .MuiClock-root": {
+                          backgroundColor: colors.surface,
+                          "& .MuiClockNumber-root": {
+                            color: colors.text,
+                            fontSize: "0.8rem",
+                            "&.Mui-selected": {
+                              backgroundColor: colors.primary,
+                              color: colors.background,
+                            },
+                          },
+                          "& .MuiClockPointer-root": {
                             backgroundColor: colors.primary,
-                            color: colors.background,
                           },
-                          "&:hover": {
-                            backgroundColor: alpha(colors.primary, 0.1),
-                          },
-                          "&.MuiPickersDay-today": {
-                            border: `1px solid ${colors.primary}`,
-                          },
-                        },
-                      },
-                      "& .MuiClock-root": {
-                        backgroundColor: colors.surface,
-                        "& .MuiClockNumber-root": {
-                          color: colors.text,
-                          fontSize: "0.8rem",
-                          "&.Mui-selected": {
+                          "& .MuiClockPointer-thumb": {
                             backgroundColor: colors.primary,
-                            color: colors.background,
+                            border: `1px solid ${colors.background}`,
                           },
-                        },
-                        "& .MuiClockPointer-root": {
-                          backgroundColor: colors.primary,
-                        },
-                        "& .MuiClockPointer-thumb": {
-                          backgroundColor: colors.primary,
-                          border: `1px solid ${colors.background}`,
                         },
                       },
                     },
                   },
-                },
-              }}
-            />
-          </LocalizationProvider>
-        </Box>
-      )}
+                }}
+              />
+            </LocalizationProvider>
+          </Box>
+        )}
 
-      {/* Date/Time Picker Bottom Sheet - Commented Out */}
-      {/* <BottomSheet
+        {/* Date/Time Picker Bottom Sheet - Commented Out */}
+        {/* <BottomSheet
         open={showDateTimePicker}
         onClose={() => setShowDateTimePicker(false)}
         title="Select Date & Time"
@@ -653,54 +662,55 @@ export default function EntryForm({
         </Box>
       </BottomSheet> */}
 
-      {/* Category Picker Bottom Sheet */}
-      <BottomSheet
-        open={showCategoryPicker}
-        onClose={() => setShowCategoryPicker(false)}
-        title="Select Category"
-        buttons={[
-          {
-            text: "Confirm",
-            onClick: () => setShowCategoryPicker(false),
-            variant: "primary",
-          },
-          {
-            text: "Cancel",
-            onClick: () => setShowCategoryPicker(false),
-            variant: "secondary",
-          },
-        ]}
-      >
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
-            gap: 1,
-          }}
+        {/* Category Picker Bottom Sheet */}
+        <BottomSheet
+          open={showCategoryPicker}
+          onClose={() => setShowCategoryPicker(false)}
+          title="Select Category"
+          buttons={[
+            {
+              text: "Confirm",
+              onClick: () => setShowCategoryPicker(false),
+              variant: "primary",
+            },
+            {
+              text: "Cancel",
+              onClick: () => setShowCategoryPicker(false),
+              variant: "secondary",
+            },
+          ]}
         >
-          {categories
-            .filter((category) => category.is_income === isIncome)
-            .map((category) => (
-              <Chip
-                key={category.id}
-                label={category.name}
-                sx={{
-                  backgroundColor: colors.border,
-                  color: colors.text,
-                  fontSize: "0.9rem",
-                  fontWeight: 500,
-                  borderRadius: 2,
-                  height: "auto",
-                  textTransform: "none",
-                }}
-                onClick={() => {
-                  onCategoryChange(category);
-                  setShowCategoryPicker(false);
-                }}
-              />
-            ))}
-        </Box>
-      </BottomSheet>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 1,
+            }}
+          >
+            {categories
+              .filter((category) => category.is_income === isIncome)
+              .map((category) => (
+                <Chip
+                  key={category.id}
+                  label={category.name}
+                  sx={{
+                    backgroundColor: colors.border,
+                    color: colors.text,
+                    fontSize: "0.9rem",
+                    fontWeight: 500,
+                    borderRadius: 2,
+                    height: "auto",
+                    textTransform: "none",
+                  }}
+                  onClick={() => {
+                    onCategoryChange(category);
+                    setShowCategoryPicker(false);
+                  }}
+                />
+              ))}
+          </Box>
+        </BottomSheet>
+      </Box>
     </Box>
   );
 }

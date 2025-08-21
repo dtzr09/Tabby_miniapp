@@ -13,7 +13,7 @@ import { isSameMonth } from "../../utils/isSameMonth";
 import { calculateSummaryData } from "../../utils/calculateSummaryData";
 import { getDashboardData } from "../../utils/getDashboardData";
 import { useAllEntries } from "../../hooks/useAllEntries";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import GroupSwitcher from "./GroupSwitcher";
 import { GroupOutlined, PersonOutlineOutlined } from "@mui/icons-material";
 import GroupPersonalToggle from "./GroupPersonalToggle";
@@ -22,9 +22,6 @@ import { useUser } from "../../hooks/useUser";
 import { getPersonalExpensesFromGroup } from "../../utils/getPersonalExpensesFromGroup";
 import { fetchUserCount } from "../../services/userCount";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
-import { fetchCategories } from "../../services/categories";
-import { fetchAllEntries } from "../../services/allEntries";
-import { fetchPreferences } from "../../services/preferences";
 import Navbar from "../navbar/Navbar";
 
 export interface TelegramUser {
@@ -43,7 +40,6 @@ interface DashboardProps {
 
 const Dashboard = ({ onViewChange }: DashboardProps) => {
   const { colors, fontFamily } = useTheme();
-  const queryClient = useQueryClient();
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | null>(null);
 
@@ -81,89 +77,6 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     },
     enabled: !!tgUser && !!initData,
   });
-
-  // Comprehensive data prefetching for all groups when groups are loaded
-  useEffect(() => {
-    if (groups && tgUser && initData) {
-      const prefetchPromises: Promise<unknown>[] = [];
-
-      groups.forEach((group: Group) => {
-        // Prefetch allEntries for each group
-        prefetchPromises.push(
-          queryClient.prefetchQuery({
-            queryKey: ["allEntries", tgUser.id, group.chat_id],
-            queryFn: () => fetchAllEntries(tgUser.id, initData, group.chat_id),
-            staleTime: 60000,
-          })
-        );
-
-        // Prefetch categories for each group (for settings)
-        prefetchPromises.push(
-          queryClient.prefetchQuery({
-            queryKey: ["categories", tgUser.id, group.chat_id],
-            queryFn: () => fetchCategories(tgUser.id, initData, group.chat_id),
-            staleTime: 300000, // 5 minutes
-          })
-        );
-
-        // Prefetch user count for each group
-        prefetchPromises.push(
-          queryClient.prefetchQuery({
-            queryKey: ["userCount", group.chat_id],
-            queryFn: () => fetchUserCount(tgUser.id, initData, group.chat_id),
-            staleTime: 300000, // 5 minutes
-          })
-        );
-
-        // Prefetch preferences for each group (for settings)
-        prefetchPromises.push(
-          queryClient.prefetchQuery({
-            queryKey: ["preferences", tgUser.id, group.chat_id],
-            queryFn: () => fetchPreferences(tgUser.id, initData, group.chat_id),
-            staleTime: 600000, // 10 minutes
-          })
-        );
-      });
-
-      // Also prefetch personal data (null chat_id)
-      prefetchPromises.push(
-        queryClient.prefetchQuery({
-          queryKey: ["allEntries", tgUser.id, null],
-          queryFn: () => fetchAllEntries(tgUser.id, initData, null),
-          staleTime: 60000,
-        })
-      );
-
-      // Prefetch personal categories (for settings)
-      prefetchPromises.push(
-        queryClient.prefetchQuery({
-          queryKey: ["categories", tgUser.id, null],
-          queryFn: () => fetchCategories(tgUser.id, initData, null),
-          staleTime: 300000, // 5 minutes
-        })
-      );
-
-      // Prefetch personal preferences (for settings)
-      prefetchPromises.push(
-        queryClient.prefetchQuery({
-          queryKey: ["preferences", tgUser.id, null],
-          queryFn: () => fetchPreferences(tgUser.id, initData, null),
-          staleTime: 600000, // 10 minutes
-        })
-      );
-
-      // Execute all prefetch operations
-      Promise.allSettled(prefetchPromises).then((results) => {
-        const successful = results.filter(
-          (r) => r.status === "fulfilled"
-        ).length;
-        const failed = results.filter((r) => r.status === "rejected").length;
-        console.log(
-          `📦 Prefetch completed: ${successful} successful, ${failed} failed`
-        );
-      });
-    }
-  }, [groups, tgUser, initData, queryClient]);
 
   // Filter entries based on group and personal view settings
   const getPersonalFilteredExpenses = useCallback(
@@ -217,9 +130,9 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
 
       if (mainButton.isMounted()) mainButton.setParams({ isVisible: false });
 
-      // Hide back button in dashboard
+      // Unmount back button if it was auto-mounted by init()
       if (backButton.isMounted()) {
-        backButton.hide();
+        backButton.unmount();
       }
 
       webApp.lockOrientation?.("portrait");
@@ -279,12 +192,15 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   }
 
   return (
-    <>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <Navbar />
+
+      {/* Scrollable Content */}
       <Box
         sx={{
+          flex: 1,
+          overflow: "auto",
           bgcolor: colors.background,
-          minHeight: "100vh",
           color: colors.text,
           fontFamily: fontFamily,
           display: "flex",
@@ -393,7 +309,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
           </Box>
         </Box>
       </Box>
-    </>
+    </Box>
   );
 };
 

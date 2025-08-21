@@ -8,6 +8,7 @@ import {
   isTMA,
   disableVerticalSwipes,
   viewport,
+  backButton,
 } from "@telegram-apps/sdk";
 
 const queryClient = new QueryClient({
@@ -74,6 +75,15 @@ function MyApp({ Component, pageProps }: AppProps) {
     async function initTg() {
       if (await isTMA()) {
         init();
+
+        // Unmount back button immediately after init to prevent auto-mounting
+        try {
+          if (backButton.isMounted()) {
+            backButton.unmount();
+          }
+        } catch (err) {
+          console.warn("Failed to unmount back button on init:", err);
+        }
 
         // Enable viewport height adjustments and safe areas
         window.Telegram?.WebApp?.setViewportSettings?.({

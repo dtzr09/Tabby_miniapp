@@ -1,4 +1,9 @@
-import { backButton, init, showPopup, settingsButton } from "@telegram-apps/sdk";
+import {
+  backButton,
+  init,
+  showPopup,
+  settingsButton,
+} from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, Button, Alert } from "@mui/material";
