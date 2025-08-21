@@ -5,11 +5,13 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 interface SettingsLayoutProps {
   title: string;
   children: React.ReactNode;
+  headerExtra?: React.ReactNode;
 }
 
 export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
   title,
   children,
+  headerExtra,
 }) => {
   const { colors } = useTheme();
 
@@ -23,6 +25,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
           mb: 2,
           position: "relative",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -39,6 +42,11 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
         >
           {title}
         </Typography>
+        {headerExtra && (
+          <Box sx={{ mt: 1 }}>
+            {headerExtra}
+          </Box>
+        )}
       </Box>
 
       {/* Scrollable Content */}

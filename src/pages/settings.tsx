@@ -6,7 +6,7 @@ import {
 } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
-import { Box, Typography, Skeleton } from "@mui/material";
+import { Box, Typography, Skeleton, Chip, Menu, MenuItem } from "@mui/material";
 import { useTheme } from "../contexts/ThemeContext";
 import { currencies } from "../../utils/preferencesData";
 import { Country, getAllCountries } from "countries-and-timezones";
@@ -19,6 +19,7 @@ import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
 import { appCache } from "../../utils/cache";
 import { SelectionList } from "../../components/settings/SelectionList";
 import CategoriesSettings from "./settings/categories";
+import { Group } from "../../utils/types";
 
 // Types
 interface UserPreferences {
@@ -85,12 +86,16 @@ const SETTINGS_CONFIG = {
 
 const Settings = () => {
   const router = useRouter();
+  const { chat_id } = router.query;
   const { colors } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [currentView, setCurrentView] = useState<SettingsView>("main");
   const [selectedCountry, setSelectedCountry] = useState("SG");
   const [selectedCurrency, setSelectedCurrency] = useState("SGD");
   const [initialLoad, setInitialLoad] = useState(true);
+  // const [isGroupSettings, setIsGroupSettings] = useState(false);
+  const [groupName, setGroupName] = useState<string | null>(null);
+  const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
 
   // Use optimized Telegram WebApp hook
   const { user, initData, isReady } = useTelegramWebApp();
@@ -104,10 +109,7 @@ const Settings = () => {
     []
   );
 
-  const {
-    control,
-    reset,
-  } = useForm<UserPreferences>({
+  const { control, reset } = useForm<UserPreferences>({
     defaultValues,
     mode: "onChange",
   });
@@ -115,6 +117,15 @@ const Settings = () => {
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [filterDataLoaded, setFilterDataLoaded] = useState(false);
   const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
+
+  // Update isGroupSettings when chat_id changes
+  useEffect(() => {
+    // setIsGroupSettings(!!chat_id);
+    // Reset state when switching between personal and group
+    setPreferencesLoaded(false);
+    setGroupName(null);
+    setInitialLoad(true);
+  }, [chat_id]);
 
   // Initialize filtered countries
   useEffect(() => {
@@ -136,6 +147,61 @@ const Settings = () => {
     setFilterDataLoaded(true);
   }, []);
 
+  // Load available groups
+  const loadAvailableGroups = useCallback(
+    async (telegram_id: string, initData: string): Promise<void> => {
+      try {
+        const params = new URLSearchParams({
+          telegram_id,
+          initData,
+        });
+
+        const response = await fetch(`/api/groups?${params.toString()}`);
+        if (response.ok) {
+          const groups = await response.json();
+          setAvailableGroups(
+            groups.map((group: Group) => ({
+              id: group.chat_id,
+              name: group.name || group.title,
+            }))
+          );
+        }
+      } catch (error) {
+        console.error("❌ Error loading groups:", error);
+      }
+    },
+    []
+  );
+
+  // Load group name if in group mode
+  const loadGroupName = useCallback(
+    async (
+      chatId: string,
+      telegram_id: string,
+      initData: string
+    ): Promise<void> => {
+      try {
+        const params = new URLSearchParams({
+          telegram_id,
+          initData,
+        });
+
+        const response = await fetch(
+          `/api/groups/${chatId}?${params.toString()}`
+        );
+        if (response.ok) {
+          const group = await response.json();
+          if (group && group.length > 0) {
+            setGroupName(group[0].name || group[0].title || "Group");
+          }
+        }
+      } catch (error) {
+        console.error("❌ Error loading group name:", error);
+      }
+    },
+    []
+  );
+
   // Load preferences from backend
   const loadPreferencesFromBackend = useCallback(
     async (telegram_id: string, initData: string): Promise<boolean> => {
@@ -144,6 +210,10 @@ const Settings = () => {
           telegram_id,
           initData,
         });
+
+        if (chat_id) {
+          params.append("chat_id", chat_id as string);
+        }
 
         const response = await fetch(`/api/preferences?${params.toString()}`);
 
@@ -171,7 +241,7 @@ const Settings = () => {
         return false;
       }
     },
-    [reset, defaultValues]
+    [reset, defaultValues, chat_id]
   );
 
   // Telegram UI setup
@@ -197,7 +267,7 @@ const Settings = () => {
 
     const handleBack = () => {
       if (currentView === "main") {
-        router.back();
+        router.push("/");
       } else {
         setCurrentView("main");
       }
@@ -226,7 +296,17 @@ const Settings = () => {
     const loadData = async () => {
       setIsLoading(true);
       try {
+        // Load preferences
         await loadPreferencesFromBackend(user.id.toString(), initData);
+
+        // Load available groups
+        await loadAvailableGroups(user.id.toString(), initData);
+
+        // Load current group name if in group mode
+        if (chat_id) {
+          await loadGroupName(chat_id as string, user.id.toString(), initData);
+        }
+
         setPreferencesLoaded(true);
       } catch (error) {
         console.error("Error loading preferences:", error);
@@ -243,6 +323,9 @@ const Settings = () => {
     preferencesLoaded,
     isLoading,
     loadPreferencesFromBackend,
+    loadAvailableGroups,
+    loadGroupName,
+    chat_id,
   ]);
 
   // Selection handlers
@@ -263,11 +346,16 @@ const Settings = () => {
           country: string;
           timezone?: string;
           currency?: string;
+          chat_id?: string;
         } = {
           telegram_id: user.id.toString(),
           initData,
           country: countryId,
         };
+
+        if (chat_id) {
+          updateData.chat_id = chat_id as string;
+        }
 
         // Auto-update timezone and currency based on country
         if (country && country.timezones && country.timezones.length > 0) {
@@ -322,7 +410,15 @@ const Settings = () => {
         });
       }
     },
-    [user, initData, filteredCountries, selectedCurrency, defaultValues, reset]
+    [
+      user,
+      initData,
+      filteredCountries,
+      selectedCurrency,
+      defaultValues,
+      reset,
+      chat_id,
+    ]
   );
 
   const handleCurrencySelect = useCallback(
@@ -335,14 +431,25 @@ const Settings = () => {
           return;
         }
 
+        const updateData: {
+          telegram_id: string;
+          initData: string;
+          currency: string;
+          chat_id?: string;
+        } = {
+          telegram_id: user.id.toString(),
+          initData,
+          currency: currencyCode,
+        };
+
+        if (chat_id) {
+          updateData.chat_id = chat_id as string;
+        }
+
         const response = await fetch("/api/preferences", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            telegram_id: user.id.toString(),
-            initData,
-            currency: currencyCode,
-          }),
+          body: JSON.stringify(updateData),
         });
 
         if (response.ok) {
@@ -369,13 +476,59 @@ const Settings = () => {
         });
       }
     },
-    [user, initData, defaultValues, selectedCountry, reset]
+    [user, initData, defaultValues, selectedCountry, reset, chat_id]
   );
 
   // View handlers
   const handleViewChange = useCallback((view: SettingsView) => {
     setCurrentView(view);
   }, []);
+
+  // Group switcher state
+  const [groupMenuAnchor, setGroupMenuAnchor] = useState<null | HTMLElement>(
+    null
+  );
+
+  // Handler for switching between personal and group settings
+  // const handleSettingsTypeToggle = useCallback(() => {
+  //   const newIsGroupSettings = !isGroupSettings;
+  //   setIsGroupSettings(newIsGroupSettings);
+
+  //   if (newIsGroupSettings && availableGroups.length > 0) {
+  //     // Switch to first available group
+  //     const firstGroup = availableGroups[0];
+  //     router.push(`/settings?chat_id=${firstGroup.id}`);
+  //   } else {
+  //     // Switch to personal
+  //     router.push('/settings');
+  //   }
+  // }, [isGroupSettings, availableGroups, router]);
+
+  // Handler for group selection
+  const handleGroupMenuOpen = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      setGroupMenuAnchor(event.currentTarget);
+    },
+    []
+  );
+
+  const handleGroupMenuClose = useCallback(() => {
+    setGroupMenuAnchor(null);
+  }, []);
+
+  const handleGroupSelect = useCallback(
+    async (groupId: string | null) => {
+      if (groupId === null) {
+        // Switch to personal
+        await router.push("/settings");
+      } else {
+        // Switch to selected group
+        await router.push(`/settings?chat_id=${groupId}`);
+      }
+      handleGroupMenuClose();
+    },
+    [router, handleGroupMenuClose]
+  );
 
   // View configurations - easy to extend
   const getViewConfig = useCallback((): ViewConfig | null => {
@@ -523,6 +676,120 @@ const Settings = () => {
     [control, filteredCountries, handleViewChange, user?.id, initData]
   );
 
+  // Create the group switcher chip
+  const groupSwitcherChip = useMemo(() => {
+    if (availableGroups.length === 0) return null;
+
+    return (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Chip
+          label={chat_id ? groupName || "Group" : "Personal"}
+          onClick={handleGroupMenuOpen}
+          sx={{
+            bgcolor: colors.card,
+            color: colors.text,
+            border: `1px solid ${colors.border}`,
+            fontSize: "0.75rem",
+            height: "28px",
+            "&:hover": {
+              bgcolor: colors.surface,
+            },
+          }}
+          clickable
+        />
+        <Menu
+          anchorEl={groupMenuAnchor}
+          open={Boolean(groupMenuAnchor)}
+          onClose={handleGroupMenuClose}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "center",
+          }}
+          transformOrigin={{
+            vertical: "top",
+            horizontal: "center",
+          }}
+          slotProps={{
+            paper: {
+              sx: {
+                bgcolor: colors.card,
+                borderColor: colors.border,
+                boxShadow: `0 2px 4px -1px ${colors.border}`,
+                borderRadius: 3,
+                minWidth: 100,
+                mt: 0.5,
+                py: 0.25,
+              },
+            },
+          }}
+        >
+          <MenuItem
+            onClick={() => handleGroupSelect(null)}
+            selected={!chat_id}
+            sx={{
+              color: colors.text,
+              fontSize: "0.75rem",
+              py: 0.5,
+              px: 1,
+              minHeight: "auto",
+              borderRadius: 2,
+              mx: 0.5,
+              "&.Mui-selected": {
+                bgcolor: colors.incomeExpenseCard,
+                color: colors.text,
+                "&:hover": {
+                  bgcolor: colors.incomeExpenseCard,
+                },
+              },
+              "&:hover": {
+                bgcolor: colors.surface,
+              },
+            }}
+          >
+            Personal
+          </MenuItem>
+          {availableGroups.map((group) => (
+            <MenuItem
+              key={group.chat_id}
+              onClick={() => handleGroupSelect(group.chat_id)}
+              selected={chat_id === group.chat_id}
+              sx={{
+                color: colors.text,
+                fontSize: "0.75rem",
+                py: 0.5,
+                px: 1,
+                minHeight: "auto",
+                borderRadius: 2,
+                mx: 0.5,
+                "&.Mui-selected": {
+                  bgcolor: colors.incomeExpenseCard,
+                  color: colors.text,
+                  "&:hover": {
+                    bgcolor: colors.incomeExpenseCard,
+                  },
+                },
+                "&:hover": {
+                  bgcolor: colors.surface,
+                },
+              }}
+            >
+              {group.name}
+            </MenuItem>
+          ))}
+        </Menu>
+      </Box>
+    );
+  }, [
+    availableGroups,
+    chat_id,
+    groupName,
+    colors,
+    handleGroupMenuOpen,
+    groupMenuAnchor,
+    handleGroupMenuClose,
+    handleGroupSelect,
+  ]);
+
   // Loading state
   if (!filterDataLoaded || !preferencesLoaded || isLoading) {
     return (
@@ -545,7 +812,10 @@ const Settings = () => {
   const viewConfig = getViewConfig();
   if (viewConfig) {
     return (
-      <SettingsLayout title={viewConfig.title}>
+      <SettingsLayout
+        title={viewConfig.title}
+        headerExtra={currentView === "main" ? groupSwitcherChip : null}
+      >
         {viewConfig.component}
       </SettingsLayout>
     );
@@ -553,7 +823,7 @@ const Settings = () => {
 
   // Main settings view
   return (
-    <SettingsLayout title="Settings">
+    <SettingsLayout title="Settings" headerExtra={groupSwitcherChip}>
       <SettingsSection title="GENERAL">
         {SETTINGS_CONFIG.general.map((item, index) =>
           renderSettingsItem(item, index === SETTINGS_CONFIG.general.length - 1)

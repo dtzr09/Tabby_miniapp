@@ -11,6 +11,7 @@ import { TelegramUser } from "../../dashboard";
 import { alpha } from "@mui/material/styles";
 import { useQueryClient } from "@tanstack/react-query";
 import { refetchExpensesQueries } from "../../../utils/refetchExpensesQueries";
+import { QueryData } from "../../../utils/types";
 
 const ExpenseRow = ({
   tx,
@@ -43,8 +44,7 @@ const ExpenseRow = ({
 
       // Update each query's data optimistically
       queryKeys.forEach((queryKey) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        queryClient.setQueryData(queryKey, (oldData: any) => {
+        queryClient.setQueryData(queryKey, (oldData: QueryData | unknown) => {
           if (!oldData) return oldData;
 
           // Handle both array and object responses
@@ -58,11 +58,9 @@ const ExpenseRow = ({
               ...oldData,
               expenses: tx.isIncome
                 ? oldData.expenses
-                : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  oldData.expenses.filter((e: any) => e.id !== tx.id),
+                : (oldData as QueryData).expenses?.filter((e) => e.id !== tx.id) || [],
               income: tx.isIncome
-                ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  oldData.income.filter((i: any) => i.id !== tx.id)
+                ? (oldData as QueryData).income?.filter((i) => i.id !== tx.id) || []
                 : oldData.income,
             };
           }

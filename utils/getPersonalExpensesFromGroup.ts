@@ -1,6 +1,8 @@
+import { Expense, ExpenseShare } from "./types";
+
 // Helper function to extract personal expenses from group view with user's share amounts
 export const getPersonalExpensesFromGroup = (
-  expenses: any[],
+  expenses: Expense[],
   userId: number
 ) => {
   if (!expenses || !Array.isArray(expenses)) {
@@ -25,7 +27,7 @@ export const getPersonalExpensesFromGroup = (
       }
 
       // Check if user has a share in the expense
-      return expense.shares.some((share: any) => {
+      return expense.shares?.some((share: ExpenseShare) => {
         if (!share || typeof share.user_id === "undefined") {
           return false;
         }
@@ -40,7 +42,7 @@ export const getPersonalExpensesFromGroup = (
     })
     .map((expense) => {
       // Find the user's share for this expense
-      const userShare = expense.shares.find((share: any) => {
+      const userShare = expense.shares?.find((share: ExpenseShare) => {
         const shareUserId =
           typeof share.user_id === "string"
             ? parseInt(share.user_id)

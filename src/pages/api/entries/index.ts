@@ -3,6 +3,7 @@ import { validateTelegramWebApp } from "../../../../lib/validateTelegram";
 import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { postgresClient } from "../../../../lib/postgresClient";
 import { BOT_TOKEN, isLocal } from "../../../../utils/utils";
+import { Expense, ExpenseShareWithUser } from "../../../../utils/types";
 
 export default async function handler(
   req: NextApiRequest,
@@ -132,12 +133,11 @@ export default async function handler(
 
       // Process Supabase data to match SQL structure
       if (chat_id && !isIncomeBoolean && entries) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const processedEntries = entries.map((entry: any) => ({
+        const processedEntries = entries.map((entry: Expense) => ({
           ...entry,
           shares:
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            entry.shares?.map((share: any) => ({
+             
+            entry.shares?.map((share: ExpenseShareWithUser) => ({
               user_id: share.user_id,
               share_amount: share.share_amount,
               user_name: share.user?.name || `User ${share.user_id}`,

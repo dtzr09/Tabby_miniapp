@@ -1,12 +1,14 @@
+import { Expense, ExpenseShare } from "./types";
+
 export interface PersonalShareData {
   amount: number;
   isPersonalShare: boolean;
   originalAmount: number;
-  userShare?: { user_id: string | number; share_amount: number };
+  userShare?: ExpenseShare;
 }
 
 export const getPersonalAmount = (
-  expense: any,
+  expense: Expense,
   isPersonalView: boolean,
   userId?: string | number
 ): PersonalShareData => {
@@ -19,7 +21,7 @@ export const getPersonalAmount = (
     };
   }
 
-  const share = expense.shares.find((s: any) => {
+  const share = expense.shares?.find((s: ExpenseShare) => {
     const shareUserId = typeof s.user_id === "string" ? parseInt(s.user_id) : s.user_id;
     const currentUserId = typeof userId === "string" ? parseInt(userId) : userId;
     return shareUserId === currentUserId;

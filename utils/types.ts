@@ -133,3 +133,58 @@ export interface ExpenseFormData {
   amount: string;
   category_id: string | number;
 }
+
+// New types to replace 'any' usage
+export interface TelegramUser {
+  id: string | number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+  is_premium?: boolean;
+  allows_write_to_pm?: boolean;
+}
+
+export interface Group {
+  id?: string;
+  chat_id: string;
+  name?: string;
+  title?: string;
+  telegram_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface GroupWithExpenses extends Group {
+  expenses?: Expense[];
+}
+
+export interface BudgetWithCategory {
+  id: number;
+  amount: number;
+  category_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChartDataPoint {
+  name: string;
+  amount: number;
+  value?: number;
+  fill?: string;
+  [key: string]: string | number | undefined;
+}
+
+export interface QueryData {
+  expenses?: Expense[];
+  income?: Income[];
+  budgets?: Budget[];
+  [key: string]: unknown;
+}
+
+export interface ExpenseShareWithUser extends ExpenseShare {
+  user?: {
+    name?: string;
+    username?: string;
+  };
+}

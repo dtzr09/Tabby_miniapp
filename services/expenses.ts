@@ -1,5 +1,5 @@
 import { QueryObserverResult } from "@tanstack/react-query";
-import { Expense, TelegramWebApp } from "../utils/types";
+import { Expense, TelegramWebApp, BudgetWithCategory } from "../utils/types";
 import { fetchUser } from "./users";
 import { invalidateExpenseCache } from "../utils/cache";
 
@@ -205,7 +205,7 @@ export const fetchExpensesForBudgets = async (
   );
 
   const budgetCategoriesIds = budgetsResponse.map(
-    (budget: any) => budget.category_id
+    (budget: BudgetWithCategory) => budget.category_id
   );
 
   const expensesParams = new URLSearchParams({

@@ -32,8 +32,9 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
       <Card
         sx={{
           borderRadius: 2,
-          bgcolor: colors.card,
+          bgcolor: colors.cardBg || colors.incomeExpenseCard || colors.surface,
           boxShadow: 0,
+          border: `1px solid ${colors.border}`,
         }}
       >
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>{children}</CardContent>

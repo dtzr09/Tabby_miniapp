@@ -3,6 +3,7 @@ import { validateTelegramWebApp } from "../../../../../lib/validateTelegram";
 import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
 import { postgresClient } from "../../../../../lib/postgresClient";
 import { BOT_TOKEN, isLocal } from "../../../../../utils/utils";
+import { ExpenseShareWithUser } from "../../../../../utils/types";
 
 export default async function handler(
   req: NextApiRequest,
@@ -141,8 +142,7 @@ export default async function handler(
           const formattedEntry = {
             ...entry,
             shares:
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              entry.shares?.map((share: any) => ({
+              entry.shares?.map((share: ExpenseShareWithUser) => ({
                 user_id: share.user_id,
                 share_amount: share.share_amount,
                 name: share.user?.name || `User ${share.user_id}`,

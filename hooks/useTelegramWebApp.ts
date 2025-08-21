@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { init } from "@telegram-apps/sdk";
-import { TelegramWebApp } from "../utils/types";
+import { TelegramWebApp, TelegramUser } from "../utils/types";
 import { appCache } from "../utils/cache";
 
 interface TelegramWebAppData {
   webApp: TelegramWebApp | null;
-  user: any | null;
+  user: TelegramUser | null;
   initData: string | null;
   isReady: boolean;
 }
