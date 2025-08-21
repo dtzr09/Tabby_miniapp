@@ -12,7 +12,7 @@ export interface BottomSheetButton {
 interface BottomSheetProps {
   open: boolean;
   onClose: () => void;
-  title: string;
+  title?: string;
   description?: string;
   buttons: BottomSheetButton[];
   children?: ReactNode;
@@ -118,7 +118,6 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           },
         }}
       >
-
         {/* Title */}
         <Typography
           variant="h6"
@@ -130,7 +129,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
             fontSize: "1.1rem",
           }}
         >
-          {title}
+          {title || ""}
         </Typography>
 
         {/* Description */}
@@ -149,11 +148,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
         )}
 
         {/* Custom Content */}
-        {children && (
-          <Box sx={{ marginBottom: 2.5 }}>
-            {children}
-          </Box>
-        )}
+        {children && <Box sx={{ marginBottom: 2.5 }}>{children}</Box>}
 
         {/* Buttons */}
         <Box

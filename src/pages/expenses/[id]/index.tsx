@@ -2,7 +2,11 @@ import { backButton, init, showPopup } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, Button, Alert } from "@mui/material";
-import { ExpenseFormData, TelegramWebApp } from "../../../../utils/types";
+import {
+  Category,
+  ExpenseFormData,
+  TelegramWebApp,
+} from "../../../../utils/types";
 import { useForm } from "react-hook-form";
 import DeleteExpenseDialog from "../../../../components/expenses/utils/DeleteExpenseDialog";
 import { TelegramUser } from "../../../../components/dashboard";
@@ -23,6 +27,8 @@ const ExpenseDetail = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | undefined>(undefined);
+  const [currentAmount, setCurrentAmount] = useState("0");
+  const [description, setDescription] = useState("");
   // Get categories from useAllEntries
   const { categories } = useAllEntries(tgUser?.id, initData, chat_id as string);
   const { data: user } = useUser(tgUser?.id, initData, chat_id as string);
@@ -50,10 +56,11 @@ const ExpenseDetail = () => {
   };
 
   const {
-    control,
+    // control,
     handleSubmit,
-    formState: { isDirty, isSubmitting, errors },
+    formState: { isSubmitting },
     reset,
+    setValue,
   } = useForm<ExpenseFormData>({
     defaultValues,
     mode: "onChange",
@@ -65,16 +72,19 @@ const ExpenseDetail = () => {
   // Reset form when expense data changes
   useEffect(() => {
     if (expense) {
+      const amount = hasExpenseShares
+        ? expense.shares
+            .find((share: { user_id: number }) => share.user_id === user?.id)
+            ?.share_amount.toString()
+        : expense.amount.toString();
+
+      setCurrentAmount(amount || "0");
+      setDescription(expense.description || "");
+
       reset(
         {
           description: expense.description || "",
-          amount: hasExpenseShares
-            ? expense.shares
-                .find(
-                  (share: { user_id: number }) => share.user_id === user?.id
-                )
-                ?.share_amount.toString()
-            : expense.amount.toString(),
+          amount: amount || "",
           category_id: expense.category?.id || 0,
         },
         { keepDirty: false }
@@ -187,6 +197,36 @@ const ExpenseDetail = () => {
     [entryId, isIncome, expense, categories, updateExpenseInCache]
   );
 
+  // Handler functions for the new EntryForm
+  const handleAmountChange = (value: string) => {
+    setCurrentAmount(value);
+    // Update the react-hook-form control as well
+    const formValue = value === "0" ? "" : value;
+    setValue("amount", formValue, { shouldDirty: true });
+  };
+
+  const handleDescriptionChange = (value: string) => {
+    setDescription(value);
+    setValue("description", value, { shouldDirty: true });
+  };
+
+  const handleDelete = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const handleFormSubmit = () => {
+    // Update form data before submitting
+    setValue("description", description, { shouldDirty: true });
+    setValue("amount", currentAmount === "0" ? "" : currentAmount, {
+      shouldDirty: true,
+    });
+    setShowSaveDialog(true);
+  };
+
+  const handleCategoryChange = (category: Category) => {
+    setValue("category_id", category.id, { shouldDirty: true });
+  };
+
   // Handle loading and error states
   if (isLoading) {
     return <LoadingSkeleton />;
@@ -240,67 +280,34 @@ const ExpenseDetail = () => {
       }}
     >
       <EntryForm
-        control={control}
+        // control={control}
         categories={categories}
         isIncome={isIncome === "true"}
-        isLoading={isLoading}
+        // isLoading={isLoading}
         date={expense.date}
         expense={expense}
-        tgUser={tgUser as TelegramUser}
-        initData={initData as string}
-        chat_id={chat_id as string}
+        // tgUser={tgUser as TelegramUser}
+        // initData={initData as string}
+        // chat_id={chat_id as string}
+        // isGroupExpense={chat_id !== tgUser?.id?.toString()}
+        onDelete={handleDelete}
+        // onToggleRecurring={() => console.log("Recurring not implemented")}
+        // onShowSplit={() => console.log("Show split not implemented")}
+        onSubmit={handleFormSubmit}
+        currentAmount={currentAmount}
+        onAmountChange={handleAmountChange}
+        description={description}
+        onDescriptionChange={handleDescriptionChange}
+        onCategoryChange={handleCategoryChange}
       />
 
-      <Box
-        sx={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: "flex",
-          flexDirection: "row",
-          gap: 1,
-          p: 2,
-          mb: 8,
-          background: colors.background,
-        }}
-      >
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{
-            width: "100%",
-            color: colors.text,
-            background: colors.expense,
-            textTransform: "none",
-          }}
-          onClick={() => setShowDeleteDialog(true)}
-        >
-          Delete {isIncome === "true" ? "income" : "expense"}
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{
-            width: "100%",
-            color: colors.text,
-            background: "#2662ec",
-            textTransform: "none",
-            "&:disabled": {
-              background: colors.disabled,
-              color: colors.textSecondary,
-            },
-          }}
-          disabled={!isDirty || Object.keys(errors).length > 0}
-          onClick={() => setShowSaveDialog(true)}
-        >
-          {isSubmitting ? "Saving..." : "Save Changes"}
-        </Button>
-      </Box>
       <DeleteExpenseDialog
         id={Number(entryId)}
         isIncome={isIncome === "true"}
-        onSuccess={() => router.back()}
+        onSuccess={() => {
+          setShowDeleteDialog(false);
+          router.back();
+        }}
         showConfirm={showDeleteDialog}
         setShowConfirm={setShowDeleteDialog}
         tgUser={tgUser}
