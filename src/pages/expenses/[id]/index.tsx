@@ -271,7 +271,6 @@ const ExpenseDetail = () => {
   return (
     <Box
       sx={{
-        height: "100%",
         background: colors.background,
         px: 2,
         display: "flex",

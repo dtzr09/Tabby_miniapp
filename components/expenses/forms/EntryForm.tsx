@@ -145,10 +145,10 @@ export default function EntryForm({
   return (
     <Box
       sx={{
-        height: "100vh",
         display: "flex",
         flexDirection: "column",
         position: "relative",
+        height: "100vh",
       }}
     >
       {/* Main Display Area */}
@@ -348,6 +348,7 @@ export default function EntryForm({
       <Box
         sx={{
           p: 0,
+          pb: 6,
         }}
       >
         <Box
