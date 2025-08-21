@@ -42,11 +42,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
         >
           {title}
         </Typography>
-        {headerExtra && (
-          <Box sx={{ mt: 1 }}>
-            {headerExtra}
-          </Box>
-        )}
+        {headerExtra && <Box sx={{ mt: 1 }}>{headerExtra}</Box>}
       </Box>
 
       {/* Scrollable Content */}

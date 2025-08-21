@@ -32,10 +32,10 @@ export const SettingsItem: React.FC<SettingsItemProps> = ({
         justifyContent: "space-between",
         py: 1.5,
         px: 2,
-        borderBottom: showBorder ? `1px solid ${colors.surface}` : "none",
+        borderBottom: showBorder ? `1px solid ${colors.border}` : "none",
         cursor: "pointer",
         "&:hover": {
-          bgcolor: colors.surface,
+          bgcolor: colors.border,
         },
       }}
     >

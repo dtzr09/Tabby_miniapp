@@ -28,7 +28,7 @@ export const SelectionList: React.FC<SelectionListProps> = ({
 
   if (isLoading) {
     return (
-      <Card sx={{ borderRadius: 2, bgcolor: colors.card, boxShadow: 0 }}>
+      <Card sx={{ borderRadius: 2, bgcolor: colors.border, boxShadow: 0 }}>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
           {[...Array(skeletonCount)].map((_, i) => (
             <Box
@@ -77,7 +77,7 @@ export const SelectionList: React.FC<SelectionListProps> = ({
   }
 
   return (
-    <Card sx={{ borderRadius: 2, bgcolor: colors.card, boxShadow: 0 }}>
+    <Card sx={{ borderRadius: 2, bgcolor: colors.border, boxShadow: 0 }}>
       <CardContent sx={{ p: 0 }}>
         {items.map((item, index) => (
           <Box
