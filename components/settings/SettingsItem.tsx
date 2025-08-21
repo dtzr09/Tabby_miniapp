@@ -34,9 +34,6 @@ export const SettingsItem: React.FC<SettingsItemProps> = ({
         px: 2,
         borderBottom: showBorder ? `1px solid ${colors.border}` : "none",
         cursor: "pointer",
-        "&:hover": {
-          bgcolor: colors.border,
-        },
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>

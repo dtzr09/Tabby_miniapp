@@ -32,7 +32,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
       <Card
         sx={{
           borderRadius: 2,
-          bgcolor: colors.border,
+          bgcolor: colors.background,
           boxShadow: 0,
           border: `1px solid ${colors.border}`,
         }}
