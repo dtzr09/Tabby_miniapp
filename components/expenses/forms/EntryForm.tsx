@@ -147,8 +147,8 @@ export default function EntryForm({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100%",
-        mb: 8,
+        height: "100dvh",
+        pb: 6,
       }}
     >
       {/* Scrollable Content */}

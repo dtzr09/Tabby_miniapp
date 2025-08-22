@@ -29,11 +29,11 @@ a {
 /* Define safe area vars with fallbacks */
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-bottom: calc(env(safe-area-inset-bottom, 0px));
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --app-height: 100dvh; /* will be replaced by JS with TG viewport */
-  --min-app-height: 568px; /* Minimum app height */
+  --min-app-height: 420px; /* Minimum app height */
 }
 
 /* Single source of truth for height; DO NOT subtract safe areas here */

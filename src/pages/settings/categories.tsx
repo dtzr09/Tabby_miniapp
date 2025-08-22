@@ -220,7 +220,7 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
 
   if (isLoading) {
     return (
-      <AppLayout title="Categories">
+      <AppLayout>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
           {[...Array(4)].map((_, i) => (
             <Skeleton

@@ -737,18 +737,20 @@ const Settings = ({ onViewChange }: SettingsProps) => {
   // Loading state
   if (!filterDataLoaded || preferencesLoading || groupsLoading || isLoading) {
     return (
-      <Box sx={{ p: 2 }}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <Skeleton
-            variant="rectangular"
-            sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
-          />
-          <Skeleton
-            variant="rectangular"
-            sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
-          />
+      <AppLayout>
+        <Box sx={{ p: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Skeleton
+              variant="rectangular"
+              sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
+            />
+            <Skeleton
+              variant="rectangular"
+              sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
+            />
+          </Box>
         </Box>
-      </Box>
+      </AppLayout>
     );
   }
 

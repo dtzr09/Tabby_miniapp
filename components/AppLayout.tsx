@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -14,9 +14,49 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   headerExtra,
 }) => {
   const { colors } = useTheme();
+  const [dimensions, setDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
+
+  useEffect(() => {
+    const updateDimensions = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    // Set initial dimensions
+    updateDimensions();
+
+    // Listen for resize events
+    window.addEventListener('resize', updateDimensions);
+    
+    // Also listen for orientation changes on mobile
+    window.addEventListener('orientationchange', () => {
+      setTimeout(updateDimensions, 100);
+    });
+
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+      window.removeEventListener('orientationchange', updateDimensions);
+    };
+  }, []);
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+    <Box 
+      sx={{ 
+        display: "flex", 
+        flexDirection: "column", 
+        width: `${dimensions.width}px`,
+        height: `${dimensions.height}px`,
+        overflow: "hidden",
+        position: "fixed",
+        top: 0,
+        left: 0,
+      }}
+    >
       {/* Fixed Header */}
       <Box
         sx={{
@@ -47,17 +87,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         {headerExtra && <Box sx={{ mt: 1 }}>{headerExtra}</Box>}
       </Box>
 
-      {/* Scrollable Content */}
+      {/* Content */}
       <Box
         sx={{
           flex: 1,
-          overflow: "auto",
+          overflow: "hidden",
           background: colors.background,
           px: 2,
           pb: 0,
         }}
       >
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1, height: "100%" }}>
           {children}
         </Box>
       </Box>
