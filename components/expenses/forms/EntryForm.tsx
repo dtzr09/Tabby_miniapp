@@ -135,8 +135,14 @@ export default function EntryForm({
         fontSize: "1.5rem",
         fontWeight: 500,
         border: "none",
+        "&:hover": {
+          backgroundColor: isSpecial
+            ? alpha(colors.primary, 0.9)
+            : alpha(colors.border, 0.9),
+          transform: "none",
+        },
         "&:active": {
-          transform: "scale(0.95)",
+          transform: "scale(0.98)",
         },
       }}
     >
@@ -156,6 +162,7 @@ export default function EntryForm({
         position: "absolute",
         top: 0,
         left: 0,
+        px: 2,
         pb: 3,
       }}
     >
@@ -231,10 +238,14 @@ export default function EntryForm({
             <IconButton
               onClick={handleBackspace}
               sx={{
-                backgroundColor: colors.border,
-                color: colors.textSecondary,
+                backgroundColor: colors.surface,
+                color: colors.text,
                 width: 32,
                 height: 32,
+                "&:hover": {
+                  backgroundColor: colors.border,
+                  transform: "none",
+                },
               }}
             >
               <Backspace fontSize="small" />
