@@ -18,7 +18,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
       <Typography
         variant="overline"
         sx={{
-          color: colors.primary,
+          color: colors.textSecondary,
           fontWeight: 600,
           fontSize: "0.7rem",
           letterSpacing: "0.08em",
