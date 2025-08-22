@@ -8,6 +8,12 @@ interface AppLayoutProps {
   headerExtra?: React.ReactNode;
 }
 
+// Create a context to share dimensions
+export const DimensionsContext = React.createContext<{
+  width: number;
+  height: number;
+}>({ width: 0, height: 0 });
+
 export const AppLayout: React.FC<AppLayoutProps> = ({
   title,
   children,
@@ -45,18 +51,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   }, []);
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        width: `${dimensions.width}px`,
-        height: `${dimensions.height}px`,
-        overflow: "hidden",
-        position: "fixed",
-        top: 0,
-        left: 0,
-      }}
-    >
+    <DimensionsContext.Provider value={dimensions}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          width: `${dimensions.width}px`,
+          height: `${dimensions.height}px`,
+          overflow: "hidden",
+          position: "fixed",
+          top: 0,
+          left: 0,
+        }}
+      >
       {/* Fixed Header */}
       <Box
         sx={{
@@ -86,25 +93,18 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         )}
         {headerExtra && <Box sx={{ mt: 1 }}>{headerExtra}</Box>}
       </Box>
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 1,
-          alignItems: "center",
-        }}
-      >
-        <Box sx={{ fontSize: "0.8rem" }}>{dimensions.width}</Box>
-        <Box sx={{ fontSize: "0.8rem" }}>{dimensions.height}</Box>
-      </Box>
       {/* Content */}
       <Box
         sx={{
           flex: 1,
-          overflow: "hidden",
+          overflowY: "auto",
+          overflowX: "hidden",
           background: colors.background,
           px: 2,
           pb: 0,
+          width: "100%",
+          maxWidth: `${dimensions.width}px`,
+          boxSizing: "border-box",
         }}
       >
         <Box
@@ -112,12 +112,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             display: "flex",
             flexDirection: "column",
             gap: 1,
-            height: "100%",
+            minHeight: "100%",
+            width: "100%",
+            maxWidth: "100%",
+            overflowX: "hidden",
+            boxSizing: "border-box",
           }}
         >
           {children}
         </Box>
       </Box>
-    </Box>
+      </Box>
+    </DimensionsContext.Provider>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   Box,
   Typography,
@@ -7,6 +7,7 @@ import {
   TextField,
   Chip,
 } from "@mui/material";
+import { DimensionsContext } from "../../AppLayout";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -73,6 +74,7 @@ export default function EntryForm({
   onCategoryChange,
 }: EntryFormProps) {
   const { colors } = useTheme();
+  const dimensions = useContext(DimensionsContext);
   // const { data: user } = useUser(tgUser?.id, initData, chat_id as string);
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
   const [selectedDateTime, setSelectedDateTime] = useState(new Date(date));
@@ -147,17 +149,26 @@ export default function EntryForm({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100dvh",
-        pb: 6,
+        height: `${dimensions.height}px`,
+        width: `${dimensions.width}px`,
+        overflow: "hidden",
+        boxSizing: "border-box",
+        position: "absolute",
+        top: 0,
+        left: 0,
+        px: 2,
       }}
     >
       {/* Scrollable Content */}
       <Box
         sx={{
           flex: 1,
-          overflow: "auto",
+          overflowY: "auto",
+          overflowX: "hidden",
           display: "flex",
           flexDirection: "column",
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
         {/* Main Display Area */}

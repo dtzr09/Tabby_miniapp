@@ -193,26 +193,29 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
 
   return (
     <AppLayout title={"Dashboard"}>
-      {/* Scrollable Content */}
+      {/* Content */}
       <Box
         sx={{
           flex: 1,
-          overflow: "auto",
+          overflowY: "auto",
+          overflowX: "hidden",
           bgcolor: colors.background,
           color: colors.text,
           fontFamily: fontFamily,
           display: "flex",
           justifyContent: "center",
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
         <Box
           sx={{
             width: "100%",
-            maxWidth: "24rem",
-            minWidth: "24rem",
+            maxWidth: "min(24rem, 100%)",
             bgcolor: colors.background,
-            mx: "auto", // Center the content
-            px: { xs: 2, sm: 2, md: 2 }, // Consistent padding
+            overflow: "hidden",
+            boxSizing: "border-box",
+            px: 0, // Remove padding since AppLayout handles it
           }}
         >
           <Box
@@ -222,6 +225,9 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
               alignItems: "center",
               mt: 2,
               gap: 1.5,
+              width: "100%",
+              overflow: "hidden",
+              boxSizing: "border-box",
             }}
           >
             {/* Group Switcher and Toggle - only show when has groups */}
