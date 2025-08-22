@@ -87,7 +87,7 @@ export const SelectionList: React.FC<SelectionListProps> = ({
     <Card
       sx={{
         borderRadius: 2,
-        bgcolor: colors.background,
+        bgcolor: colors.card,
         border: `1px solid ${colors.border}`,
         boxShadow: 0,
       }}

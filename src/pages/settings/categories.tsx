@@ -217,10 +217,9 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
   };
 
   // Categories are now already segregated from the API
-
   if (isLoading) {
     return (
-      <AppLayout>
+      <AppLayout title="Categories">
         <Box
           sx={{
             display: "flex",

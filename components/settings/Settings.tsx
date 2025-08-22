@@ -737,25 +737,27 @@ const Settings = ({ onViewChange }: SettingsProps) => {
   // Loading state
   if (!filterDataLoaded || preferencesLoading || groupsLoading || isLoading) {
     return (
-      <AppLayout>
-        <Box sx={{ p: 2 }}>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              alignItems: "center",
-            }}
-          >
-            <Skeleton
-              variant="rectangular"
-              sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
-            />
-            <Skeleton
-              variant="rectangular"
-              sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}
-            />
-          </Box>
+      <AppLayout title="Settings">
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            alignItems: "center",
+          }}
+        >
+          <Skeleton
+            variant="rectangular"
+            width="100%"
+            height={60}
+            sx={{ borderRadius: 2, bgcolor: colors.card }}
+          />
+          <Skeleton
+            variant="rectangular"
+            width="100%"
+            height={60}
+            sx={{ borderRadius: 2, bgcolor: colors.card }}
+          />
         </Box>
       </AppLayout>
     );
