@@ -156,8 +156,7 @@ export default function EntryForm({
         position: "absolute",
         top: 0,
         left: 0,
-        px: 2,
-        pb: 1,
+        pb: 3,
       }}
     >
       {/* Scrollable Content */}
