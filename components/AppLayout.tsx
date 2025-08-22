@@ -68,8 +68,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         <Box
           sx={{
             px: 2,
-            pt: 1, // Increased padding to push title below status bar
-            mb: 2,
+            pt: { xs: 6, sm: 2 },
+            mb: 1,
             position: "relative",
             display: "flex",
             flexDirection: "column",
