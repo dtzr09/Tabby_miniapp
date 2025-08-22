@@ -221,7 +221,14 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
   if (isLoading) {
     return (
       <AppLayout>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 1.5,
+            alignItems: "center",
+          }}
+        >
           {[...Array(4)].map((_, i) => (
             <Skeleton
               key={i}

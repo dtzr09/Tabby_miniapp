@@ -739,7 +739,14 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     return (
       <AppLayout>
         <Box sx={{ p: 2 }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              alignItems: "center",
+            }}
+          >
             <Skeleton
               variant="rectangular"
               sx={{ height: 60, borderRadius: 1, bgcolor: colors.surface }}

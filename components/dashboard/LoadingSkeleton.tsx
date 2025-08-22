@@ -11,11 +11,11 @@ const LoadingSkeleton = () => {
         height: "100%",
         width: "100%",
         px: 6,
-        pt: "var(--safe-top)",
-        pb: "var(--safe-bottom)",
+        pt: 2,
         color: colors.text,
         display: "flex",
         flexDirection: "column",
+        alignItems: "center",
         gap: 2,
       }}
     >
