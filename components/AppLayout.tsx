@@ -68,7 +68,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         <Box
           sx={{
             px: 2,
-            pt: { xs: 6, sm: 2 },
+            pt: { xs: 8, sm: 2 },
             mb: 1,
             position: "relative",
             display: "flex",
