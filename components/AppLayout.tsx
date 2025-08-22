@@ -64,64 +64,64 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           left: 0,
         }}
       >
-      {/* Fixed Header */}
-      <Box
-        sx={{
-          px: 1.5,
-          pt: 1,
-          mb: 2,
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {title && (
-          <Typography
-            variant="h3"
-            sx={{
-              color: colors.text,
-              fontWeight: 600,
-              fontSize: "1.1rem",
-              textAlign: "center",
-              py: 0.5,
-            }}
-          >
-            {title}
-          </Typography>
-        )}
-        {headerExtra && <Box sx={{ mt: 1 }}>{headerExtra}</Box>}
-      </Box>
-      {/* Content */}
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: "auto",
-          overflowX: "hidden",
-          background: colors.background,
-          px: 2,
-          pb: 0,
-          width: "100%",
-          maxWidth: `${dimensions.width}px`,
-          boxSizing: "border-box",
-        }}
-      >
+        {/* Fixed Header */}
         <Box
           sx={{
+            px: 1.5,
+            pt: 6, // Increased padding to push title below status bar
+            mb: 2,
+            position: "relative",
             display: "flex",
             flexDirection: "column",
-            gap: 1,
-            minHeight: "100%",
-            width: "100%",
-            maxWidth: "100%",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {title && (
+            <Typography
+              variant="h3"
+              sx={{
+                color: colors.text,
+                fontWeight: 600,
+                fontSize: "1.1rem",
+                textAlign: "center",
+                py: 0.5,
+              }}
+            >
+              {title}
+            </Typography>
+          )}
+          {headerExtra && <Box sx={{ mt: 1 }}>{headerExtra}</Box>}
+        </Box>
+        {/* Content */}
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: "auto",
             overflowX: "hidden",
+            background: colors.background,
+            px: 2,
+            pb: 0,
+            width: "100%",
+            maxWidth: `${dimensions.width}px`,
             boxSizing: "border-box",
           }}
         >
-          {children}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 1,
+              minHeight: "100%",
+              width: "100%",
+              maxWidth: "100%",
+              overflowX: "hidden",
+              boxSizing: "border-box",
+            }}
+          >
+            {children}
+          </Box>
         </Box>
-      </Box>
       </Box>
     </DimensionsContext.Provider>
   );

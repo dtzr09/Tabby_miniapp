@@ -130,9 +130,14 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
 
       if (mainButton.isMounted()) mainButton.setParams({ isVisible: false });
 
-      // Unmount back button if it was auto-mounted by init()
-      if (backButton.isMounted()) {
-        backButton.unmount();
+      // Aggressively unmount back button for dashboard
+      try {
+        if (backButton.isMounted()) {
+          backButton.hide();
+          backButton.unmount();
+        }
+      } catch (backButtonError) {
+        console.warn("Failed to unmount back button:", backButtonError);
       }
 
       webApp.lockOrientation?.("portrait");
