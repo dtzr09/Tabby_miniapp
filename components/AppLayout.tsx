@@ -31,24 +31,24 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     updateDimensions();
 
     // Listen for resize events
-    window.addEventListener('resize', updateDimensions);
-    
+    window.addEventListener("resize", updateDimensions);
+
     // Also listen for orientation changes on mobile
-    window.addEventListener('orientationchange', () => {
+    window.addEventListener("orientationchange", () => {
       setTimeout(updateDimensions, 100);
     });
 
     return () => {
-      window.removeEventListener('resize', updateDimensions);
-      window.removeEventListener('orientationchange', updateDimensions);
+      window.removeEventListener("resize", updateDimensions);
+      window.removeEventListener("orientationchange", updateDimensions);
     };
   }, []);
 
   return (
-    <Box 
-      sx={{ 
-        display: "flex", 
-        flexDirection: "column", 
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
         width: `${dimensions.width}px`,
         height: `${dimensions.height}px`,
         overflow: "hidden",
@@ -86,7 +86,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         )}
         {headerExtra && <Box sx={{ mt: 1 }}>{headerExtra}</Box>}
       </Box>
-
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          alignItems: "center",
+        }}
+      >
+        <Box sx={{ fontSize: "0.8rem" }}>{dimensions.width}</Box>
+        <Box sx={{ fontSize: "0.8rem" }}>{dimensions.height}</Box>
+      </Box>
       {/* Content */}
       <Box
         sx={{
@@ -97,7 +107,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           pb: 0,
         }}
       >
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1, height: "100%" }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+            height: "100%",
+          }}
+        >
           {children}
         </Box>
       </Box>
