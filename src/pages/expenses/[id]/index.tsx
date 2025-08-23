@@ -36,6 +36,7 @@ const ExpenseDetail = () => {
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(new Date());
   const [selectedCategoryId, setSelectedCategoryId] = useState<number>(0);
   const [isUserEditingDateTime, setIsUserEditingDateTime] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   // Get categories from useAllEntries
   const { categories } = useAllEntries(tgUser?.id, initData, chat_id as string);
   const { data: user } = useUser(tgUser?.id, initData, chat_id as string);
@@ -76,9 +77,9 @@ const ExpenseDetail = () => {
   const hasExpenseShares =
     isGroupView !== "true" && expense?.shares && expense.shares.length > 0;
 
-  // Reset form when expense data changes
+  // Reset form when expense data changes (but not after we just saved)
   useEffect(() => {
-    if (expense) {
+    if (expense && !justSaved) {
       const amount = hasExpenseShares
         ? expense.shares
             .find((share: { user_id: number }) => share.user_id === user?.id)
@@ -102,7 +103,7 @@ const ExpenseDetail = () => {
         { keepDirty: false }
       );
     }
-  }, [expense, reset, user, isGroupView, hasExpenseShares]);
+  }, [expense, reset, user, isGroupView, hasExpenseShares, justSaved]);
 
   // Initialize Telegram WebApp
   useEffect(() => {
@@ -175,6 +176,7 @@ const ExpenseDetail = () => {
           amount: parseFloat(data.amount),
           category: categories.find((c) => c.id === data.category_id),
           date: selectedDateTime.toISOString(),
+          updated_at: new Date().toISOString(), // Include updated_at timestamp
         };
 
         // Optimistically update the cache
@@ -207,6 +209,9 @@ const ExpenseDetail = () => {
           return;
         }
 
+        // Set flag to prevent form reset after successful save
+        setJustSaved(true);
+
         // Invalidate expense cache after successful update
         invalidateExpenseCache(user.id.toString(), chat_id as string);
         console.log("🗑️ Cache invalidated after expense update");
@@ -218,6 +223,11 @@ const ExpenseDetail = () => {
           } updated successfully`,
           buttons: [{ type: "ok" }],
         });
+
+        // Reset the flag after cache has been updated
+        setTimeout(() => {
+          setJustSaved(false);
+        }, 1000);
       } catch (err) {
         console.error("Error updating entry:", err);
         showPopup({

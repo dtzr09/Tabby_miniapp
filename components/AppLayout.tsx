@@ -36,6 +36,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     // Set initial dimensions
     updateDimensions();
 
+    // Disable swipe down for Telegram mini apps using SDK
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.swipeBehavior) {
+      window.Telegram.WebApp.swipeBehavior.disableVerticalSwipe();
+    }
+
     // Listen for resize events
     window.addEventListener("resize", updateDimensions);
 
@@ -45,6 +50,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     });
 
     return () => {
+      // Re-enable vertical swipe when component unmounts
+      if (typeof window !== 'undefined' && window.Telegram?.WebApp?.swipeBehavior) {
+        window.Telegram.WebApp.swipeBehavior.enableVerticalSwipe();
+      }
+      
+      // Remove event listeners
       window.removeEventListener("resize", updateDimensions);
       window.removeEventListener("orientationchange", updateDimensions);
     };

@@ -1,4 +1,10 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  useContext,
+  useEffect,
+  useCallback,
+} from "react";
 import {
   Box,
   Typography,
@@ -80,69 +86,98 @@ export default function EntryForm({
   const dimensions = useContext(DimensionsContext);
   // const { data: user } = useUser(tgUser?.id, initData, chat_id as string);
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
-  const [selectedDateTime, setSelectedDateTime] = useState(parentSelectedDateTime || new Date(date));
+  const [selectedDateTime, setSelectedDateTime] = useState(
+    parentSelectedDateTime || new Date(date)
+  );
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   // Filter categories based on income/expense type
-  const filteredCategories = categories.filter(cat => cat.is_income === isIncome);
+  const filteredCategories = categories.filter(
+    (cat) => cat.is_income === isIncome
+  );
 
   // Initialize with expense's category if available, otherwise use first filtered category
   const getInitialCategory = () => {
-    if (expense?.category && filteredCategories.some(cat => cat.id === expense.category?.id)) {
+    if (
+      expense?.category &&
+      filteredCategories.some((cat) => cat.id === expense.category?.id)
+    ) {
       return expense.category as Category;
     }
     if (filteredCategories.length > 0) {
       return filteredCategories[0];
     }
-    return { id: 1, name: isIncome ? "Salary" : "Transport", emoji: isIncome ? "💰" : "🚗", is_income: isIncome };
+    return {
+      id: 1,
+      name: isIncome ? "Salary" : "Transport",
+      emoji: isIncome ? "💰" : "🚗",
+      is_income: isIncome,
+    };
   };
 
-  const [selectedCategory, setSelectedCategory] = useState<Category>(getInitialCategory());
+  const [selectedCategory, setSelectedCategory] = useState<Category>(
+    getInitialCategory()
+  );
+  const amountScrollRef = useRef<HTMLDivElement>(null);
 
   // Sync with parent selectedDateTime
   useEffect(() => {
-    if (parentSelectedDateTime && parentSelectedDateTime.getTime() !== selectedDateTime.getTime()) {
+    if (
+      parentSelectedDateTime &&
+      parentSelectedDateTime.getTime() !== selectedDateTime.getTime()
+    ) {
       setSelectedDateTime(parentSelectedDateTime);
     }
-  }, [parentSelectedDateTime]);
+  }, [parentSelectedDateTime, selectedDateTime]);
 
-  // Initialize category when expense changes
+  // Memoized category initialization to prevent unnecessary re-renders
+  const initializeCategoryFromExpense = useCallback(() => {
+    if (expense?.category && filteredCategories.length > 0) {
+      const expenseCategory = filteredCategories.find(
+        (cat) => cat.id === expense.category?.id
+      );
+      if (expenseCategory && expenseCategory.id !== selectedCategory.id) {
+        setSelectedCategory(expenseCategory);
+        onCategoryChange(expenseCategory);
+      }
+    }
+  }, [
+    expense?.category?.id,
+    filteredCategories,
+    selectedCategory.id,
+    onCategoryChange,
+  ]);
+
+  // Initialize category when expense changes (only once per expense)
   useEffect(() => {
-    const initialCategory = getInitialCategory();
-    setSelectedCategory(initialCategory);
-    onCategoryChange(initialCategory);
-  }, [expense, filteredCategories]);
+    initializeCategoryFromExpense();
+  }, [expense?.id]); // Only when expense ID changes (new expense loaded)
 
-  // Update selected category when categories or income type changes
+  // Handle income type changes
   useEffect(() => {
     if (filteredCategories.length > 0) {
       // Check if current selected category is still valid for the current type
-      const isCurrentCategoryValid = filteredCategories.some(cat => cat.id === selectedCategory.id);
+      const isCurrentCategoryValid = filteredCategories.some(
+        (cat) => cat.id === selectedCategory.id
+      );
       if (!isCurrentCategoryValid) {
         const newCategory = filteredCategories[0];
         setSelectedCategory(newCategory);
         onCategoryChange(newCategory);
       }
-    } else {
-      // No categories available, set a default one
-      const defaultCategory = { 
-        id: 1, 
-        name: isIncome ? "Salary" : "Transport", 
-        emoji: isIncome ? "💰" : "🚗", 
-        is_income: isIncome 
-      };
-      setSelectedCategory(defaultCategory);
-      onCategoryChange(defaultCategory);
     }
-  }, [filteredCategories, isIncome]);
+  }, [isIncome, filteredCategories.length]); // Only when income type changes or categories become available
 
   const handleCategorySelect = (categoryName: string) => {
     // Find the category object from filtered categories array or create a new one
-    const category = filteredCategories.find((cat) => cat.name === categoryName) || {
+    const category = filteredCategories.find(
+      (cat) => cat.name === categoryName
+    ) || {
       id: categoryName,
       name: categoryName,
       emoji: "📝",
       is_income: isIncome,
     };
+
     setSelectedCategory(category);
     onCategoryChange(category);
   };
@@ -165,6 +200,13 @@ export default function EntryForm({
       hour12: true,
     });
   };
+
+  // Auto-scroll to the end when amount changes
+  useEffect(() => {
+    if (amountScrollRef.current) {
+      amountScrollRef.current.scrollLeft = amountScrollRef.current.scrollWidth;
+    }
+  }, [currentAmount]);
 
   // Handle keypad input
   const handleKeypadPress = (value: string) => {
@@ -281,23 +323,38 @@ export default function EntryForm({
           <Box
             sx={{
               textAlign: "center",
+              position: "relative",
+              width: "100%",
               display: "flex",
+              justifyContent: "center",
               alignItems: "center",
-              gap: 2,
             }}
           >
-            <Typography
+            <Box
+              ref={amountScrollRef}
               sx={{
-                fontSize: "4rem",
-                fontWeight: 300,
-                color: colors.text,
-                lineHeight: 1,
+                maxWidth: "50%", // Account for backspace button width + more padding
+                overflowX: "auto",
+                "&::-webkit-scrollbar": {
+                  display: "none",
+                },
+                scrollbarWidth: "none",
               }}
             >
-              {currentAmount}
-            </Typography>
+              <Typography
+                sx={{
+                  fontSize: "4rem",
+                  fontWeight: 300,
+                  color: colors.text,
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {currentAmount}
+              </Typography>
+            </Box>
 
-            {/* Backspace Button to the right of amount */}
+            {/* Backspace Button positioned further to the right */}
             <IconButton
               onClick={handleBackspace}
               sx={{
@@ -305,10 +362,8 @@ export default function EntryForm({
                 color: colors.text,
                 width: 32,
                 height: 32,
-                "&:hover": {
-                  backgroundColor: colors.border,
-                  transform: "none",
-                },
+                position: "absolute",
+                right: 0,
               }}
             >
               <Backspace fontSize="small" />
@@ -501,7 +556,7 @@ export default function EntryForm({
         <BottomSheet
           open={showDateTimePicker}
           onClose={() => setShowDateTimePicker(false)}
-          minHeight="25rem"
+          height="25rem"
         >
           <DateTimePicker
             date={selectedDateTime}
@@ -515,13 +570,19 @@ export default function EntryForm({
         </BottomSheet>
 
         {/* Category Picker Bottom Sheet */}
-        <CategoryPicker
+        <BottomSheet
           open={showCategoryPicker}
-          categories={filteredCategories}
           onClose={() => setShowCategoryPicker(false)}
-          selectedCategory={selectedCategory.name}
-          onCategorySelect={handleCategorySelect}
-        />
+          height="18rem"
+        >
+          <CategoryPicker
+            open={showCategoryPicker}
+            categories={filteredCategories}
+            onClose={() => setShowCategoryPicker(false)}
+            selectedCategory={selectedCategory.name}
+            onCategorySelect={handleCategorySelect}
+          />
+        </BottomSheet>
       </Box>
     </Box>
   );

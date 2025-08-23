@@ -9,7 +9,7 @@ const LoadingSkeleton = () => {
       <Box
         sx={{
           px: 2,
-          pt: 2,
+          pt: 4,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",

@@ -16,7 +16,7 @@ interface BottomSheetProps {
   description?: string;
   buttons?: BottomSheetButton[];
   children?: ReactNode;
-  minHeight?: string;
+  height?: string;
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({
@@ -26,6 +26,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   description,
   buttons,
   children,
+  height,
 }) => {
   const { colors } = useTheme();
 
@@ -107,6 +108,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           padding: 3,
           boxShadow: "0 -8px 32px rgba(0,0,0,0.12)",
           zIndex: 1300,
+          mx: 1,
           animation: "slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           "@keyframes slideUp": {
             from: {
@@ -118,6 +120,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
               opacity: 1,
             },
           },
+          height: height,
         }}
       >
         {/* Title */}
