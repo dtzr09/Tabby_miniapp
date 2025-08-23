@@ -22,18 +22,28 @@ const YearScrollPicker = ({
   const currentYear = new Date().getFullYear();
   const startYear = currentYear - 25;
   const endYear = currentYear + 25;
-  const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
-  
+  const years = Array.from(
+    { length: endYear - startYear + 1 },
+    (_, i) => startYear + i
+  );
+
   // Find the index of the selected year
-  const selectedIndex = years.findIndex(year => year === value);
+  const selectedIndex = years.findIndex((year) => year === value);
 
   useEffect(() => {
     const setScrollPosition = () => {
-      if (scrollRef.current && selectedIndex !== -1 && !isScrollingRef.current) {
+      if (
+        scrollRef.current &&
+        selectedIndex !== -1 &&
+        !isScrollingRef.current
+      ) {
         const containerHeight = scrollRef.current.clientHeight;
         const centerOffset = containerHeight / 2;
         // Position selected item exactly in center
-        const targetScroll = (SPACER_ITEMS + selectedIndex) * ITEM_HEIGHT - centerOffset + (ITEM_HEIGHT / 2);
+        const targetScroll =
+          (SPACER_ITEMS + selectedIndex) * ITEM_HEIGHT -
+          centerOffset +
+          ITEM_HEIGHT / 2;
         scrollRef.current.scrollTop = Math.max(0, targetScroll);
       }
     };
@@ -53,13 +63,17 @@ const YearScrollPicker = ({
 
       // Find nearest item accounting for spacers and center offset
       let adjustedIndex =
-        Math.round((scrollTop + centerOffset - (ITEM_HEIGHT / 2)) / ITEM_HEIGHT) - SPACER_ITEMS;
+        Math.round((scrollTop + centerOffset - ITEM_HEIGHT / 2) / ITEM_HEIGHT) -
+        SPACER_ITEMS;
 
       adjustedIndex = Math.max(0, Math.min(years.length - 1, adjustedIndex));
       onChange(years[adjustedIndex]);
 
       // Snap to centered position
-      const targetScroll = (SPACER_ITEMS + adjustedIndex) * ITEM_HEIGHT - centerOffset + (ITEM_HEIGHT / 2);
+      const targetScroll =
+        (SPACER_ITEMS + adjustedIndex) * ITEM_HEIGHT -
+        centerOffset +
+        ITEM_HEIGHT / 2;
 
       if (immediate) {
         scrollRef.current.scrollTop = Math.max(0, targetScroll);
@@ -88,47 +102,34 @@ const YearScrollPicker = ({
     }, 150);
   };
 
-  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault(); // Prevent default touch behavior
+  // Keep only mouse drag for desktop, remove touch interference
+  const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
-    const clientY = "clientY" in e ? e.clientY : e.touches[0].clientY;
-    setStartY(clientY);
+    setStartY(e.clientY);
     if (scrollRef.current) {
       setScrollTop(scrollRef.current.scrollTop);
     }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging || !scrollRef.current) return;
-    e.preventDefault();
-    const clientY = "clientY" in e ? e.clientY : e.touches[0].clientY;
-    const walk = (clientY - startY) * -1;
-    scrollRef.current.scrollTop = scrollTop + walk;
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setTimeout(() => {
-      snapToNearestItem();
-    }, 10);
   };
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     if (scrollRef.current && selectedIndex !== -1 && !isScrollingRef.current) {
       isScrollingRef.current = true;
-      
+
       const direction = e.deltaY > 0 ? 1 : -1;
-      const newIndex = Math.max(0, Math.min(years.length - 1, selectedIndex + direction));
-      
+      const newIndex = Math.max(
+        0,
+        Math.min(years.length - 1, selectedIndex + direction)
+      );
+
       // Clear any existing timeout
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
-      
+
       // Update value and reset scrolling flag after delay
       onChange(years[newIndex]);
-      
+
       scrollTimeoutRef.current = setTimeout(() => {
         isScrollingRef.current = false;
       }, 200);
@@ -142,11 +143,10 @@ const YearScrollPicker = ({
         snapToNearestItem();
       }, 10);
     };
-    const handleGlobalMouseMove = (e: MouseEvent | TouchEvent) => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
       if (isDragging && scrollRef.current) {
         e.preventDefault();
-        const clientY = "clientY" in e ? e.clientY : e.touches[0].clientY;
-        const walk = (clientY - startY) * -1;
+        const walk = (e.clientY - startY) * -1;
         scrollRef.current.scrollTop = scrollTop + walk;
       }
     };
@@ -154,17 +154,11 @@ const YearScrollPicker = ({
     if (isDragging) {
       document.addEventListener("mousemove", handleGlobalMouseMove);
       document.addEventListener("mouseup", handleGlobalMouseUp);
-      document.addEventListener("touchmove", handleGlobalMouseMove, {
-        passive: false,
-      });
-      document.addEventListener("touchend", handleGlobalMouseUp);
     }
 
     return () => {
       document.removeEventListener("mousemove", handleGlobalMouseMove);
       document.removeEventListener("mouseup", handleGlobalMouseUp);
-      document.removeEventListener("touchmove", handleGlobalMouseMove);
-      document.removeEventListener("touchend", handleGlobalMouseUp);
     };
   }, [isDragging, startY, scrollTop]);
 
@@ -194,19 +188,16 @@ const YearScrollPicker = ({
           scrollbarWidth: "none",
           cursor: isDragging ? "grabbing" : "grab",
           WebkitOverflowScrolling: "touch", // Enable momentum scrolling on iOS
+          overscrollBehavior: "contain", // Prevent overscroll from affecting parent elements
           "&::-webkit-scrollbar": {
             display: "none",
           },
         }}
         onScroll={handleScroll}
         onMouseDown={handleMouseDown}
-        onTouchStart={handleMouseDown}
-        onTouchMove={handleMouseMove}
-        onTouchEnd={handleMouseUp}
         onWheel={handleWheel}
         style={{
-          scrollBehavior: isDragging ? "auto" : "smooth",
-          touchAction: "pan-y", // Allow only vertical scrolling on touch
+          scrollBehavior: "auto", // Always use auto for responsive scrolling
         }}
       >
         <Box>
