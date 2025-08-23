@@ -186,7 +186,7 @@ export default async function handler(
         }
       }
     } else if (req.method === "PUT") {
-      const { description, amount, category_id } = req.body;
+      const { description, amount, category_id, date } = req.body;
 
       if (!description || amount === undefined || category_id === undefined) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -206,17 +206,17 @@ export default async function handler(
 
           // Update the entry - only include is_income field for expenses table
           const updateFields = isIncomeBoolean
-            ? "description = $1, amount = $2, category_id = $3, updated_at = NOW()"
-            : "description = $1, amount = $2, category_id = $3, is_income = $4, updated_at = NOW()";
+            ? "description = $1, amount = $2, category_id = $3, date = $4, updated_at = NOW()"
+            : "description = $1, amount = $2, category_id = $3, is_income = $4, date = $5, updated_at = NOW()";
           const updateValues = isIncomeBoolean
-            ? [description, amount, category_id, id, chat_id]
-            : [description, amount, category_id, isIncomeBoolean, id, chat_id];
+            ? [description, amount, category_id, date, id, chat_id]
+            : [description, amount, category_id, isIncomeBoolean, date, id, chat_id];
 
           await postgresClient.query(
             `UPDATE ${tableName}
              SET ${updateFields}
-             WHERE id = ${isIncomeBoolean ? "$4" : "$5"} AND chat_id = ${
-              isIncomeBoolean ? "$5" : "$6"
+             WHERE id = ${isIncomeBoolean ? "$5" : "$6"} AND chat_id = ${
+              isIncomeBoolean ? "$6" : "$7"
             }`,
             updateValues
           );
@@ -255,6 +255,7 @@ export default async function handler(
               description,
               amount,
               category_id,
+              date,
               ...(isIncomeBoolean ? {} : { is_income: isIncomeBoolean }), // Only include is_income for expenses table
               updated_at: new Date().toISOString(),
             })

@@ -33,6 +33,9 @@ const ExpenseDetail = () => {
   const [initData, setInitData] = useState<string | undefined>(undefined);
   const [currentAmount, setCurrentAmount] = useState("0");
   const [description, setDescription] = useState("");
+  const [selectedDateTime, setSelectedDateTime] = useState<Date>(new Date());
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number>(0);
+  const [isUserEditingDateTime, setIsUserEditingDateTime] = useState(false);
   // Get categories from useAllEntries
   const { categories } = useAllEntries(tgUser?.id, initData, chat_id as string);
   const { data: user } = useUser(tgUser?.id, initData, chat_id as string);
@@ -84,6 +87,11 @@ const ExpenseDetail = () => {
 
       setCurrentAmount(amount || "0");
       setDescription(expense.description || "");
+      // Only update datetime from expense if user is not actively editing it
+      if (!isUserEditingDateTime) {
+        setSelectedDateTime(expense.date ? new Date(expense.date) : new Date());
+      }
+      setSelectedCategoryId(expense.category?.id || 0);
 
       reset(
         {
@@ -166,10 +174,14 @@ const ExpenseDetail = () => {
           description: data.description,
           amount: parseFloat(data.amount),
           category: categories.find((c) => c.id === data.category_id),
+          date: selectedDateTime.toISOString(),
         };
 
         // Optimistically update the cache
         updateExpenseInCache(updatedExpense);
+
+        // Convert selectedDateTime to UTC for backend
+        const utcDateTime = selectedDateTime.toISOString();
 
         // Make the API call in the background
         const response = await fetch(`/api/entries/${entryId}`, {
@@ -181,6 +193,7 @@ const ExpenseDetail = () => {
             ...data,
             amount: parseFloat(data.amount),
             isIncome: isIncome === "true",
+            date: utcDateTime,
           }),
         });
 
@@ -240,11 +253,20 @@ const ExpenseDetail = () => {
     setValue("amount", currentAmount === "0" ? "" : currentAmount, {
       shouldDirty: true,
     });
+    setValue("category_id", selectedCategoryId, { shouldDirty: true });
     setShowSaveDialog(true);
   };
 
   const handleCategoryChange = (category: Category) => {
+    setSelectedCategoryId(Number(category.id));
     setValue("category_id", category.id, { shouldDirty: true });
+  };
+
+  const handleDateTimeChange = (newDateTime: Date) => {
+    setIsUserEditingDateTime(true);
+    setSelectedDateTime(newDateTime);
+    // Reset the flag after a short delay to allow the update to complete
+    setTimeout(() => setIsUserEditingDateTime(false), 1000);
   };
 
   // Handle loading and error states
@@ -310,6 +332,8 @@ const ExpenseDetail = () => {
         description={description}
         onDescriptionChange={handleDescriptionChange}
         onCategoryChange={handleCategoryChange}
+        onDateTimeChange={handleDateTimeChange}
+        selectedDateTime={selectedDateTime}
       />
 
       <DeleteExpenseDialog

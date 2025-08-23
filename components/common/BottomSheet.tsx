@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react";
 import { Box, Typography, Button } from "@mui/material";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "../../src/contexts/ThemeContext";
 
 export interface BottomSheetButton {
   text: string;
@@ -14,8 +14,9 @@ interface BottomSheetProps {
   onClose: () => void;
   title?: string;
   description?: string;
-  buttons: BottomSheetButton[];
+  buttons?: BottomSheetButton[];
   children?: ReactNode;
+  minHeight?: string;
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({
@@ -94,6 +95,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
 
       {/* Bottom Sheet */}
       <Box
+        onClick={(e) => e.stopPropagation()}
         sx={{
           position: "fixed",
           bottom: 0,
@@ -159,26 +161,27 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
             width: "100%",
           }}
         >
-          {buttons.map((button, index) => (
-            <Button
-              key={index}
-              fullWidth
-              variant={button.variant === "secondary" ? "text" : "contained"}
-              onClick={button.onClick}
-              disabled={button.disabled}
-              sx={{
-                fontSize: "0.9rem",
-                fontWeight: button.variant === "secondary" ? 500 : 600,
-                py: 0.9,
-                borderRadius: 2,
-                minHeight: "auto",
-                transition: "all 0.2s ease",
-                ...getButtonStyles(button.variant),
-              }}
-            >
-              {button.text}
-            </Button>
-          ))}
+          {buttons &&
+            buttons.map((button, index) => (
+              <Button
+                key={index}
+                fullWidth
+                variant={button.variant === "secondary" ? "text" : "contained"}
+                onClick={button.onClick}
+                disabled={button.disabled}
+                sx={{
+                  fontSize: "0.9rem",
+                  fontWeight: button.variant === "secondary" ? 500 : 600,
+                  py: 0.9,
+                  borderRadius: 2,
+                  minHeight: "auto",
+                  transition: "all 0.2s ease",
+                  ...getButtonStyles(button.variant),
+                }}
+              >
+                {button.text}
+              </Button>
+            ))}
         </Box>
       </Box>
     </>

@@ -1,0 +1,243 @@
+import { Box } from "@mui/material";
+import React, { useState, useRef, useEffect } from "react";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
+
+const YearScrollPicker = ({
+  value,
+  onChange,
+}: {
+  value: number; // current year
+  onChange: (value: number) => void;
+}) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
+  const isScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { colors } = useTheme();
+
+  // Generate years range (current year ± 25 years for better performance)
+  const currentYear = new Date().getFullYear();
+  const startYear = currentYear - 25;
+  const endYear = currentYear + 25;
+  const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
+  
+  // Find the index of the selected year
+  const selectedIndex = years.findIndex(year => year === value);
+
+  useEffect(() => {
+    const setScrollPosition = () => {
+      if (scrollRef.current && selectedIndex !== -1 && !isScrollingRef.current) {
+        const containerHeight = scrollRef.current.clientHeight;
+        const centerOffset = containerHeight / 2;
+        // Position selected item exactly in center
+        const targetScroll = (SPACER_ITEMS + selectedIndex) * ITEM_HEIGHT - centerOffset + (ITEM_HEIGHT / 2);
+        scrollRef.current.scrollTop = Math.max(0, targetScroll);
+      }
+    };
+
+    if (!isScrollingRef.current) {
+      setScrollPosition();
+      const timer = setTimeout(setScrollPosition, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [value, selectedIndex]);
+
+  const snapToNearestItem = (immediate = false) => {
+    if (scrollRef.current) {
+      const scrollTop = scrollRef.current.scrollTop;
+      const containerHeight = scrollRef.current.clientHeight;
+      const centerOffset = containerHeight / 2;
+
+      // Find nearest item accounting for spacers and center offset
+      let adjustedIndex =
+        Math.round((scrollTop + centerOffset - (ITEM_HEIGHT / 2)) / ITEM_HEIGHT) - SPACER_ITEMS;
+
+      adjustedIndex = Math.max(0, Math.min(years.length - 1, adjustedIndex));
+      onChange(years[adjustedIndex]);
+
+      // Snap to centered position
+      const targetScroll = (SPACER_ITEMS + adjustedIndex) * ITEM_HEIGHT - centerOffset + (ITEM_HEIGHT / 2);
+
+      if (immediate) {
+        scrollRef.current.scrollTop = Math.max(0, targetScroll);
+      } else {
+        scrollRef.current.scrollTo({
+          top: Math.max(0, targetScroll),
+          behavior: "smooth",
+        });
+      }
+    }
+  };
+
+  const handleScroll = () => {
+    isScrollingRef.current = true;
+
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    // Snap after scroll stops with longer delay to prevent conflicts
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (scrollRef.current) {
+        isScrollingRef.current = false;
+        snapToNearestItem();
+      }
+    }, 150);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsDragging(true);
+    const clientY = "clientY" in e ? e.clientY : e.touches[0].clientY;
+    setStartY(clientY);
+    if (scrollRef.current) {
+      setScrollTop(scrollRef.current.scrollTop);
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const clientY = "clientY" in e ? e.clientY : e.touches[0].clientY;
+    const walk = (clientY - startY) * -1;
+    scrollRef.current.scrollTop = scrollTop + walk;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setTimeout(() => {
+      snapToNearestItem();
+    }, 10);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (scrollRef.current && selectedIndex !== -1 && !isScrollingRef.current) {
+      isScrollingRef.current = true;
+      
+      const direction = e.deltaY > 0 ? 1 : -1;
+      const newIndex = Math.max(0, Math.min(years.length - 1, selectedIndex + direction));
+      
+      // Clear any existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Update value and reset scrolling flag after delay
+      onChange(years[newIndex]);
+      
+      scrollTimeoutRef.current = setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 200);
+    }
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+      setTimeout(() => {
+        snapToNearestItem();
+      }, 10);
+    };
+    const handleGlobalMouseMove = (e: MouseEvent | TouchEvent) => {
+      if (isDragging && scrollRef.current) {
+        e.preventDefault();
+        const clientY = "clientY" in e ? e.clientY : e.touches[0].clientY;
+        const walk = (clientY - startY) * -1;
+        scrollRef.current.scrollTop = scrollTop + walk;
+      }
+    };
+
+    if (isDragging) {
+      document.addEventListener("mousemove", handleGlobalMouseMove);
+      document.addEventListener("mouseup", handleGlobalMouseUp);
+      document.addEventListener("touchmove", handleGlobalMouseMove, {
+        passive: false,
+      });
+      document.addEventListener("touchend", handleGlobalMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleGlobalMouseMove);
+      document.removeEventListener("mouseup", handleGlobalMouseUp);
+      document.removeEventListener("touchmove", handleGlobalMouseMove);
+      document.removeEventListener("touchend", handleGlobalMouseUp);
+    };
+  }, [isDragging, startY, scrollTop]);
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        height: "14rem",
+        overflow: "hidden",
+        zIndex: 99,
+        flex: 1,
+      }}
+    >
+      <Box
+        ref={scrollRef}
+        sx={{
+          height: "100%",
+          overflowY: "auto",
+          scrollbarWidth: "none",
+          cursor: isDragging ? "grabbing" : "grab",
+          "&::-webkit-scrollbar": {
+            display: "none",
+          },
+        }}
+        onScroll={handleScroll}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleMouseDown}
+        onTouchMove={handleMouseMove}
+        onTouchEnd={handleMouseUp}
+        onWheel={handleWheel}
+        style={{
+          scrollBehavior: isDragging ? "auto" : "smooth",
+        }}
+      >
+        <Box>
+          {/* Extra items at top for centering */}
+          {Array.from({ length: SPACER_ITEMS }, (_, i) => (
+            <Box key={`top-${i}`} sx={{ height: ITEM_HEIGHT }} />
+          ))}
+
+          {years.map((year) => (
+            <Box
+              key={year}
+              sx={{
+                height: ITEM_HEIGHT,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.95rem",
+                color: year === value ? colors.text : colors.textSecondary,
+                fontWeight: year === value ? 500 : 400,
+                px: "0.5rem",
+              }}
+            >
+              {year}
+            </Box>
+          ))}
+
+          {/* Extra items at bottom for centering */}
+          {Array.from({ length: SPACER_ITEMS }, (_, i) => (
+            <Box key={`bottom-${i}`} sx={{ height: ITEM_HEIGHT }} />
+          ))}
+        </Box>
+      </Box>
+    </Box>
+  );
+};
+
+export default YearScrollPicker;

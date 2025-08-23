@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -8,9 +8,6 @@ import {
   Chip,
 } from "@mui/material";
 import { DimensionsContext } from "../../AppLayout";
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { useTheme } from "../../../src/contexts/ThemeContext";
 import {
   DeleteOutline,
@@ -29,6 +26,8 @@ import {
 } from "../../../utils/types";
 // import { TelegramUser } from "../../dashboard";
 import { alpha } from "@mui/material/styles";
+import DateTimePicker from "../../datetimepicker/DateTimePicker";
+import CategoryPicker from "../CategoryPicker";
 
 interface EntryFormProps {
   // control: Control<ExpenseFormData>;
@@ -50,6 +49,8 @@ interface EntryFormProps {
   description: string;
   onDescriptionChange: (value: string) => void;
   onCategoryChange: (category: Category) => void;
+  onDateTimeChange?: (dateTime: Date) => void;
+  selectedDateTime?: Date;
 }
 
 export default function EntryForm({
@@ -72,13 +73,79 @@ export default function EntryForm({
   description,
   onDescriptionChange,
   onCategoryChange,
+  onDateTimeChange,
+  selectedDateTime: parentSelectedDateTime,
 }: EntryFormProps) {
   const { colors } = useTheme();
   const dimensions = useContext(DimensionsContext);
   // const { data: user } = useUser(tgUser?.id, initData, chat_id as string);
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
-  const [selectedDateTime, setSelectedDateTime] = useState(new Date(date));
+  const [selectedDateTime, setSelectedDateTime] = useState(parentSelectedDateTime || new Date(date));
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  // Filter categories based on income/expense type
+  const filteredCategories = categories.filter(cat => cat.is_income === isIncome);
+
+  // Initialize with expense's category if available, otherwise use first filtered category
+  const getInitialCategory = () => {
+    if (expense?.category && filteredCategories.some(cat => cat.id === expense.category?.id)) {
+      return expense.category as Category;
+    }
+    if (filteredCategories.length > 0) {
+      return filteredCategories[0];
+    }
+    return { id: 1, name: isIncome ? "Salary" : "Transport", emoji: isIncome ? "💰" : "🚗", is_income: isIncome };
+  };
+
+  const [selectedCategory, setSelectedCategory] = useState<Category>(getInitialCategory());
+
+  // Sync with parent selectedDateTime
+  useEffect(() => {
+    if (parentSelectedDateTime && parentSelectedDateTime.getTime() !== selectedDateTime.getTime()) {
+      setSelectedDateTime(parentSelectedDateTime);
+    }
+  }, [parentSelectedDateTime]);
+
+  // Initialize category when expense changes
+  useEffect(() => {
+    const initialCategory = getInitialCategory();
+    setSelectedCategory(initialCategory);
+    onCategoryChange(initialCategory);
+  }, [expense, filteredCategories]);
+
+  // Update selected category when categories or income type changes
+  useEffect(() => {
+    if (filteredCategories.length > 0) {
+      // Check if current selected category is still valid for the current type
+      const isCurrentCategoryValid = filteredCategories.some(cat => cat.id === selectedCategory.id);
+      if (!isCurrentCategoryValid) {
+        const newCategory = filteredCategories[0];
+        setSelectedCategory(newCategory);
+        onCategoryChange(newCategory);
+      }
+    } else {
+      // No categories available, set a default one
+      const defaultCategory = { 
+        id: 1, 
+        name: isIncome ? "Salary" : "Transport", 
+        emoji: isIncome ? "💰" : "🚗", 
+        is_income: isIncome 
+      };
+      setSelectedCategory(defaultCategory);
+      onCategoryChange(defaultCategory);
+    }
+  }, [filteredCategories, isIncome]);
+
+  const handleCategorySelect = (categoryName: string) => {
+    // Find the category object from filtered categories array or create a new one
+    const category = filteredCategories.find((cat) => cat.name === categoryName) || {
+      id: categoryName,
+      name: categoryName,
+      emoji: "📝",
+      is_income: isIncome,
+    };
+    setSelectedCategory(category);
+    onCategoryChange(category);
+  };
   // Format date exactly like the screenshot: "Sat, 9 Aug"
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -95,7 +162,7 @@ export default function EntryForm({
     return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
-      hour12: false,
+      hour12: true,
     });
   };
 
@@ -193,11 +260,7 @@ export default function EntryForm({
         >
           {/* Category Selector Chip*/}
           <Chip
-            label={
-              categories.find(
-                (category) => category.id === expense?.category?.id
-              )?.name
-            }
+            label={selectedCategory?.name || "Select Category"}
             sx={{
               backgroundColor: colors.border,
               color: colors.text,
@@ -211,7 +274,7 @@ export default function EntryForm({
               width: "fit-content",
             }}
             onClick={() => {
-              // setShowCategoryPicker(true);
+              setShowCategoryPicker(true);
             }}
           />
           {/* Amount Display with Delete Button */}
@@ -291,7 +354,7 @@ export default function EntryForm({
           sx={{
             display: "flex",
             alignItems: "center",
-            py: 1,
+            py: 0.5,
             gap: 1,
             position: "relative",
             zIndex: 1000,
@@ -299,12 +362,12 @@ export default function EntryForm({
         >
           {/* Date and Time */}
           <Button
-            onClick={() => setShowDateTimePicker(false)}
+            onClick={() => setShowDateTimePicker(true)}
             sx={{
               display: "flex",
               alignItems: "center",
               backgroundColor: colors.border,
-              px: 2.5,
+              px: 1,
               py: 1,
               borderRadius: 3,
               textTransform: "none",
@@ -411,7 +474,10 @@ export default function EntryForm({
 
             {/* Submit Button (Save) */}
             <Button
-              onClick={onSubmit}
+              onClick={() => {
+                onDateTimeChange?.(selectedDateTime);
+                onSubmit?.();
+              }}
               disabled={!onSubmit || currentAmount === "0"}
               sx={{
                 height: 72,
@@ -431,304 +497,31 @@ export default function EntryForm({
           </Box>
         </Box>
 
-        {/* Inline DateTime Picker */}
-        {showDateTimePicker && (
-          <Box
-            sx={{
-              position: "absolute",
-              backgroundColor: colors.surface,
-              borderRadius: 3,
-              boxShadow: `0 8px 32px ${alpha(colors.text, 0.2)}`,
-              border: `1px solid ${colors.border}`,
-              zIndex: 1000,
-              mb: 2,
-              overflow: "hidden",
+        {/* Date/Time Picker Bottom Sheet */}
+        <BottomSheet
+          open={showDateTimePicker}
+          onClose={() => setShowDateTimePicker(false)}
+          minHeight="25rem"
+        >
+          <DateTimePicker
+            date={selectedDateTime}
+            onDateChange={(newDateTime) => {
+              setSelectedDateTime(newDateTime);
+              // Notify parent component of date/time changes
+              onDateTimeChange?.(newDateTime);
             }}
-          >
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DateTimePicker
-                value={selectedDateTime}
-                onChange={(newValue: Date | null) => {
-                  if (newValue) {
-                    setSelectedDateTime(newValue);
-                  }
-                }}
-                slotProps={{
-                  textField: {
-                    sx: {
-                      "& .MuiOutlinedInput-root": {
-                        backgroundColor: colors.surface,
-                        border: "none",
-                        "& fieldset": {
-                          border: "none",
-                        },
-                        "&:hover": {
-                          backgroundColor: colors.surface,
-                        },
-                        "&.Mui-focused": {
-                          backgroundColor: colors.surface,
-                        },
-                      },
-                      "& .MuiInputBase-input": {
-                        color: colors.text,
-                        fontSize: "0.9rem",
-                        padding: "8px 12px",
-                      },
-                    },
-                  },
-                  popper: {
-                    sx: {
-                      "& .MuiPaper-root": {
-                        backgroundColor: colors.surface,
-                        boxShadow: `0 8px 32px ${alpha(colors.text, 0.2)}`,
-                        border: `1px solid ${colors.border}`,
-                        borderRadius: 3,
-                      },
-                      "& .MuiPickersLayout-root": {
-                        backgroundColor: colors.surface,
-                        "& .MuiPickersLayout-toolbar": {
-                          backgroundColor: colors.surface,
-                          "& .MuiPickersLayout-toolbarText": {
-                            color: colors.text,
-                            fontSize: "1rem",
-                            fontWeight: 600,
-                          },
-                        },
-                        "& .MuiPickersLayout-actionBar": {
-                          backgroundColor: colors.surface,
-                          "& .MuiButton-root": {
-                            color: colors.primary,
-                            fontSize: "0.9rem",
-                            fontWeight: 500,
-                            textTransform: "none",
-                          },
-                        },
-                        "& .MuiDayCalendar-root": {
-                          backgroundColor: colors.surface,
-                          "& .MuiPickersCalendarHeader-root": {
-                            backgroundColor: colors.surface,
-                            "& .MuiPickersCalendarHeader-label": {
-                              color: colors.text,
-                              fontSize: "0.9rem",
-                              fontWeight: 600,
-                            },
-                            "& .MuiIconButton-root": {
-                              color: colors.text,
-                              "&:hover": {
-                                backgroundColor: alpha(colors.primary, 0.1),
-                              },
-                            },
-                          },
-                          "& .MuiDayCalendar-weekDayLabel": {
-                            color: colors.textSecondary,
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                          },
-                          "& .MuiPickersDay-root": {
-                            color: colors.text,
-                            fontSize: "0.8rem",
-                            width: "28px",
-                            height: "28px",
-                            margin: "1px",
-                            "&.Mui-selected": {
-                              backgroundColor: colors.primary,
-                              color: colors.background,
-                            },
-                            "&:hover": {
-                              backgroundColor: alpha(colors.primary, 0.1),
-                            },
-                            "&.MuiPickersDay-today": {
-                              border: `1px solid ${colors.primary}`,
-                            },
-                          },
-                        },
-                        "& .MuiClock-root": {
-                          backgroundColor: colors.surface,
-                          "& .MuiClockNumber-root": {
-                            color: colors.text,
-                            fontSize: "0.8rem",
-                            "&.Mui-selected": {
-                              backgroundColor: colors.primary,
-                              color: colors.background,
-                            },
-                          },
-                          "& .MuiClockPointer-root": {
-                            backgroundColor: colors.primary,
-                          },
-                          "& .MuiClockPointer-thumb": {
-                            backgroundColor: colors.primary,
-                            border: `1px solid ${colors.background}`,
-                          },
-                        },
-                      },
-                    },
-                  },
-                }}
-              />
-            </LocalizationProvider>
-          </Box>
-        )}
-
-        {/* Date/Time Picker Bottom Sheet - Commented Out */}
-        {/* <BottomSheet
-        open={showDateTimePicker}
-        onClose={() => setShowDateTimePicker(false)}
-        title="Select Date & Time"
-        buttons={[
-          {
-            text: "Confirm",
-            onClick: () => {
-              // Combine selected date and time
-              const newDate = new Date(selectedDate);
-              const [hours, minutes] = selectedTime.split(":");
-              newDate.setHours(parseInt(hours), parseInt(minutes));
-
-              setShowDateTimePicker(false);
-            },
-            variant: "primary",
-          },
-          {
-            text: "Cancel",
-            onClick: () => setShowDateTimePicker(false),
-            variant: "secondary",
-          },
-        ]}
-      >
-        <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 3 }}>
-          <Box>
-            <Typography
-              variant="overline"
-              sx={{
-                color: colors.primary,
-                fontWeight: 600,
-                fontSize: "0.75rem",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                mb: 1,
-                display: "block",
-              }}
-            >
-              Date
-            </Typography>
-            <TextField
-              type="date"
-              value={selectedDate.toISOString().split("T")[0]}
-              onChange={(e) => setSelectedDate(new Date(e.target.value))}
-              fullWidth
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: colors.surface,
-                  borderRadius: 2,
-                  "& fieldset": {
-                    border: "none",
-                  },
-                  "&:hover": {
-                    backgroundColor: alpha(colors.surface, 0.8),
-                  },
-                  "&.Mui-focused": {
-                    backgroundColor: colors.surface,
-                  },
-                },
-                "& .MuiInputBase-input": {
-                  color: colors.text,
-                  padding: "12px 16px",
-                },
-              }}
-            />
-          </Box>
-
-          <Box>
-            <Typography
-              variant="overline"
-              sx={{
-                color: colors.primary,
-                fontWeight: 600,
-                fontSize: "0.75rem",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                mb: 1,
-                display: "block",
-              }}
-            >
-              Time
-            </Typography>
-            <TextField
-              type="time"
-              value={selectedTime}
-              onChange={(e) => setSelectedTime(e.target.value)} 
-              fullWidth
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: colors.surface,
-                  borderRadius: 2,
-                  "& fieldset": {
-                    border: "none",
-                  },
-                  "&:hover": {
-                    backgroundColor: alpha(colors.surface, 0.8),
-                  },
-                  "&.Mui-focused": {
-                    backgroundColor: colors.surface,
-                  },
-                },
-                "& .MuiInputBase-input": {
-                  color: colors.text,
-                  padding: "12px 16px",
-                },
-              }}
-            />
-          </Box>
-        </Box>
-      </BottomSheet> */}
+            onClose={() => setShowDateTimePicker(false)}
+          />
+        </BottomSheet>
 
         {/* Category Picker Bottom Sheet */}
-        <BottomSheet
+        <CategoryPicker
           open={showCategoryPicker}
+          categories={filteredCategories}
           onClose={() => setShowCategoryPicker(false)}
-          title="Select Category"
-          buttons={[
-            {
-              text: "Confirm",
-              onClick: () => setShowCategoryPicker(false),
-              variant: "primary",
-            },
-            {
-              text: "Cancel",
-              onClick: () => setShowCategoryPicker(false),
-              variant: "secondary",
-            },
-          ]}
-        >
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
-              gap: 1,
-            }}
-          >
-            {categories
-              .filter((category) => category.is_income === isIncome)
-              .map((category) => (
-                <Chip
-                  key={category.id}
-                  label={category.name}
-                  sx={{
-                    backgroundColor: colors.border,
-                    color: colors.text,
-                    fontSize: "0.9rem",
-                    fontWeight: 500,
-                    borderRadius: 2,
-                    height: "auto",
-                    textTransform: "none",
-                  }}
-                  onClick={() => {
-                    onCategoryChange(category);
-                    setShowCategoryPicker(false);
-                  }}
-                />
-              ))}
-          </Box>
-        </BottomSheet>
+          selectedCategory={selectedCategory.name}
+          onCategorySelect={handleCategorySelect}
+        />
       </Box>
     </Box>
   );
