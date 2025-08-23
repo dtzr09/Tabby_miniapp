@@ -21,6 +21,9 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({
   categories,
 }) => {
   const [categoryPage, setCategoryPage] = useState(0);
+  const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const { colors } = useTheme();
 
   // Reset page when categories change
@@ -43,6 +46,46 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setStartX(touch.clientX);
+    setStartY(touch.clientY);
+    setIsDragging(false);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) {
+      const touch = e.touches[0];
+      const deltaX = Math.abs(touch.clientX - startX);
+      const deltaY = Math.abs(touch.clientY - startY);
+      
+      // Only consider it a swipe if horizontal movement is greater than vertical
+      if (deltaX > 10 && deltaX > deltaY) {
+        setIsDragging(true);
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - startX;
+    const minSwipeDistance = 50;
+    
+    if (Math.abs(deltaX) > minSwipeDistance) {
+      if (deltaX > 0) {
+        // Swipe right - go to previous page
+        navigateCategories("prev");
+      } else {
+        // Swipe left - go to next page
+        navigateCategories("next");
+      }
+    }
+    
+    setIsDragging(false);
+  };
+
   return (
     <BottomSheet open={open} onClose={onClose} title="Select Category">
       <Box>
@@ -53,7 +96,11 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({
             gridTemplateColumns: "1fr 1fr",
             gap: 2,
             mb: 3,
+            touchAction: "pan-y", // Allow vertical scrolling but handle horizontal swipes
           }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           {categories
             .slice(categoryPage * 4, (categoryPage + 1) * 4)

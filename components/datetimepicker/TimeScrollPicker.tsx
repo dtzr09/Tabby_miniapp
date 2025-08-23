@@ -90,6 +90,7 @@ const TimeScrollPicker = ({
   };
 
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault(); // Prevent default touch behavior
     setIsDragging(true);
     const clientY = "clientY" in e ? e.clientY : e.touches[0].clientY;
     setStartY(clientY);
@@ -206,6 +207,7 @@ const TimeScrollPicker = ({
           overflowY: "auto",
           scrollbarWidth: "none",
           cursor: isDragging ? "grabbing" : "grab",
+          WebkitOverflowScrolling: "touch", // Enable momentum scrolling on iOS
           "&::-webkit-scrollbar": {
             display: "none",
           },
@@ -218,6 +220,7 @@ const TimeScrollPicker = ({
         onWheel={handleWheel}
         style={{
           scrollBehavior: isDragging ? "auto" : "smooth",
+          touchAction: "pan-y", // Allow only vertical scrolling on touch
         }}
       >
         <Box>
