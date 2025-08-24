@@ -317,10 +317,6 @@ export default function EntryForm({
         left: 0,
         px: 2,
         pb: 4,
-        // Prevent viewport changes when keyboard opens
-        position: "fixed",
-        transform: "translate3d(0, 0, 0)",
-        WebkitTransform: "translate3d(0, 0, 0)",
       }}
     >
       {/* Scrollable Content */}
@@ -471,10 +467,40 @@ export default function EntryForm({
           />
         </Box>
 
-        {/* Date/Time Bar with Right-Aligned Icons */}
+        {/* Overlay when floating panel is open */}
+        {isGroupExpense && showFloatingPanel && !isIncome && (
+          <Box
+            onClick={() => setShowFloatingPanel(false)}
+            sx={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.3)",
+              zIndex: 999, // Lower than the floating panel but higher than other content
+              animation: "fadeIn 0.2s ease-out",
+              "@keyframes fadeIn": {
+                from: { opacity: 0 },
+                to: { opacity: 1 },
+              },
+            }}
+          />
+        )}
+
+        {/* Fixed Bottom Section - Date/Time Bar and Keypad */}
         <Box
           ref={bottomSectionRef}
-          sx={{ position: "fixed", bottom: 0, left: 0, right: 0, p: 1 }}
+          sx={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            p: 1.5,
+            backgroundColor: colors.background,
+            transform: "translate3d(0, 0, 0)",
+            WebkitTransform: "translate3d(0, 0, 0)",
+          }}
         >
           <Box
             sx={{
@@ -493,7 +519,6 @@ export default function EntryForm({
                 display: "flex",
                 alignItems: "center",
                 backgroundColor: colors.border,
-                px: 1,
                 py: 1,
                 borderRadius: 3,
                 textTransform: "none",
@@ -608,27 +633,6 @@ export default function EntryForm({
               </>
             )}
           </Box>
-
-          {/* Overlay when floating panel is open */}
-          {isGroupExpense && showFloatingPanel && !isIncome && (
-            <Box
-              onClick={() => setShowFloatingPanel(false)}
-              sx={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(0,0,0,0.3)",
-                zIndex: 1000,
-                animation: "fadeIn 0.2s ease-out",
-                "@keyframes fadeIn": {
-                  from: { opacity: 0 },
-                  to: { opacity: 1 },
-                },
-              }}
-            />
-          )}
 
           {/* Floating Panel for Group Actions */}
           {isGroupExpense && showFloatingPanel && !isIncome && (
