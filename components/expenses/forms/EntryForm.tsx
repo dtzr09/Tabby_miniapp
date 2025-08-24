@@ -381,7 +381,7 @@ export default function EntryForm({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: `${dimensions.height - 100}px`,
+        height: `${774}px`,
         width: "100%",
         overflow: "hidden",
       }}
