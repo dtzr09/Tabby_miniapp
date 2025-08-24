@@ -301,7 +301,7 @@ export default function EntryForm({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        height: "var(--app-height, 100vh)",
         width: "100vw",
         overflow: "hidden",
         boxSizing: "border-box",
@@ -312,6 +312,7 @@ export default function EntryForm({
         pb: 4,
         transform: "translate3d(0, 0, 0)",
         WebkitTransform: "translate3d(0, 0, 0)",
+        zIndex: 1,
       }}
     >
       {/* Scrollable Content */}
