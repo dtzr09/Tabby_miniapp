@@ -1,7 +1,7 @@
 import React, {
   useState,
   useRef,
-  // useContext,
+  useContext,
   useEffect,
   useCallback,
   useMemo,
@@ -15,7 +15,7 @@ import {
   TextField,
   Chip,
 } from "@mui/material";
-// import { DimensionsContext } from "../../AppLayout";
+import { DimensionsContext } from "../../AppLayout";
 import { useTheme } from "../../../src/contexts/ThemeContext";
 import { Backspace, CallSplit, GraphicEq } from "@mui/icons-material";
 import BottomSheet from "../../common/BottomSheet";
@@ -86,7 +86,7 @@ export default function EntryForm({
   hasChanges = false,
 }: EntryFormProps) {
   const { colors } = useTheme();
-  // const dimensions = useContext(DimensionsContext);
+  const dimensions = useContext(DimensionsContext);
   const isExpense = typeof expense === "object" && "shares" in expense;
   const queryClient = useQueryClient();
 
@@ -381,8 +381,7 @@ export default function EntryForm({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100dvh",
-        // height: `${dimensions.height - 120}px`,
+        height: `${dimensions.height - 100}px`,
         width: "100%",
         overflow: "hidden",
       }}
@@ -446,6 +445,18 @@ export default function EntryForm({
             setShowCategoryPicker(true);
           }}
         />
+
+        {/* Debug */}
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+          }}
+        >
+          <Typography>{dimensions.height}</Typography>
+        </Box>
 
         {/* Amount Display with Delete Button */}
         <Box
