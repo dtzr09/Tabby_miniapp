@@ -262,6 +262,10 @@ export default function EntryForm({
   const [showFloatingPanel, setShowFloatingPanel] = useState(false);
   const [showSplitExpenseSheet, setShowSplitExpenseSheet] = useState(false);
 
+  // Keyboard height detection
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isDescriptionFocused, setIsDescriptionFocused] = useState(false);
+
   // Measure the fixed bottom section height
   const [bottomSectionRef, bottomSectionBounds] = useMeasure();
 
@@ -337,6 +341,42 @@ export default function EntryForm({
     }
   }, [isIncome, filteredCategories.length]); // Only when income type changes or categories become available
 
+  // Detect keyboard height
+  useEffect(() => {
+    const initialViewportHeight =
+      window.visualViewport?.height || window.innerHeight;
+
+    const handleViewportChange = () => {
+      const currentViewportHeight =
+        window.visualViewport?.height || window.innerHeight;
+      const heightDifference = initialViewportHeight - currentViewportHeight;
+
+      // If viewport shrunk significantly (likely keyboard), store the keyboard height
+      if (heightDifference > 150) {
+        // Threshold to detect keyboard
+        setKeyboardHeight(heightDifference);
+      } else {
+        setKeyboardHeight(0);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleViewportChange);
+      return () => {
+        window.visualViewport?.removeEventListener(
+          "resize",
+          handleViewportChange
+        );
+      };
+    } else {
+      // Fallback for older browsers
+      window.addEventListener("resize", handleViewportChange);
+      return () => {
+        window.removeEventListener("resize", handleViewportChange);
+      };
+    }
+  }, []);
+
   const handleCategorySelect = (categoryName: string) => {
     // Find the category object from filtered categories array or create a new one
     const category = filteredCategories.find(
@@ -376,12 +416,22 @@ export default function EntryForm({
     onAmountChange(newAmount);
   };
 
+  // Calculate dynamic height based on keyboard state
+  const calculateHeight = () => {
+    const bottomNavigationHeight = 100;
+    const baseHeight = dimensions.height - bottomNavigationHeight;
+    if (isDescriptionFocused && keyboardHeight > 0) {
+      return baseHeight + keyboardHeight;
+    }
+    return baseHeight;
+  };
+
   return (
     <Box
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: `${774}px`,
+        height: `${calculateHeight()}px`,
         width: "100%",
         overflow: "hidden",
       }}
@@ -453,9 +503,18 @@ export default function EntryForm({
             bottom: 0,
             left: 0,
             right: 0,
+            backgroundColor: alpha(colors.surface, 0.8),
+            p: 1,
+            borderRadius: 1,
           }}
         >
-          <Typography>{dimensions.height}</Typography>
+          <Typography variant="body2">
+            Height: {dimensions.height} | Keyboard: {keyboardHeight} | Focused:{" "}
+            {isDescriptionFocused ? "Yes" : "No"}
+          </Typography>
+          <Typography variant="body2">
+            Total Height: {calculateHeight()}
+          </Typography>
         </Box>
 
         {/* Amount Display with Delete Button */}
@@ -516,6 +575,8 @@ export default function EntryForm({
           onChange={(e) => onDescriptionChange(e.target.value)}
           placeholder="Enter description"
           variant="standard"
+          onFocus={() => setIsDescriptionFocused(true)}
+          onBlur={() => setIsDescriptionFocused(false)}
           inputProps={{
             inputMode: "text",
             autoComplete: "off",
