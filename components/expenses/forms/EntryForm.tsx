@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useRef,
-  useContext,
-  useEffect,
-  useCallback,
-} from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import useMeasure from "react-use-measure";
 import {
   Box,
@@ -14,7 +8,6 @@ import {
   TextField,
   Chip,
 } from "@mui/material";
-import { DimensionsContext } from "../../AppLayout";
 import { useTheme } from "../../../src/contexts/ThemeContext";
 import {
   DeleteOutline,
@@ -93,7 +86,6 @@ export default function EntryForm({
   hasChanges = false,
 }: EntryFormProps) {
   const { colors } = useTheme();
-  const dimensions = useContext(DimensionsContext);
   const isExpense = typeof expense === "object" && "shares" in expense;
   const [editExpenseShare, setEditExpenseShare] = useState(false);
 
@@ -309,14 +301,17 @@ export default function EntryForm({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: `${dimensions.height}px`,
-        width: `${dimensions.width}px`,
+        height: "100vh",
+        width: "100vw",
         overflow: "hidden",
         boxSizing: "border-box",
+        position: "fixed",
         top: 0,
         left: 0,
         px: 2,
         pb: 4,
+        transform: "translate3d(0, 0, 0)",
+        WebkitTransform: "translate3d(0, 0, 0)",
       }}
     >
       {/* Scrollable Content */}
@@ -329,6 +324,7 @@ export default function EntryForm({
           flexDirection: "column",
           width: "100%",
           boxSizing: "border-box",
+          minHeight: "70vh",
         }}
       >
         {/* Main Display Area */}
@@ -340,8 +336,8 @@ export default function EntryForm({
             justifyContent: "center",
             alignItems: "center",
             px: 4,
-            gap: 3,
-            pt: 4,
+            gap: 4,
+            minHeight: "60vh",
             pb:
               bottomSectionBounds.height > 0
                 ? `${bottomSectionBounds.height + 16}px`
@@ -486,6 +482,77 @@ export default function EntryForm({
               },
             }}
           />
+        )}
+
+        {/* Floating Panel for Group Actions */}
+        {isGroupExpense && showFloatingPanel && !isIncome && (
+          <Box
+            sx={{
+              position: "fixed",
+              right: "0.8rem",
+              bottom: `${bottomSectionBounds.height - 12}px`, // Position just above the MoreVert icon
+              backgroundColor: colors.surface,
+              borderRadius: 3,
+              boxShadow: `0 4px 20px ${colors.textSecondary}20`,
+              p: 0.5,
+              zIndex: 1002, // Higher than the overlay (999)
+              display: "flex",
+              flexDirection: "column",
+              gap: 0.5,
+              animation: "slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              "@keyframes slideInFromRight": {
+                from: {
+                  opacity: 0,
+                  transform: "translateX(20px)",
+                },
+                to: {
+                  opacity: 1,
+                  transform: "translateX(0)",
+                },
+              },
+            }}
+          >
+            {/* Recurring Icon */}
+            <IconButton
+              onClick={onToggleRecurring}
+              disabled={!onToggleRecurring}
+              sx={{
+                color: colors.text,
+                width: 36,
+                height: 36,
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  backgroundColor: colors.border,
+                  transform: "scale(1.1)",
+                },
+                "&:disabled": {
+                  color: colors.textSecondary,
+                },
+              }}
+            >
+              <RepeatOutlined fontSize="small" />
+            </IconButton>
+
+            {/* Group/Split Icon */}
+            <IconButton
+              onClick={() => {
+                setShowSplitExpenseSheet(true);
+                setShowFloatingPanel(false);
+              }}
+              sx={{
+                color: colors.text,
+                width: 36,
+                height: 36,
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  backgroundColor: colors.border,
+                  transform: "scale(1.1)",
+                },
+              }}
+            >
+              <Group fontSize="small" />
+            </IconButton>
+          </Box>
         )}
 
         {/* Fixed Bottom Section - Date/Time Bar and Keypad */}
@@ -633,77 +700,6 @@ export default function EntryForm({
               </>
             )}
           </Box>
-
-          {/* Floating Panel for Group Actions */}
-          {isGroupExpense && showFloatingPanel && !isIncome && (
-            <Box
-              sx={{
-                position: "absolute",
-                right: "0.5rem",
-                top: `calc(100% - ${bottomSectionBounds.height + 80}px)`, // Position above the fixed bottom section (keypad area)
-                backgroundColor: colors.surface,
-                borderRadius: 3,
-                boxShadow: `0 4px 20px ${colors.textSecondary}20`,
-                p: 0.5,
-                zIndex: 1001,
-                display: "flex",
-                flexDirection: "column",
-                gap: 0.5,
-                animation: "slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                "@keyframes slideInFromRight": {
-                  from: {
-                    opacity: 0,
-                    transform: "translateX(20px)",
-                  },
-                  to: {
-                    opacity: 1,
-                    transform: "translateX(0)",
-                  },
-                },
-              }}
-            >
-              {/* Recurring Icon */}
-              <IconButton
-                onClick={onToggleRecurring}
-                disabled={!onToggleRecurring}
-                sx={{
-                  color: colors.text,
-                  width: 36,
-                  height: 36,
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    backgroundColor: colors.border,
-                    transform: "scale(1.1)",
-                  },
-                  "&:disabled": {
-                    color: colors.textSecondary,
-                  },
-                }}
-              >
-                <RepeatOutlined fontSize="small" />
-              </IconButton>
-
-              {/* Group/Split Icon */}
-              <IconButton
-                onClick={() => {
-                  setShowSplitExpenseSheet(true);
-                  setShowFloatingPanel(false);
-                }}
-                sx={{
-                  color: colors.text,
-                  width: 36,
-                  height: 36,
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    backgroundColor: colors.border,
-                    transform: "scale(1.1)",
-                  },
-                }}
-              >
-                <Group fontSize="small" />
-              </IconButton>
-            </Box>
-          )}
 
           {/* Keypad */}
           <Box
