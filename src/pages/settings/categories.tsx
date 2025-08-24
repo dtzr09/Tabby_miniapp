@@ -222,7 +222,7 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
           sx={{
             display: "flex",
             flexDirection: "column",
-            gap: 1.5,
+            gap: 2,
             alignItems: "center",
           }}
         >
@@ -230,7 +230,12 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
             <Skeleton
               key={i}
               variant="rectangular"
-              sx={{ height: 50, borderRadius: 2, bgcolor: colors.surface }}
+              sx={{
+                height: 50,
+                borderRadius: 2,
+                width: "100%",
+                bgcolor: colors.surface,
+              }}
             />
           ))}
         </Box>
