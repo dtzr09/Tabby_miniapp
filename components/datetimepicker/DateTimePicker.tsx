@@ -374,11 +374,12 @@ const ExpenseDateTimePicker = ({
                       backgroundColor: colors.surface,
                       borderRadius: 2,
                       position: "absolute",
-                      top: 50,
+                      bottom: -10,
                       right: 0,
                       zIndex: 20,
                       width: "fit-content",
                       p: "0.25rem",
+                      mx: 1,
                     }}
                   >
                     <Box sx={{ position: "relative" }}>

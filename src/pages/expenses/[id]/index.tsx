@@ -20,7 +20,6 @@ import LoadingSkeleton from "../../../../components/dashboard/LoadingSkeleton";
 import { useExpense } from "../../../../hooks/useExpense";
 import { useAllEntries } from "../../../../hooks/useAllEntries";
 import { useUser } from "../../../../hooks/useUser";
-import BottomSheet from "../../../../components/common/BottomSheet";
 import { invalidateExpenseCache } from "../../../../utils/cache";
 import { AppLayout } from "../../../../components/AppLayout";
 
@@ -28,7 +27,6 @@ const ExpenseDetail = () => {
   const router = useRouter();
   const { id: entryId, isIncome, chat_id, isGroupView } = router.query;
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | undefined>(undefined);
   const [currentAmount, setCurrentAmount] = useState("0");
@@ -37,6 +35,7 @@ const ExpenseDetail = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number>(0);
   const [isUserEditingDateTime, setIsUserEditingDateTime] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+
   // Get categories from useAllEntries
   const { categories } = useAllEntries(tgUser?.id, initData, chat_id as string);
   const { data: user } = useUser(tgUser?.id, initData, chat_id as string);
@@ -61,12 +60,13 @@ const ExpenseDetail = () => {
     description: "",
     amount: "",
     category_id: 0,
+    date: new Date().toISOString(),
   };
 
   const {
     // control,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isDirty },
     reset,
     setValue,
   } = useForm<ExpenseFormData>({
@@ -99,6 +99,7 @@ const ExpenseDetail = () => {
           description: expense.description || "",
           amount: amount || "",
           category_id: expense.category?.id || 0,
+          date: expense.date || new Date().toISOString(),
         },
         { keepDirty: false }
       );
@@ -264,7 +265,8 @@ const ExpenseDetail = () => {
       shouldDirty: true,
     });
     setValue("category_id", selectedCategoryId, { shouldDirty: true });
-    setShowSaveDialog(true);
+    // Save directly without confirmation
+    handleSubmit(onSubmit)();
   };
 
   const handleCategoryChange = (category: Category) => {
@@ -275,12 +277,14 @@ const ExpenseDetail = () => {
   const handleDateTimeChange = (newDateTime: Date) => {
     setIsUserEditingDateTime(true);
     setSelectedDateTime(newDateTime);
+    // Update the form date field to mark form as dirty
+    setValue("date", newDateTime.toISOString(), { shouldDirty: true });
     // Reset the flag after a short delay to allow the update to complete
     setTimeout(() => setIsUserEditingDateTime(false), 1000);
   };
 
   // Handle loading and error states
-  if (isLoading) {
+  if (isLoading || !expense) {
     return <LoadingSkeleton />;
   }
 
@@ -291,23 +295,6 @@ const ExpenseDetail = () => {
           {error instanceof Error
             ? error.message
             : "Failed to load expense data. Please try again."}
-        </Alert>
-        <Button
-          variant="contained"
-          onClick={() => router.back()}
-          sx={{ mt: 2 }}
-        >
-          Go Back
-        </Button>
-      </Box>
-    );
-  }
-
-  if (!expense) {
-    return (
-      <Box sx={{ p: 2 }}>
-        <Alert severity="warning">
-          Expense not found. It may have been deleted.
         </Alert>
         <Button
           variant="contained"
@@ -344,6 +331,7 @@ const ExpenseDetail = () => {
         onCategoryChange={handleCategoryChange}
         onDateTimeChange={handleDateTimeChange}
         selectedDateTime={selectedDateTime}
+        hasChanges={isDirty}
       />
 
       <DeleteExpenseDialog
@@ -357,30 +345,6 @@ const ExpenseDetail = () => {
         setShowConfirm={setShowDeleteDialog}
         tgUser={tgUser}
         deleteFromCache={deleteExpenseFromCache}
-      />
-
-      {/* Save Changes Bottom Sheet */}
-      <BottomSheet
-        open={showSaveDialog}
-        onClose={() => setShowSaveDialog(false)}
-        title={`Save ${isIncome === "true" ? "Income" : "Expense"} Changes`}
-        description="Are you sure you want to save these changes?"
-        buttons={[
-          {
-            text: isSubmitting ? "Saving..." : "Save Changes",
-            onClick: () => {
-              setShowSaveDialog(false);
-              handleSubmit(onSubmit)();
-            },
-            variant: "primary",
-            disabled: isSubmitting,
-          },
-          {
-            text: "Cancel",
-            onClick: () => setShowSaveDialog(false),
-            variant: "secondary",
-          },
-        ]}
       />
     </AppLayout>
   );

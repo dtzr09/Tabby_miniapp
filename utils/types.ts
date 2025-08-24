@@ -132,6 +132,7 @@ export interface ExpenseFormData {
   description: string;
   amount: string;
   category_id: string | number;
+  date: string;
 }
 
 // New types to replace 'any' usage

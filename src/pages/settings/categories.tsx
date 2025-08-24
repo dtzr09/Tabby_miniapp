@@ -29,7 +29,7 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
   const { colors } = useTheme();
   const [userCategories, setUserCategories] = useState<Category[]>([]);
   const [staticCategories, setStaticCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(false); // Start optimistically
+  const [isLoading, setIsLoading] = useState(true); // Start with loading state
 
   // Use optimized Telegram WebApp hook
   const { user, initData, isReady } = useTelegramWebApp();
@@ -64,9 +64,7 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
         return;
       }
 
-      if (userCategories.length === 0 && staticCategories.length === 0) {
-        setIsLoading(true); // Only show loading if no cached data
-      }
+      setIsLoading(true);
 
       const response = await fetchCategories(
         user.id.toString(),

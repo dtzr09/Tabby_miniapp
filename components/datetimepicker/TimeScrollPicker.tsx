@@ -2,8 +2,10 @@ import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 
-export const ITEM_HEIGHT = 42;
-export const SPACER_ITEMS = 4;
+export const TIME_ITEM_HEIGHT = 28; // Slightly taller for better row gap spacing
+export const MONTH_YEAR_ITEM_HEIGHT = 32; // Larger height for month/year pickers
+export const ITEM_HEIGHT = 32; // Default for time pickers
+export const SPACER_ITEMS = 2; // Reduced spacers for 5-item view
 // Time picker scroll component
 const TimeScrollPicker = ({
   type,
@@ -28,10 +30,14 @@ const TimeScrollPicker = ({
     const setScrollPosition = () => {
       if (scrollRef.current) {
         const scrollValue = type === "hour" ? value - 1 : value;
+        const containerHeight = scrollRef.current.clientHeight;
+        const centerOffset = containerHeight / 2;
 
-        // Account for spacer items at top + scroll to center the item
+        // Position selected item exactly in center with overlay
         const targetScroll =
-          (SPACER_ITEMS + scrollValue) * ITEM_HEIGHT - ITEM_HEIGHT;
+          (SPACER_ITEMS + scrollValue) * TIME_ITEM_HEIGHT -
+          centerOffset +
+          TIME_ITEM_HEIGHT / 2;
         scrollRef.current.scrollTop = Math.max(0, targetScroll);
       }
     };
@@ -45,10 +51,14 @@ const TimeScrollPicker = ({
   const snapToNearestItem = (immediate = false) => {
     if (scrollRef.current) {
       const scrollTop = scrollRef.current.scrollTop;
+      const containerHeight = scrollRef.current.clientHeight;
+      const centerOffset = containerHeight / 2;
 
-      // Find nearest item accounting for spacers
+      // Find nearest item accounting for spacers and centering
       let adjustedIndex =
-        Math.round((scrollTop + ITEM_HEIGHT) / ITEM_HEIGHT) - SPACER_ITEMS;
+        Math.round(
+          (scrollTop + centerOffset - TIME_ITEM_HEIGHT / 2) / TIME_ITEM_HEIGHT
+        ) - SPACER_ITEMS;
 
       if (type === "hour") {
         adjustedIndex = Math.max(0, Math.min(11, adjustedIndex));
@@ -61,7 +71,9 @@ const TimeScrollPicker = ({
 
       // Snap to centered position
       const targetScroll =
-        (SPACER_ITEMS + adjustedIndex) * ITEM_HEIGHT - ITEM_HEIGHT;
+        (SPACER_ITEMS + adjustedIndex) * TIME_ITEM_HEIGHT -
+        centerOffset +
+        TIME_ITEM_HEIGHT / 2;
 
       if (immediate) {
         scrollRef.current.scrollTop = Math.max(0, targetScroll);
@@ -157,9 +169,12 @@ const TimeScrollPicker = ({
     <Box
       sx={{
         position: "relative",
-        height: "8rem",
+        height: "8rem", // Reduced overall height
+        width: "2.5rem", // Slightly wider for better overlay fit
         overflow: "hidden",
         zIndex: 99,
+        minWidth: "2.5rem", // Ensure minimum width
+        maxWidth: "2.5rem", // Ensure maximum width
       }}
     >
       {/* Selection overlay - positioned at item level */}
@@ -179,12 +194,20 @@ const TimeScrollPicker = ({
       <Box
         ref={scrollRef}
         sx={{
+          position: "absolute", // Cover entire picker area for touch
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           height: "100%",
           overflowY: "auto",
           scrollbarWidth: "none",
           cursor: isDragging ? "grabbing" : "grab",
           WebkitOverflowScrolling: "touch", // Enable momentum scrolling on iOS
           overscrollBehavior: "contain", // Prevent overscroll from affecting parent elements
+          touchAction: "pan-y", // Only allow vertical scrolling
+          perspective: "600px", // Add perspective for 3D effect
+          perspectiveOrigin: "center center", // Center the perspective
           "&::-webkit-scrollbar": {
             display: "none",
           },
@@ -194,36 +217,60 @@ const TimeScrollPicker = ({
         onWheel={handleWheel}
         style={{
           scrollBehavior: "auto", // Always use auto for responsive scrolling
+          willChange: "scroll-position", // Optimize for scrolling
         }}
       >
         <Box>
           {/* Extra items at top for centering */}
-          {Array.from({ length: 4 }, (_, i) => (
-            <Box key={`top-${i}`} sx={{ height: ITEM_HEIGHT }} />
+          {Array.from({ length: SPACER_ITEMS }, (_, i) => (
+            <Box key={`top-${i}`} sx={{ height: TIME_ITEM_HEIGHT }} />
           ))}
 
-          {items.map((item) => (
-            <Box
-              key={item}
-              sx={{
-                height: ITEM_HEIGHT,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "1.25rem",
-                transition: "all 0.3s",
-                color: item === value ? colors.text : colors.textSecondary,
-                px: "1rem",
-                fontWeight: item === value ? 500 : 400,
-              }}
-            >
-              {type === "hour" ? item : item.toString().padStart(2, "0")}
-            </Box>
-          ))}
+          {items.map((item) => {
+            // Calculate distance from center for 3D cylindrical effect
+            const itemIndex = items.indexOf(item);
+            const selectedIndex = items.indexOf(value);
+            const distanceFromCenter = itemIndex - selectedIndex;
+            const absDistance = Math.abs(distanceFromCenter);
+
+            // Calculate balanced skeuomorphic rotating dial transformation
+            const rotationX = distanceFromCenter * 12; // Reduced rotation for more uniform spacing
+            const scale = 1 - absDistance * 0.08; // Less dramatic scale to maintain spacing
+            const opacity = Math.max(0.4, 1 - absDistance * 0.18); // Gentler fade for better visibility
+            const translateZ = -absDistance * 8; // Less aggressive Z translation
+
+            return (
+              <Box
+                key={item}
+                sx={{
+                  height: TIME_ITEM_HEIGHT,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.25rem",
+                  color: item === value ? colors.text : colors.textSecondary,
+                  px: "0.5rem", // Reduced padding for more compact design
+                  fontWeight: item === value ? 600 : 400,
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transform: `
+                    perspective(500px) 
+                    rotateX(${rotationX}deg) 
+                    scale(${Math.max(0.6, scale)}) 
+                    translateZ(${translateZ}px)
+                  `,
+                  opacity: opacity,
+                  transformStyle: "preserve-3d",
+                  backfaceVisibility: "hidden",
+                }}
+              >
+                {type === "hour" ? item : item.toString().padStart(2, "0")}
+              </Box>
+            );
+          })}
 
           {/* Extra items at bottom for centering */}
-          {Array.from({ length: 4 }, (_, i) => (
-            <Box key={`bottom-${i}`} sx={{ height: "2.5rem" }} />
+          {Array.from({ length: SPACER_ITEMS }, (_, i) => (
+            <Box key={`bottom-${i}`} sx={{ height: TIME_ITEM_HEIGHT }} />
           ))}
         </Box>
       </Box>

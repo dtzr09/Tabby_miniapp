@@ -57,6 +57,7 @@ interface EntryFormProps {
   onCategoryChange: (category: Category) => void;
   onDateTimeChange?: (dateTime: Date) => void;
   selectedDateTime?: Date;
+  hasChanges?: boolean;
 }
 
 export default function EntryForm({
@@ -81,6 +82,7 @@ export default function EntryForm({
   onCategoryChange,
   onDateTimeChange,
   selectedDateTime: parentSelectedDateTime,
+  hasChanges = false,
 }: EntryFormProps) {
   const { colors } = useTheme();
   const dimensions = useContext(DimensionsContext);
@@ -533,17 +535,18 @@ export default function EntryForm({
                 onDateTimeChange?.(selectedDateTime);
                 onSubmit?.();
               }}
-              disabled={!onSubmit || currentAmount === "0"}
+              disabled={!onSubmit || currentAmount === "0" || !hasChanges}
               sx={{
                 height: 72,
                 borderRadius: 3,
                 backgroundColor: colors.background,
                 color: colors.text,
-                border: `2px solid ${colors.text}`,
+                border: `2px solid ${
+                  hasChanges ? colors.text : alpha(colors.text, 0.1)
+                }`,
                 "&:disabled": {
-                  backgroundColor: colors.border,
-                  color: colors.textSecondary,
-                  border: `2px solid ${colors.textSecondary}`,
+                  backgroundColor: colors.background,
+                  color: alpha(colors.text, 0.1),
                 },
               }}
             >
@@ -573,7 +576,7 @@ export default function EntryForm({
         <BottomSheet
           open={showCategoryPicker}
           onClose={() => setShowCategoryPicker(false)}
-          height="18rem"
+          title="Categories"
         >
           <CategoryPicker
             open={showCategoryPicker}

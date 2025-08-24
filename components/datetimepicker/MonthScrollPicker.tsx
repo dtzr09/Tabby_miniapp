@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
+import { MONTH_YEAR_ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
 
 const MonthScrollPicker = ({
   value,
@@ -40,7 +40,9 @@ const MonthScrollPicker = ({
         const centerOffset = containerHeight / 2;
         // Position selected item exactly in center
         const targetScroll =
-          (SPACER_ITEMS + value) * ITEM_HEIGHT - centerOffset + ITEM_HEIGHT / 2;
+          (SPACER_ITEMS + value) * MONTH_YEAR_ITEM_HEIGHT -
+          centerOffset +
+          MONTH_YEAR_ITEM_HEIGHT / 2;
         scrollRef.current.scrollTop = Math.max(0, targetScroll);
       }
     };
@@ -60,17 +62,19 @@ const MonthScrollPicker = ({
 
       // Find nearest item accounting for spacers and center offset
       let adjustedIndex =
-        Math.round((scrollTop + centerOffset - ITEM_HEIGHT / 2) / ITEM_HEIGHT) -
-        SPACER_ITEMS;
+        Math.round(
+          (scrollTop + centerOffset - MONTH_YEAR_ITEM_HEIGHT / 2) /
+            MONTH_YEAR_ITEM_HEIGHT
+        ) - SPACER_ITEMS;
 
       adjustedIndex = Math.max(0, Math.min(11, adjustedIndex));
       onChange(adjustedIndex);
 
       // Snap to centered position
       const targetScroll =
-        (SPACER_ITEMS + adjustedIndex) * ITEM_HEIGHT -
+        (SPACER_ITEMS + adjustedIndex) * MONTH_YEAR_ITEM_HEIGHT -
         centerOffset +
-        ITEM_HEIGHT / 2;
+        MONTH_YEAR_ITEM_HEIGHT / 2;
 
       if (immediate) {
         scrollRef.current.scrollTop = Math.max(0, targetScroll);
@@ -168,21 +172,46 @@ const MonthScrollPicker = ({
     <Box
       sx={{
         position: "relative",
-        height: "14rem",
+        height: "14rem", // Keep original height
+        width: "6rem", // Keep original width
         overflow: "hidden",
         zIndex: 99,
-        flex: 1,
+        minWidth: "6rem", // Ensure minimum width
+        maxWidth: "6rem", // Ensure maximum width
+        py: 3, // Add vertical padding to reduce effective picker height
       }}
     >
+      {/* Selection overlay - shorter height for month picker */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "0.2rem",
+          right: "0.2rem",
+          transform: "translateY(-50%)",
+          height: "1.5rem", // Shorter height for month/year
+          borderRadius: 2,
+          zIndex: 5,
+        }}
+      />
+
       <Box
         ref={scrollRef}
         sx={{
+          position: "absolute", // Cover entire picker area for touch
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           height: "100%",
           overflowY: "auto",
           scrollbarWidth: "none",
           cursor: isDragging ? "grabbing" : "grab",
           WebkitOverflowScrolling: "touch", // Enable momentum scrolling on iOS
           overscrollBehavior: "contain", // Prevent overscroll from affecting parent elements
+          touchAction: "pan-y", // Only allow vertical scrolling
+          perspective: "600px", // Add perspective for 3D effect
+          perspectiveOrigin: "center center", // Center the perspective
           "&::-webkit-scrollbar": {
             display: "none",
           },
@@ -192,35 +221,58 @@ const MonthScrollPicker = ({
         onWheel={handleWheel}
         style={{
           scrollBehavior: "auto", // Always use auto for responsive scrolling
+          willChange: "scroll-position", // Optimize for scrolling
         }}
       >
         <Box>
           {/* Extra items at top for centering */}
           {Array.from({ length: SPACER_ITEMS }, (_, i) => (
-            <Box key={`top-${i}`} sx={{ height: ITEM_HEIGHT }} />
+            <Box key={`top-${i}`} sx={{ height: MONTH_YEAR_ITEM_HEIGHT }} />
           ))}
 
-          {months.map((month, index) => (
-            <Box
-              key={month}
-              sx={{
-                height: ITEM_HEIGHT,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "0.95rem",
-                color: index === value ? colors.text : colors.textSecondary,
-                fontWeight: index === value ? 500 : 400,
-                px: "0.5rem",
-              }}
-            >
-              {month}
-            </Box>
-          ))}
+          {months.map((month, index) => {
+            // Calculate distance from center for 3D cylindrical effect
+            const distanceFromCenter = index - value;
+            const absDistance = Math.abs(distanceFromCenter);
+
+            // Calculate skeuomorphic rotating dial transformation
+            const rotationX = distanceFromCenter * 12; // Degrees of rotation for cylinder effect
+            const scale = 1 - absDistance * 0.08; // Subtle scale reduction
+            const opacity = Math.max(0.4, 1 - absDistance * 0.15); // Fade distant items
+            const translateZ = -absDistance * 8; // Push distant items back in 3D space
+
+            return (
+              <Box
+                key={month}
+                sx={{
+                  height: MONTH_YEAR_ITEM_HEIGHT,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "0.95rem",
+                  color: index === value ? colors.text : colors.textSecondary,
+                  fontWeight: index === value ? 600 : 400,
+                  px: "0.5rem",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transform: `
+                    perspective(600px) 
+                    rotateX(${rotationX}deg) 
+                    scale(${Math.max(0.7, scale)}) 
+                    translateZ(${translateZ}px)
+                  `,
+                  opacity: opacity,
+                  transformStyle: "preserve-3d",
+                  backfaceVisibility: "hidden",
+                }}
+              >
+                {month}
+              </Box>
+            );
+          })}
 
           {/* Extra items at bottom for centering */}
           {Array.from({ length: SPACER_ITEMS }, (_, i) => (
-            <Box key={`bottom-${i}`} sx={{ height: ITEM_HEIGHT }} />
+            <Box key={`bottom-${i}`} sx={{ height: MONTH_YEAR_ITEM_HEIGHT }} />
           ))}
         </Box>
       </Box>

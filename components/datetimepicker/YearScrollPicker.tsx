@@ -1,7 +1,9 @@
 import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
+import { MONTH_YEAR_ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
+
+const ITEM_HEIGHT = MONTH_YEAR_ITEM_HEIGHT; // Use larger height for year picker
 
 const YearScrollPicker = ({
   value,
@@ -174,21 +176,46 @@ const YearScrollPicker = ({
     <Box
       sx={{
         position: "relative",
-        height: "14rem",
+        height: "14rem", // Keep original height
+        width: "5rem", // Keep original width
         overflow: "hidden",
         zIndex: 99,
-        flex: 1,
+        minWidth: "5rem", // Ensure minimum width
+        maxWidth: "5rem", // Ensure maximum width
+        py: 3, // Add vertical padding to reduce effective picker height
       }}
     >
+      {/* Selection overlay - shorter height for year picker */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "0.2rem",
+          right: "0.2rem",
+          transform: "translateY(-50%)",
+          height: "1.5rem", // Shorter height for month/year
+          borderRadius: 2,
+          zIndex: 5,
+        }}
+      />
+
       <Box
         ref={scrollRef}
         sx={{
+          position: "absolute", // Cover entire picker area for touch
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           height: "100%",
           overflowY: "auto",
           scrollbarWidth: "none",
           cursor: isDragging ? "grabbing" : "grab",
           WebkitOverflowScrolling: "touch", // Enable momentum scrolling on iOS
           overscrollBehavior: "contain", // Prevent overscroll from affecting parent elements
+          touchAction: "pan-y", // Only allow vertical scrolling
+          perspective: "600px", // Add perspective for 3D effect
+          perspectiveOrigin: "center center", // Center the perspective
           "&::-webkit-scrollbar": {
             display: "none",
           },
@@ -198,6 +225,7 @@ const YearScrollPicker = ({
         onWheel={handleWheel}
         style={{
           scrollBehavior: "auto", // Always use auto for responsive scrolling
+          willChange: "scroll-position", // Optimize for scrolling
         }}
       >
         <Box>
@@ -206,23 +234,47 @@ const YearScrollPicker = ({
             <Box key={`top-${i}`} sx={{ height: ITEM_HEIGHT }} />
           ))}
 
-          {years.map((year) => (
-            <Box
-              key={year}
-              sx={{
-                height: ITEM_HEIGHT,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "0.95rem",
-                color: year === value ? colors.text : colors.textSecondary,
-                fontWeight: year === value ? 500 : 400,
-                px: "0.5rem",
-              }}
-            >
-              {year}
-            </Box>
-          ))}
+          {years.map((year) => {
+            // Calculate distance from center for 3D cylindrical effect
+            const yearIndex = years.indexOf(year);
+            const selectedIndex = years.indexOf(value);
+            const distanceFromCenter = yearIndex - selectedIndex;
+            const absDistance = Math.abs(distanceFromCenter);
+
+            // Calculate skeuomorphic rotating dial transformation
+            const rotationX = distanceFromCenter * 12; // Degrees of rotation for cylinder effect
+            const scale = 1 - absDistance * 0.08; // Subtle scale reduction
+            const opacity = Math.max(0.4, 1 - absDistance * 0.15); // Fade distant items
+            const translateZ = -absDistance * 8; // Push distant items back in 3D space
+
+            return (
+              <Box
+                key={year}
+                sx={{
+                  height: ITEM_HEIGHT,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "0.95rem",
+                  color: year === value ? colors.text : colors.textSecondary,
+                  fontWeight: year === value ? 600 : 400,
+                  px: "0.5rem",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transform: `
+                    perspective(600px) 
+                    rotateX(${rotationX}deg) 
+                    scale(${Math.max(0.7, scale)}) 
+                    translateZ(${translateZ}px)
+                  `,
+                  opacity: opacity,
+                  transformStyle: "preserve-3d",
+                  backfaceVisibility: "hidden",
+                }}
+              >
+                {year}
+              </Box>
+            );
+          })}
 
           {/* Extra items at bottom for centering */}
           {Array.from({ length: SPACER_ITEMS }, (_, i) => (

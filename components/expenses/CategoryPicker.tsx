@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Box, Button } from "@mui/material";
-import { ChevronLeftOutlined, ChevronRightOutlined } from "@mui/icons-material";
+import React from "react";
+import { Box, Button, Typography, List, ListItem } from "@mui/material";
+import { Check } from "@mui/icons-material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Category } from "../../utils/types";
+import { cleanCategoryName } from "../../utils/categoryUtils";
 
 interface CategoryPickerProps {
   open: boolean;
@@ -14,36 +15,32 @@ interface CategoryPickerProps {
 
 const CategoryPicker: React.FC<CategoryPickerProps> = ({
   onClose,
-  // selectedCategory,
+  selectedCategory,
   onCategorySelect,
   categories,
 }) => {
-  const [categoryPage, setCategoryPage] = useState(0);
-  const [startX, setStartX] = useState(0);
-  const [startY, setStartY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
   const { colors } = useTheme();
 
   // Generate consistent colors for categories
   const getCategoryColor = (categoryName: string) => {
     const colorPalette = [
-      "#FF6B6B",
-      "#4ECDC4",
-      "#45B7D1",
-      "#96CEB4",
-      "#FECA57",
-      "#FF9FF3",
-      "#54A0FF",
-      "#5F27CD",
-      "#00D2D3",
-      "#FF9F43",
-      "#A55EEA",
-      "#26DE81",
-      "#FD79A8",
-      "#FDCB6E",
-      "#6C5CE7",
+      "#FF6B6B", // Red
+      "#4ECDC4", // Teal
+      "#45B7D1", // Blue
+      "#96CEB4", // Green
+      "#FECA57", // Yellow
+      "#FF9FF3", // Pink
+      "#54A0FF", // Light Blue
+      "#5F27CD", // Purple
+      "#00D2D3", // Cyan
+      "#FF9F43", // Orange
+      "#A55EEA", // Violet
+      "#26DE81", // Mint
+      "#FD79A8", // Rose
+      "#FDCB6E", // Peach
+      "#6C5CE7", // Indigo
     ];
-    // Use category name to generate consistent color index
+
     const hash = categoryName.split("").reduce((a, b) => {
       a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
@@ -51,219 +48,114 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({
     return colorPalette[Math.abs(hash) % colorPalette.length];
   };
 
-  // Reset page when categories change
-  useEffect(() => {
-    setCategoryPage(0);
-  }, [categories]);
-
   const handleCategorySelect = (categoryName: string) => {
     onCategorySelect(categoryName);
     onClose();
   };
 
-  const totalPages = Math.ceil(categories.length / 4);
-
-  const navigateCategories = (direction: "prev" | "next") => {
-    if (direction === "prev" && categoryPage > 0) {
-      setCategoryPage(categoryPage - 1);
-    } else if (direction === "next" && categoryPage < totalPages - 1) {
-      setCategoryPage(categoryPage + 1);
-    }
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    setStartX(touch.clientX);
-    setStartY(touch.clientY);
-    setIsDragging(false);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) {
-      const touch = e.touches[0];
-      const deltaX = Math.abs(touch.clientX - startX);
-      const deltaY = Math.abs(touch.clientY - startY);
-
-      // Lower threshold for more responsive swipe detection
-      if (deltaX > 5 && deltaX > deltaY) {
-        setIsDragging(true);
-        e.preventDefault(); // Prevent scrolling while swiping
-      }
-    } else {
-      e.preventDefault(); // Continue preventing scrolling during swipe
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-
-    const touch = e.changedTouches[0];
-    const deltaX = touch.clientX - startX;
-    const minSwipeDistance = 30; // Reduced for more responsive swiping
-
-    if (Math.abs(deltaX) > minSwipeDistance) {
-      if (deltaX > 0) {
-        // Swipe right - go to previous page
-        navigateCategories("prev");
-      } else {
-        // Swipe left - go to next page
-        navigateCategories("next");
-      }
-    }
-
-    setIsDragging(false);
-  };
-
   return (
     <Box
       sx={{
-        height: "18rem", // Reduced height
+        maxHeight: "28rem",
         display: "flex",
         flexDirection: "column",
+        py: 1,
       }}
     >
-      {/* Fixed height category grid container */}
+      {/* Scrollable category list */}
       <Box
         sx={{
-          height: "12rem", // Increased height for category section
-          display: "flex",
-          alignItems: totalPages > 1 ? "center" : "flex-start", // Top align when single page
-          justifyContent: totalPages > 1 ? "center" : "flex-start", // Left align when single page
-          pt: totalPages > 1 ? 0 : 2, // Add top padding when single page
-          pl: totalPages > 1 ? 0 : 0.5, // Add left padding when single page to match grid padding
+          flex: 1,
+          overflowY: "auto",
+          "&::-webkit-scrollbar": {
+            width: "4px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "transparent",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: colors.textSecondary + "40",
+            borderRadius: "2px",
+          },
         }}
       >
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 2, // More compact spacing
-            px: 0.5, // Reduced side padding
-            touchAction: "pan-y", // Allow vertical scrolling but handle horizontal swipes
-            transition: "all 0.3s ease-out", // Smooth transitions for page changes
-            opacity: isDragging ? 0.8 : 1, // Visual feedback during swipe
-          }}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          {categories
-            .slice(categoryPage * 4, (categoryPage + 1) * 4)
-            .map((cat: Category) => {
-              const categoryColor = getCategoryColor(cat.name);
-              return (
+        <List sx={{ padding: 0 }}>
+          {categories.map((cat: Category) => {
+            const cleanedCategory = cleanCategoryName(cat.name);
+            const categoryColor = getCategoryColor(cleanedCategory.name);
+            const isSelected = selectedCategory === cleanedCategory.name;
+
+            return (
+              <ListItem key={cat.name} sx={{ padding: 0, mb: 0.5 }}>
                 <Button
-                  key={cat.name}
                   onClick={() => handleCategorySelect(cat.name)}
                   sx={{
+                    width: "100%",
                     display: "flex",
-                    flexDirection: "column",
                     alignItems: "center",
-                    justifyContent: "center",
-                    gap: 0,
-                    p: 2,
-                    backgroundColor: categoryColor,
-                    borderRadius: 3,
-                    minHeight: "3.5rem", // Reduced button height
+                    justifyContent: "flex-start",
+                    gap: 1.5,
+                    p: 1,
+                    backgroundColor: isSelected
+                      ? colors.surface
+                      : "transparent",
+                    borderRadius: 2,
                     textTransform: "none",
-                    color: "white",
-                    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                    border: "none",
-                    boxShadow: `0 2px 8px ${categoryColor}40`, // Shadow with category color
+                    transition: "all 0.2s ease-in-out",
                     "&:hover": {
-                      transform: "scale(1.05)", // Simple scale on hover
-                      boxShadow: `0 4px 12px ${categoryColor}60`,
+                      backgroundColor: colors.surface,
                     },
                     "&:active": {
-                      transform: "scale(0.95)", // Press down effect
+                      transform: "scale(0.98)",
                     },
                   }}
                 >
+                  {/* Category icon circle */}
                   <Box
                     sx={{
-                      fontSize: "0.875rem",
-                      fontWeight: 700,
-                      textAlign: "center",
-                      lineHeight: 1.3,
-                      textShadow: "0 1px 2px rgba(0,0,0,0.2)", // Better text readability
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      backgroundColor: categoryColor,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      fontSize: "1.25rem",
                     }}
                   >
-                    {cat.name}
+                    {cleanedCategory.emoji}
                   </Box>
+
+                  {/* Category name */}
+                  <Typography
+                    sx={{
+                      fontSize: "0.9rem",
+                      fontWeight: 500,
+                      color: colors.text,
+                      textAlign: "left",
+                      flex: 1,
+                    }}
+                  >
+                    {cleanedCategory.name}
+                  </Typography>
+
+                  {/* Selected indicator */}
+                  {isSelected && (
+                    <Check
+                      sx={{
+                        color: colors.text,
+                        fontSize: "1.2rem",
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
                 </Button>
-              );
-            })}
-        </Box>
+              </ListItem>
+            );
+          })}
+        </List>
       </Box>
-
-      {/* Navigation fixed at bottom */}
-      {totalPages > 1 && (
-        <Box
-          sx={{
-            height: "7rem", // Increased height for navigation
-            display: "flex",
-            width: "100%",
-            justifyContent: "space-between",
-            alignItems: "center", // Center align all navigation elements
-            pt: 0, // Remove top padding to bring closer
-            transform: "translateY(-3rem)", // Move entire navigation higher up
-          }}
-        >
-          <Button
-            onClick={() => navigateCategories("prev")}
-            disabled={categoryPage === 0}
-            sx={{
-              color: categoryPage === 0 ? colors.textSecondary : colors.text,
-              minWidth: "auto",
-              borderRadius: 2,
-              transition: "all 0.2s ease-in-out",
-              "&:disabled": {
-                opacity: 0.3,
-              },
-            }}
-          >
-            <ChevronLeftOutlined />
-          </Button>
-
-          {/* Page Indicators */}
-          <Box sx={{ display: "flex", gap: 1.5 }}>
-            {Array.from({ length: totalPages }).map((_, index) => (
-              <Box
-                key={index}
-                sx={{
-                  width: index === categoryPage ? 12 : 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor:
-                    index === categoryPage
-                      ? colors.text
-                      : colors.textSecondary + "30",
-                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", // Smooth size transition
-                }}
-              />
-            ))}
-          </Box>
-
-          <Button
-            onClick={() => navigateCategories("next")}
-            disabled={categoryPage === totalPages - 1}
-            sx={{
-              color:
-                categoryPage === totalPages - 1
-                  ? colors.textSecondary
-                  : colors.text,
-              minWidth: "auto",
-              borderRadius: 2,
-              transition: "all 0.2s ease-in-out",
-              "&:disabled": {
-                opacity: 0.3,
-              },
-            }}
-          >
-            <ChevronRightOutlined />
-          </Button>
-        </Box>
-      )}
     </Box>
   );
 };

@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
+import { TIME_ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
 
 const PeriodScrollPicker = ({
   value,
@@ -24,10 +24,14 @@ const PeriodScrollPicker = ({
     const setScrollPosition = () => {
       if (scrollRef.current) {
         const scrollValue = value === "AM" ? 0 : 1;
+        const containerHeight = scrollRef.current.clientHeight;
+        const centerOffset = containerHeight / 2;
 
-        // Account for spacer items at top + scroll to center the item
+        // Position selected item exactly in center with overlay
         const targetScroll =
-          (SPACER_ITEMS + scrollValue) * ITEM_HEIGHT - ITEM_HEIGHT;
+          (SPACER_ITEMS + scrollValue) * TIME_ITEM_HEIGHT -
+          centerOffset +
+          TIME_ITEM_HEIGHT / 2;
         scrollRef.current.scrollTop = Math.max(0, targetScroll);
       }
     };
@@ -41,10 +45,14 @@ const PeriodScrollPicker = ({
   const snapToNearestItem = (immediate = false) => {
     if (scrollRef.current) {
       const scrollTop = scrollRef.current.scrollTop;
+      const containerHeight = scrollRef.current.clientHeight;
+      const centerOffset = containerHeight / 2;
 
-      // Find nearest item accounting for spacers
+      // Find nearest item accounting for spacers and centering
       let adjustedIndex =
-        Math.round((scrollTop + ITEM_HEIGHT) / ITEM_HEIGHT) - SPACER_ITEMS;
+        Math.round(
+          (scrollTop + centerOffset - TIME_ITEM_HEIGHT / 2) / TIME_ITEM_HEIGHT
+        ) - SPACER_ITEMS;
 
       adjustedIndex = Math.max(0, Math.min(1, adjustedIndex));
       const newValue = periods[adjustedIndex];
@@ -52,7 +60,9 @@ const PeriodScrollPicker = ({
 
       // Snap to centered position
       const targetScroll =
-        (SPACER_ITEMS + adjustedIndex) * ITEM_HEIGHT - ITEM_HEIGHT;
+        (SPACER_ITEMS + adjustedIndex) * TIME_ITEM_HEIGHT -
+        centerOffset +
+        TIME_ITEM_HEIGHT / 2;
 
       if (immediate) {
         scrollRef.current.scrollTop = Math.max(0, targetScroll);
@@ -136,20 +146,31 @@ const PeriodScrollPicker = ({
     <Box
       sx={{
         position: "relative",
-        height: "8rem",
+        height: "8rem", // Reduced overall height
+        width: "3rem", // Wider for AM/PM text and better overlay coverage
         overflow: "hidden",
         zIndex: 99,
+        minWidth: "3rem", // Ensure minimum width
+        maxWidth: "3rem", // Ensure maximum width
       }}
     >
       <Box
         ref={scrollRef}
         sx={{
+          position: "absolute", // Cover entire picker area for touch
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           height: "100%",
           overflowY: "auto",
           scrollbarWidth: "none",
           cursor: isDragging ? "grabbing" : "grab",
           WebkitOverflowScrolling: "touch", // Enable momentum scrolling on iOS
           overscrollBehavior: "contain", // Prevent overscroll from affecting parent elements
+          touchAction: "pan-y", // Only allow vertical scrolling
+          perspective: "600px", // Add perspective for 3D effect
+          perspectiveOrigin: "center center", // Center the perspective
           "&::-webkit-scrollbar": {
             display: "none",
           },
@@ -159,34 +180,58 @@ const PeriodScrollPicker = ({
         onWheel={handleWheel}
         style={{
           scrollBehavior: "auto", // Always use auto for responsive scrolling
+          willChange: "scroll-position", // Optimize for scrolling
         }}
       >
         <Box>
           {/* Extra items at top for centering */}
-          {Array.from({ length: 4 }, (_, i) => (
-            <Box key={`top-${i}`} sx={{ height: ITEM_HEIGHT }} />
+          {Array.from({ length: SPACER_ITEMS }, (_, i) => (
+            <Box key={`top-${i}`} sx={{ height: TIME_ITEM_HEIGHT }} />
           ))}
 
-          {periods.map((period) => (
-            <Box
-              key={period}
-              sx={{
-                height: ITEM_HEIGHT,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "1.25rem",
-                color: period === value ? colors.text : colors.textSecondary,
-                fontWeight: period === value ? 500 : 400,
-              }}
-            >
-              {period}
-            </Box>
-          ))}
+          {periods.map((period, index) => {
+            // Calculate distance from center for 3D cylindrical effect
+            const valueIndex = periods.indexOf(value);
+            const distanceFromCenter = index - valueIndex;
+            const absDistance = Math.abs(distanceFromCenter);
+
+            // Calculate balanced skeuomorphic rotating dial transformation
+            const rotationX = distanceFromCenter * 12; // Reduced rotation for more uniform spacing
+            const scale = 1 - absDistance * 0.08; // Less dramatic scale to maintain spacing
+            const opacity = Math.max(0.4, 1 - absDistance * 0.18); // Gentler fade for better visibility
+            const translateZ = -absDistance * 8; // Less aggressive Z translation
+
+            return (
+              <Box
+                key={period}
+                sx={{
+                  height: TIME_ITEM_HEIGHT,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.25rem",
+                  color: period === value ? colors.text : colors.textSecondary,
+                  fontWeight: period === value ? 600 : 400,
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transform: `
+                    perspective(500px) 
+                    rotateX(${rotationX}deg) 
+                    scale(${Math.max(0.6, scale)}) 
+                    translateZ(${translateZ}px)
+                  `,
+                  opacity: opacity,
+                  transformStyle: "preserve-3d",
+                  backfaceVisibility: "hidden",
+                }}
+              >
+                {period}
+              </Box>
+            );
+          })}
 
           {/* Extra items at bottom for centering */}
-          {Array.from({ length: 4 }, (_, i) => (
-            <Box key={`bottom-${i}`} sx={{ height: "2.5rem" }} />
+          {Array.from({ length: SPACER_ITEMS }, (_, i) => (
+            <Box key={`bottom-${i}`} sx={{ height: TIME_ITEM_HEIGHT }} />
           ))}
         </Box>
       </Box>
