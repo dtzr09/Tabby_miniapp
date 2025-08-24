@@ -1,7 +1,7 @@
 import React, {
   useState,
   useRef,
-  useContext,
+  // useContext,
   useEffect,
   useCallback,
   useMemo,
@@ -15,7 +15,7 @@ import {
   TextField,
   Chip,
 } from "@mui/material";
-import { DimensionsContext } from "../../AppLayout";
+// import { DimensionsContext } from "../../AppLayout";
 import { useTheme } from "../../../src/contexts/ThemeContext";
 import { Backspace, CallSplit, GraphicEq } from "@mui/icons-material";
 import BottomSheet from "../../common/BottomSheet";
@@ -86,7 +86,7 @@ export default function EntryForm({
   hasChanges = false,
 }: EntryFormProps) {
   const { colors } = useTheme();
-  const dimensions = useContext(DimensionsContext);
+  // const dimensions = useContext(DimensionsContext);
   const isExpense = typeof expense === "object" && "shares" in expense;
   const queryClient = useQueryClient();
 
@@ -377,11 +377,11 @@ export default function EntryForm({
   };
 
   return (
-    // <AppLayout title={isIncome ? "Income" : "Expense"}>
     <Box
       sx={{
         display: "flex",
         flexDirection: "column",
+        height: "100dvh",
         // height: `${dimensions.height - 120}px`,
         width: "100%",
         overflow: "hidden",
@@ -775,6 +775,5 @@ export default function EntryForm({
         </BottomSheet>
       )}
     </Box>
-    // </AppLayout>
   );
 }
