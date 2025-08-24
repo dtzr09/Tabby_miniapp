@@ -264,7 +264,6 @@ export default function EntryForm({
 
   // Keyboard height detection
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [isDescriptionFocused, setIsDescriptionFocused] = useState(false);
 
   // Measure the fixed bottom section height
   const [bottomSectionRef, bottomSectionBounds] = useMeasure();
@@ -555,8 +554,6 @@ export default function EntryForm({
           onChange={(e) => onDescriptionChange(e.target.value)}
           placeholder="Enter description"
           variant="standard"
-          onFocus={() => setIsDescriptionFocused(true)}
-          onBlur={() => setIsDescriptionFocused(false)}
           inputProps={{
             inputMode: "text",
             autoComplete: "off",
