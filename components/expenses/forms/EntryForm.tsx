@@ -17,11 +17,7 @@ import {
 } from "@mui/material";
 import { AppLayout, DimensionsContext } from "../../AppLayout";
 import { useTheme } from "../../../src/contexts/ThemeContext";
-import {
-  Backspace,
-  CallSplit,
-  GraphicEq,
-} from "@mui/icons-material";
+import { Backspace, CallSplit, GraphicEq } from "@mui/icons-material";
 import BottomSheet from "../../common/BottomSheet";
 import SplitInfoTooltip from "../../common/SplitInfoTooltip";
 import { Category, Expense, Income } from "../../../utils/types";
@@ -406,406 +402,404 @@ export default function EntryForm({
   };
 
   return (
-    <AppLayout title={isIncome ? "Income" : "Expense"}>
+    // <AppLayout title={isIncome ? "Income" : "Expense"}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: `${dimensions.height - 120}px`,
+        width: "100%",
+        overflow: "hidden",
+      }}
+    >
+      {/* Top Section - Main Display Area */}
       <Box
         sx={{
+          flex: 1,
           display: "flex",
           flexDirection: "column",
-          height: `${dimensions.height - 120}px`,
+          justifyContent: "center",
+          alignItems: "center",
+          px: 2,
+          gap: 4,
           width: "100%",
-          overflow: "hidden",
+          position: "relative",
+          minHeight: 0, // Allow flex item to shrink
         }}
       >
-        {/* Top Section - Main Display Area */}
+        {/* Split Info Tooltip - Only for group expenses */}
+        {isGroupExpense && isExpense && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              zIndex: 100,
+            }}
+          >
+            <SplitInfoTooltip
+              expense={expense}
+              currentAmount={currentAmount}
+              isEditMode={false}
+            />
+          </Box>
+        )}
+
+        {/* Category Selector Chip*/}
+        <Chip
+          label={selectedCategory?.name || "Select Category"}
+          sx={{
+            backgroundColor: selectedCategory?.name
+              ? getCategoryColor(cleanCategoryName(selectedCategory.name).name)
+              : colors.border,
+            color: selectedCategory?.name ? "white" : colors.text,
+            fontSize: "0.8rem",
+            fontWeight: 500,
+            borderRadius: 2,
+            padding: "2px 4px",
+            height: "auto",
+            textTransform: "none",
+            cursor: "pointer",
+            width: "fit-content",
+            boxShadow: selectedCategory?.name
+              ? `0 2px 6px ${getCategoryColor(
+                  cleanCategoryName(selectedCategory.name).name
+                )}40`
+              : "none",
+          }}
+          onClick={() => {
+            setShowCategoryPicker(true);
+          }}
+        />
+
+        {/* Amount Display with Delete Button */}
         <Box
           sx={{
-            flex: 1,
+            textAlign: "center",
+            position: "relative",
+            width: "100%",
             display: "flex",
-            flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
-            px: 2,
-            gap: 4,
-            width: "100%",
-            position: "relative",
-            minHeight: 0, // Allow flex item to shrink
           }}
         >
-          {/* Split Info Tooltip - Only for group expenses */}
-          {isGroupExpense && isExpense && (
-            <Box
-              sx={{
-                position: "absolute",
-                top: 16,
-                right: 16,
-                zIndex: 100,
-              }}
-            >
-              <SplitInfoTooltip
-                expense={expense}
-                currentAmount={currentAmount}
-                isEditMode={false}
-              />
-            </Box>
-          )}
-
-          {/* Category Selector Chip*/}
-          <Chip
-            label={selectedCategory?.name || "Select Category"}
-            sx={{
-              backgroundColor: selectedCategory?.name
-                ? getCategoryColor(
-                    cleanCategoryName(selectedCategory.name).name
-                  )
-                : colors.border,
-              color: selectedCategory?.name ? "white" : colors.text,
-              fontSize: "0.8rem",
-              fontWeight: 500,
-              borderRadius: 2,
-              padding: "2px 4px",
-              height: "auto",
-              textTransform: "none",
-              cursor: "pointer",
-              width: "fit-content",
-              boxShadow: selectedCategory?.name
-                ? `0 2px 6px ${getCategoryColor(
-                    cleanCategoryName(selectedCategory.name).name
-                  )}40`
-                : "none",
-            }}
-            onClick={() => {
-              setShowCategoryPicker(true);
-            }}
-          />
-
-          {/* Amount Display with Delete Button */}
           <Box
+            ref={amountScrollRef}
             sx={{
-              textAlign: "center",
-              position: "relative",
-              width: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
+              maxWidth: "50%", // Account for backspace button width + more padding
+              overflowX: "auto",
+              "&::-webkit-scrollbar": {
+                display: "none",
+              },
+              scrollbarWidth: "none",
             }}
           >
-            <Box
-              ref={amountScrollRef}
+            <Typography
               sx={{
-                maxWidth: "50%", // Account for backspace button width + more padding
-                overflowX: "auto",
-                "&::-webkit-scrollbar": {
-                  display: "none",
-                },
-                scrollbarWidth: "none",
-              }}
-            >
-              <Typography
-                sx={{
-                  fontSize: "4rem",
-                  fontWeight: 300,
-                  color: colors.text,
-                  lineHeight: 1,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {currentAmount}
-              </Typography>
-            </Box>
-
-            {/* Backspace Button positioned further to the right */}
-            <IconButton
-              onClick={handleBackspace}
-              disabled={originalIsCustomSplit()}
-              sx={{
-                backgroundColor: colors.surface,
+                fontSize: "4rem",
+                fontWeight: 300,
                 color: colors.text,
-                width: 32,
-                height: 32,
-                position: "absolute",
-                right: 0,
+                lineHeight: 1,
+                whiteSpace: "nowrap",
               }}
             >
-              <Backspace fontSize="small" />
-            </IconButton>
+              {currentAmount}
+            </Typography>
           </Box>
 
-          {/* Description Input Field */}
-          <TextField
-            value={description}
-            onChange={(e) => onDescriptionChange(e.target.value)}
-            placeholder="Enter description"
-            variant="standard"
-            inputProps={{
-              inputMode: "text",
-              autoComplete: "off",
-              autoCorrect: "off",
-              spellCheck: false,
-            }}
+          {/* Backspace Button positioned further to the right */}
+          <IconButton
+            onClick={handleBackspace}
+            disabled={originalIsCustomSplit()}
             sx={{
-              width: "70%",
-              "& .MuiInput-root": {
-                fontSize: "1.1rem",
-                fontWeight: 500,
-                "&:before": {
-                  borderBottom: `1px solid ${alpha(colors.textSecondary, 0.3)}`,
-                },
-                "&:hover:not(.Mui-disabled):before": {
-                  borderBottom: `1px solid ${alpha(colors.textSecondary, 0.6)}`,
-                },
-                "&:after": {
-                  borderBottom: `2px solid ${colors.primary}`,
-                },
-              },
-              "& .MuiInputBase-input": {
-                textAlign: "center",
-                color: colors.text,
-                backgroundColor: "transparent",
-                padding: "8px 0",
-                "&::placeholder": {
-                  color: colors.textSecondary,
-                  opacity: 0.7,
-                },
-              },
-            }}
-          />
-        </Box>
-
-        {/* Bottom Section - Always at bottom */}
-        <Box
-          ref={bottomSectionRef}
-          sx={{
-            width: "100%",
-            flexShrink: 0, // Prevent shrinking
-            backgroundColor: colors.background,
-          }}
-        >
-          <DatetimeBar
-            onDelete={onDelete}
-            onToggleRecurring={onToggleRecurring}
-            isGroupExpense={isGroupExpense}
-            isIncome={isIncome}
-            setShowDateTimePicker={setShowDateTimePicker}
-            selectedDateTime={selectedDateTime}
-            showFloatingPanel={showFloatingPanel}
-            setShowFloatingPanel={setShowFloatingPanel}
-            isCustomSplit={isCustomSplit}
-            setEditExpenseShare={setEditExpenseShare}
-            setShowSplitExpenseSheet={setShowSplitExpenseSheet}
-            bottomSectionBounds={bottomSectionBounds}
-          />
-          <KeypadButtons
-            onDateTimeChange={onDateTimeChange}
-            onSubmit={onSubmit}
-            currentAmount={currentAmount}
-            hasChanges={hasChanges}
-            originalIsCustomSplit={originalIsCustomSplit}
-            editExpenseShare={editExpenseShare}
-            isCustomSplit={isCustomSplit}
-            onAmountChange={onAmountChange}
-            onBackspace={handleBackspace}
-            selectedDateTime={selectedDateTime}
-          />
-        </Box>
-
-        {/* Overlay when floating panel is open */}
-        {isGroupExpense && showFloatingPanel && !isIncome && (
-          <Box
-            onClick={() => setShowFloatingPanel(false)}
-            sx={{
-              position: "fixed",
-              top: 0,
-              left: 0,
+              backgroundColor: colors.surface,
+              color: colors.text,
+              width: 32,
+              height: 32,
+              position: "absolute",
               right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.3)",
-              zIndex: 999, // Lower than the floating panel but higher than other content
-              animation: "fadeIn 0.2s ease-out",
-              "@keyframes fadeIn": {
-                from: { opacity: 0 },
-                to: { opacity: 1 },
-              },
             }}
-          />
-        )}
+          >
+            <Backspace fontSize="small" />
+          </IconButton>
+        </Box>
 
-        {/* Date/Time Picker Bottom Sheet */}
-        <BottomSheet
-          open={showDateTimePicker}
+        {/* Description Input Field */}
+        <TextField
+          value={description}
+          onChange={(e) => onDescriptionChange(e.target.value)}
+          placeholder="Enter description"
+          variant="standard"
+          inputProps={{
+            inputMode: "text",
+            autoComplete: "off",
+            autoCorrect: "off",
+            spellCheck: false,
+          }}
+          sx={{
+            width: "70%",
+            "& .MuiInput-root": {
+              fontSize: "1.1rem",
+              fontWeight: 500,
+              "&:before": {
+                borderBottom: `1px solid ${alpha(colors.textSecondary, 0.3)}`,
+              },
+              "&:hover:not(.Mui-disabled):before": {
+                borderBottom: `1px solid ${alpha(colors.textSecondary, 0.6)}`,
+              },
+              "&:after": {
+                borderBottom: `2px solid ${colors.primary}`,
+              },
+            },
+            "& .MuiInputBase-input": {
+              textAlign: "center",
+              color: colors.text,
+              backgroundColor: "transparent",
+              padding: "8px 0",
+              "&::placeholder": {
+                color: colors.textSecondary,
+                opacity: 0.7,
+              },
+            },
+          }}
+        />
+      </Box>
+
+      {/* Bottom Section - Always at bottom */}
+      <Box
+        ref={bottomSectionRef}
+        sx={{
+          width: "100%",
+          flexShrink: 0, // Prevent shrinking
+          backgroundColor: colors.background,
+        }}
+      >
+        <DatetimeBar
+          onDelete={onDelete}
+          onToggleRecurring={onToggleRecurring}
+          isGroupExpense={isGroupExpense}
+          isIncome={isIncome}
+          setShowDateTimePicker={setShowDateTimePicker}
+          selectedDateTime={selectedDateTime}
+          showFloatingPanel={showFloatingPanel}
+          setShowFloatingPanel={setShowFloatingPanel}
+          isCustomSplit={isCustomSplit}
+          setEditExpenseShare={setEditExpenseShare}
+          setShowSplitExpenseSheet={setShowSplitExpenseSheet}
+          bottomSectionBounds={bottomSectionBounds}
+        />
+        <KeypadButtons
+          onDateTimeChange={onDateTimeChange}
+          onSubmit={onSubmit}
+          currentAmount={currentAmount}
+          hasChanges={hasChanges}
+          originalIsCustomSplit={originalIsCustomSplit}
+          editExpenseShare={editExpenseShare}
+          isCustomSplit={isCustomSplit}
+          onAmountChange={onAmountChange}
+          onBackspace={handleBackspace}
+          selectedDateTime={selectedDateTime}
+        />
+      </Box>
+
+      {/* Overlay when floating panel is open */}
+      {isGroupExpense && showFloatingPanel && !isIncome && (
+        <Box
+          onClick={() => setShowFloatingPanel(false)}
+          sx={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.3)",
+            zIndex: 999, // Lower than the floating panel but higher than other content
+            animation: "fadeIn 0.2s ease-out",
+            "@keyframes fadeIn": {
+              from: { opacity: 0 },
+              to: { opacity: 1 },
+            },
+          }}
+        />
+      )}
+
+      {/* Date/Time Picker Bottom Sheet */}
+      <BottomSheet
+        open={showDateTimePicker}
+        onClose={() => setShowDateTimePicker(false)}
+        height="25rem"
+      >
+        <DateTimePicker
+          date={selectedDateTime}
+          onDateChange={(newDateTime) => {
+            setSelectedDateTime(newDateTime);
+            // Notify parent component of date/time changes
+            onDateTimeChange?.(newDateTime);
+          }}
           onClose={() => setShowDateTimePicker(false)}
-          height="25rem"
-        >
-          <DateTimePicker
-            date={selectedDateTime}
-            onDateChange={(newDateTime) => {
-              setSelectedDateTime(newDateTime);
-              // Notify parent component of date/time changes
-              onDateTimeChange?.(newDateTime);
-            }}
-            onClose={() => setShowDateTimePicker(false)}
-          />
-        </BottomSheet>
+        />
+      </BottomSheet>
 
-        {/* Category Picker Bottom Sheet */}
-        <BottomSheet
+      {/* Category Picker Bottom Sheet */}
+      <BottomSheet
+        open={showCategoryPicker}
+        onClose={() => setShowCategoryPicker(false)}
+        title="Categories"
+      >
+        <CategoryPicker
           open={showCategoryPicker}
+          categories={filteredCategories}
           onClose={() => setShowCategoryPicker(false)}
-          title="Categories"
-        >
-          <CategoryPicker
-            open={showCategoryPicker}
-            categories={filteredCategories}
-            onClose={() => setShowCategoryPicker(false)}
-            selectedCategory={selectedCategory.name}
-            onCategorySelect={handleCategorySelect}
-          />
-        </BottomSheet>
+          selectedCategory={selectedCategory.name}
+          onCategorySelect={handleCategorySelect}
+        />
+      </BottomSheet>
 
-        {/* Split Expense Bottom Sheet */}
-        {isExpense && (
-          <BottomSheet
-            open={showSplitExpenseSheet}
-            onClose={() => {
-              setShowSplitExpenseSheet(false);
-              // Reset changes when closing the sheet
-              setSplitHasChanges(false);
-              setEditExpenseShare(false);
-            }}
-            title="Split Expense"
-            titleIcon={
-              <SplitInfoTooltip
-                expense={expense}
-                currentAmount={currentAmount}
-                isEditMode={editExpenseShare}
-              />
-            }
-            description={`$${parseFloat(displayAmount).toFixed(2)}  •  ${
-              isExpense && expense?.shares && expense?.shares?.length
-            } people`}
-            buttons={[
-              {
-                text: "Save",
-                onClick: handleSplitApplyChanges,
-                disabled:
-                  Object.keys(splitValidationErrors).length > 0 ||
-                  !splitHasChanges,
-                variant: "primary",
-              },
-            ]}
-            actionButtons={
-              <Box sx={{ display: "flex", gap: 1 }}>
-                {/* Edit/Equal Split Toggle Button */}
-                <Button
-                  onClick={() => {
-                    if (editExpenseShare && isCustomSplit()) {
-                      // Switching from custom split to equal split - populate equal amounts
-                      if (expense?.shares) {
-                        const totalAmount = parseFloat(displayAmount);
-                        const equalAmount = (
-                          totalAmount / expense.shares.length
-                        ).toFixed(2);
+      {/* Split Expense Bottom Sheet */}
+      {isExpense && (
+        <BottomSheet
+          open={showSplitExpenseSheet}
+          onClose={() => {
+            setShowSplitExpenseSheet(false);
+            // Reset changes when closing the sheet
+            setSplitHasChanges(false);
+            setEditExpenseShare(false);
+          }}
+          title="Split Expense"
+          titleIcon={
+            <SplitInfoTooltip
+              expense={expense}
+              currentAmount={currentAmount}
+              isEditMode={editExpenseShare}
+            />
+          }
+          description={`$${parseFloat(displayAmount).toFixed(2)}  •  ${
+            isExpense && expense?.shares && expense?.shares?.length
+          } people`}
+          buttons={[
+            {
+              text: "Save",
+              onClick: handleSplitApplyChanges,
+              disabled:
+                Object.keys(splitValidationErrors).length > 0 ||
+                !splitHasChanges,
+              variant: "primary",
+            },
+          ]}
+          actionButtons={
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {/* Edit/Equal Split Toggle Button */}
+              <Button
+                onClick={() => {
+                  if (editExpenseShare && isCustomSplit()) {
+                    // Switching from custom split to equal split - populate equal amounts
+                    if (expense?.shares) {
+                      const totalAmount = parseFloat(displayAmount);
+                      const equalAmount = (
+                        totalAmount / expense.shares.length
+                      ).toFixed(2);
 
-                        // Update input values with equal amounts
-                        const newInputValues: Record<string | number, string> =
-                          {};
-                        expense.shares.forEach((share) => {
-                          newInputValues[share.user_id] = equalAmount;
-                        });
-                        setSplitInputValues(newInputValues);
-                        setSplitHasChanges(true); // Enable save button for this change
-                      }
-                    } else if (editExpenseShare && !isCustomSplit()) {
-                      // Switching from equal split to custom split - check if values actually changed
-                      if (expense?.shares) {
-                        const totalAmount = parseFloat(displayAmount);
-                        const equalAmount = (
-                          totalAmount / expense.shares.length
-                        ).toFixed(2);
-
-                        // Check if current input values are different from equal amounts
-                        const hasChanges = expense.shares.some((share) => {
-                          const currentValue = splitInputValues[share.user_id];
-                          return (
-                            currentValue &&
-                            Math.abs(
-                              parseFloat(currentValue) - parseFloat(equalAmount)
-                            ) > 0.01
-                          );
-                        });
-
-                        setSplitHasChanges(hasChanges);
-                      }
-                    } else if (!editExpenseShare) {
-                      // Initialize input values with current shares
-                      if (expense?.shares) {
-                        const currentInputValues: Record<
-                          string | number,
-                          string
-                        > = {};
-                        expense.shares.forEach((share) => {
-                          currentInputValues[share.user_id] =
-                            share.share_amount.toString();
-                        });
-                        setSplitInputValues(currentInputValues);
-                        setSplitHasChanges(false); // No changes initially
-                      }
+                      // Update input values with equal amounts
+                      const newInputValues: Record<string | number, string> =
+                        {};
+                      expense.shares.forEach((share) => {
+                        newInputValues[share.user_id] = equalAmount;
+                      });
+                      setSplitInputValues(newInputValues);
+                      setSplitHasChanges(true); // Enable save button for this change
                     }
+                  } else if (editExpenseShare && !isCustomSplit()) {
+                    // Switching from equal split to custom split - check if values actually changed
+                    if (expense?.shares) {
+                      const totalAmount = parseFloat(displayAmount);
+                      const equalAmount = (
+                        totalAmount / expense.shares.length
+                      ).toFixed(2);
 
-                    setEditExpenseShare(!editExpenseShare);
-                  }}
+                      // Check if current input values are different from equal amounts
+                      const hasChanges = expense.shares.some((share) => {
+                        const currentValue = splitInputValues[share.user_id];
+                        return (
+                          currentValue &&
+                          Math.abs(
+                            parseFloat(currentValue) - parseFloat(equalAmount)
+                          ) > 0.01
+                        );
+                      });
+
+                      setSplitHasChanges(hasChanges);
+                    }
+                  } else if (!editExpenseShare) {
+                    // Initialize input values with current shares
+                    if (expense?.shares) {
+                      const currentInputValues: Record<
+                        string | number,
+                        string
+                      > = {};
+                      expense.shares.forEach((share) => {
+                        currentInputValues[share.user_id] =
+                          share.share_amount.toString();
+                      });
+                      setSplitInputValues(currentInputValues);
+                      setSplitHasChanges(false); // No changes initially
+                    }
+                  }
+
+                  setEditExpenseShare(!editExpenseShare);
+                }}
+                sx={{
+                  color: colors.text,
+                  textTransform: "none",
+                  borderRadius: 6,
+                  backgroundColor: colors.border,
+                  p: 1,
+                }}
+              >
+                {editExpenseShare && !isCustomSplit() ? (
+                  <GraphicEq
+                    fontSize="small"
+                    sx={{
+                      mr: 0.5,
+                      fontSize: "0.9rem",
+                      color: colors.text,
+                    }}
+                  />
+                ) : (
+                  <CallSplit
+                    fontSize="small"
+                    sx={{
+                      mr: 0.5,
+                      fontSize: "0.9rem",
+                      color: colors.text,
+                    }}
+                  />
+                )}
+
+                <Typography
+                  variant="body2"
                   sx={{
-                    color: colors.text,
-                    textTransform: "none",
-                    borderRadius: 6,
-                    backgroundColor: colors.border,
-                    p: 1,
+                    fontSize: "0.8rem",
+                    letterSpacing: 1,
+                    fontWeight: 550,
                   }}
                 >
-                  {editExpenseShare && !isCustomSplit() ? (
-                    <GraphicEq
-                      fontSize="small"
-                      sx={{
-                        mr: 0.5,
-                        fontSize: "0.9rem",
-                        color: colors.text,
-                      }}
-                    />
-                  ) : (
-                    <CallSplit
-                      fontSize="small"
-                      sx={{
-                        mr: 0.5,
-                        fontSize: "0.9rem",
-                        color: colors.text,
-                      }}
-                    />
-                  )}
-
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontSize: "0.8rem",
-                      letterSpacing: 1,
-                      fontWeight: 550,
-                    }}
-                  >
-                    {editExpenseShare ? "Split Evenly" : "Custom Split"}
-                  </Typography>
-                </Button>
-              </Box>
-            }
-          >
-            <SplitExpense
-              expense={expense}
-              editExpenseShare={editExpenseShare}
-              currentAmount={currentAmount}
-              onValidationChange={setSplitValidationErrors}
-              onHasChangesChange={setSplitHasChanges}
-              onInputValuesChange={setSplitInputValues}
-            />
-          </BottomSheet>
-        )}
-      </Box>
-    </AppLayout>
+                  {editExpenseShare ? "Split Evenly" : "Custom Split"}
+                </Typography>
+              </Button>
+            </Box>
+          }
+        >
+          <SplitExpense
+            expense={expense}
+            editExpenseShare={editExpenseShare}
+            currentAmount={currentAmount}
+            onValidationChange={setSplitValidationErrors}
+            onHasChangesChange={setSplitHasChanges}
+            onInputValuesChange={setSplitInputValues}
+          />
+        </BottomSheet>
+      )}
+    </Box>
+    // </AppLayout>
   );
 }
