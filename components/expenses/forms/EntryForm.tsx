@@ -15,7 +15,7 @@ import {
   TextField,
   Chip,
 } from "@mui/material";
-import { AppLayout, DimensionsContext } from "../../AppLayout";
+import { DimensionsContext } from "../../AppLayout";
 import { useTheme } from "../../../src/contexts/ThemeContext";
 import { Backspace, CallSplit, GraphicEq } from "@mui/icons-material";
 import BottomSheet from "../../common/BottomSheet";
@@ -26,6 +26,7 @@ import { alpha } from "@mui/material/styles";
 import DateTimePicker from "../../datetimepicker/DateTimePicker";
 import CategoryPicker from "../CategoryPicker";
 import { cleanCategoryName } from "../../../utils/categoryUtils";
+import { getCategoryColor } from "../../../utils/categoryColors";
 import SplitExpense from "../../expenseShare/SplitExpense";
 import {
   updateExpenseAmount,
@@ -252,32 +253,6 @@ export default function EntryForm({
     onAmountChange,
   ]);
 
-  // Generate consistent colors for categories
-  const getCategoryColor = (categoryName: string) => {
-    const colorPalette = [
-      "#FF6B6B", // Red
-      "#4ECDC4", // Teal
-      "#45B7D1", // Blue
-      "#96CEB4", // Green
-      "#FECA57", // Yellow
-      "#FF9FF3", // Pink
-      "#54A0FF", // Light Blue
-      "#5F27CD", // Purple
-      "#00D2D3", // Cyan
-      "#FF9F43", // Orange
-      "#A55EEA", // Violet
-      "#26DE81", // Mint
-      "#FD79A8", // Rose
-      "#FDCB6E", // Peach
-      "#6C5CE7", // Indigo
-    ];
-
-    const hash = categoryName.split("").reduce((a, b) => {
-      a = (a << 5) - a + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    return colorPalette[Math.abs(hash) % colorPalette.length];
-  };
   // const { data: user } = useUser(tgUser?.id, initData, chat_id as string);
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
   const [selectedDateTime, setSelectedDateTime] = useState(

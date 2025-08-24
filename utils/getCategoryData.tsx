@@ -1,3 +1,4 @@
+import { CATEGORY_COLOR_PALETTE } from "./categoryColors";
 import { getFilteredExpenses } from "./getFilteredExpenses";
 import { Budget, Expense } from "./types";
 
@@ -81,31 +82,6 @@ export const getCategoryData = (
       icon: <span>{cat.emoji}</span>,
       budget: cat.budget,
       spent: cat.spent,
-      color: [
-        "#4CAF50", // Green
-        "#FF9800", // Orange
-        "#2196F3", // Blue
-        "#9C27B0", // Purple
-        "#F44336", // Red
-        "#00BCD4", // Cyan
-        "#FF5722", // Deep Orange
-        "#3F51B5", // Indigo
-        "#009688", // Teal
-        "#E91E63", // Pink
-        "#8BC34A", // Light Green
-        "#673AB7", // Deep Purple
-        "#FFC107", // Amber
-        "#03A9F4", // Light Blue
-        "#795548", // Brown
-        "#607D8B", // Blue Grey
-        "#CDDC39", // Lime
-        "#FF4081", // Pink Accent
-        "#00E676", // Green Accent
-        "#64FFDA", // Teal Accent
-        "#40C4FF", // Light Blue Accent
-        "#536DFE", // Indigo Accent
-        "#FF5252", // Red Accent
-        "#FFD740", // Amber Accent
-      ][index % 24],
+      color: CATEGORY_COLOR_PALETTE[index % 24],
     }));
 };
