@@ -313,11 +313,14 @@ export default function EntryForm({
         width: `${dimensions.width}px`,
         overflow: "hidden",
         boxSizing: "border-box",
-        position: "absolute",
         top: 0,
         left: 0,
         px: 2,
         pb: 4,
+        // Prevent viewport changes when keyboard opens
+        position: "fixed",
+        transform: "translate3d(0, 0, 0)",
+        WebkitTransform: "translate3d(0, 0, 0)",
       }}
     >
       {/* Scrollable Content */}
@@ -433,6 +436,12 @@ export default function EntryForm({
             onChange={(e) => onDescriptionChange(e.target.value)}
             placeholder="Enter description"
             variant="standard"
+            inputProps={{
+              inputMode: "text",
+              autoComplete: "off",
+              autoCorrect: "off",
+              spellCheck: false,
+            }}
             sx={{
               width: "70%",
               "& .MuiInput-root": {
@@ -704,6 +713,7 @@ export default function EntryForm({
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr 1fr",
                 gap: 1.5,
+                pb: 3,
               }}
             >
               {/* Row 1 */}

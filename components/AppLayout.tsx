@@ -37,15 +37,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     updateDimensions();
 
     // Disable vertical swipes for Telegram mini apps
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
       const webApp = window.Telegram.WebApp as typeof window.Telegram.WebApp & {
         disableVerticalSwipes?: () => void;
         enableVerticalSwipes?: () => void;
         isVerticalSwipesEnabled?: boolean;
       };
-      
+
       // Use the newer API methods if available
-      if (typeof webApp.disableVerticalSwipes === 'function') {
+      if (typeof webApp.disableVerticalSwipes === "function") {
         webApp.disableVerticalSwipes();
       }
     }
@@ -60,19 +60,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
     return () => {
       // Re-enable vertical swipes when component unmounts
-      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-        const webApp = window.Telegram.WebApp as typeof window.Telegram.WebApp & {
+      if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+        const webApp = window.Telegram
+          .WebApp as typeof window.Telegram.WebApp & {
           disableVerticalSwipes?: () => void;
           enableVerticalSwipes?: () => void;
           isVerticalSwipesEnabled?: boolean;
         };
-        
+
         // Re-enable the vertical swipes functionality
-        if (typeof webApp.enableVerticalSwipes === 'function') {
+        if (typeof webApp.enableVerticalSwipes === "function") {
           webApp.enableVerticalSwipes();
         }
       }
-      
+
       // Remove event listeners
       window.removeEventListener("resize", updateDimensions);
       window.removeEventListener("orientationchange", updateDimensions);

@@ -107,11 +107,11 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           backgroundColor: colors.background,
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
-          padding: 3,
+          padding: 2,
           boxShadow: "0 -8px 32px rgba(0,0,0,0.12)",
           zIndex: 1300,
-          width: "calc(100% - 2rem)",
-          maxWidth: "24rem",
+          width: "calc(100% - 1rem)",
+          maxWidth: "28rem",
           animation: "slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           "@keyframes slideUp": {
             from: {
