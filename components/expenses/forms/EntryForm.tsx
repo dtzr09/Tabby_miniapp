@@ -612,14 +612,13 @@ export default function EntryForm({
         {isGroupExpense && showFloatingPanel && !isIncome && (
           <Box
             sx={{
-              position: "absolute",
-              right: 0,
+              position: "fixed",
+              right: "1rem",
               top: "calc(40% - 65px)", // Position above the close icon
               backgroundColor: colors.surface,
               borderRadius: 3,
               boxShadow: `0 4px 20px ${colors.textSecondary}20`,
               p: 1,
-              mx: 2,
               zIndex: 1001,
               display: "flex",
               flexDirection: "column",
