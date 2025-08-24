@@ -17,6 +17,7 @@ interface BottomSheetProps {
   buttons?: BottomSheetButton[];
   children?: ReactNode;
   height?: string;
+  actionButtons?: ReactNode;
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({
@@ -27,6 +28,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   buttons,
   children,
   height,
+  actionButtons,
 }) => {
   const { colors } = useTheme();
 
@@ -100,57 +102,71 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
         sx={{
           position: "fixed",
           bottom: 0,
-          left: 0,
-          right: 0,
+          left: "50%",
+          transform: "translateX(-50%)",
           backgroundColor: colors.background,
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
           padding: 3,
           boxShadow: "0 -8px 32px rgba(0,0,0,0.12)",
           zIndex: 1300,
-          mx: 1,
+          width: "calc(100% - 2rem)",
+          maxWidth: "24rem",
           animation: "slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           "@keyframes slideUp": {
             from: {
-              transform: "translateY(100%)",
+              transform: "translateX(-50%) translateY(100%)",
               opacity: 0,
             },
             to: {
-              transform: "translateY(0)",
+              transform: "translateX(-50%) translateY(0)",
               opacity: 1,
             },
           },
           height: height,
         }}
       >
-        {/* Title */}
-        <Typography
-          variant="h6"
+        <Box
           sx={{
-            color: colors.text,
-            fontWeight: 600,
-            marginBottom: description || children ? 0.5 : 1.5,
-            textAlign: "left",
-            fontSize: "1.1rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          {title || ""}
-        </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
+            {/* Title */}
+            <Typography
+              variant="h6"
+              sx={{
+                color: colors.text,
+                fontWeight: 600,
+                marginBottom: description || children ? 0.5 : 1.5,
+                textAlign: "left",
+                fontSize: "1.1rem",
+              }}
+            >
+              {title || ""}
+            </Typography>
 
-        {/* Description */}
-        {description && (
-          <Typography
-            sx={{
-              color: colors.textSecondary,
-              marginBottom: children ? 1.5 : 2,
-              textAlign: "left",
-              fontSize: "0.85rem",
-              lineHeight: 1.4,
-            }}
-          >
-            {description}
-          </Typography>
-        )}
+            {/* Description */}
+            {description && (
+              <Typography
+                sx={{
+                  color: colors.textSecondary,
+                  marginBottom: children ? 1.5 : 2,
+                  textAlign: "left",
+                  fontSize: "0.85rem",
+                  lineHeight: 1.4,
+                }}
+              >
+                {description}
+              </Typography>
+            )}
+          </Box>
+
+          {/* Action Buttons */}
+          {actionButtons && actionButtons}
+        </Box>
 
         {/* Custom Content */}
         {children && <Box sx={{ marginBottom: 2.5 }}>{children}</Box>}

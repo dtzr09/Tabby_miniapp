@@ -21,6 +21,11 @@ import {
   CheckOutlined,
   Backspace,
   CalendarMonth,
+  MoreVert,
+  Close,
+  Group,
+  Edit,
+  Check,
 } from "@mui/icons-material";
 import BottomSheet from "../../common/BottomSheet";
 // import { Control } from "react-hook-form";
@@ -35,6 +40,7 @@ import { alpha } from "@mui/material/styles";
 import DateTimePicker from "../../datetimepicker/DateTimePicker";
 import CategoryPicker from "../CategoryPicker";
 import { cleanCategoryName } from "../../../utils/categoryUtils";
+import SplitExpense from "../../expenseShare/SplitExpense";
 
 interface EntryFormProps {
   // control: Control<ExpenseFormData>;
@@ -71,7 +77,7 @@ export default function EntryForm({
   // initData,
   // chat_id,
   expense,
-  // isGroupExpense = false,
+  isGroupExpense = false,
   onDelete,
   onToggleRecurring,
   // onShowSplit,
@@ -87,6 +93,8 @@ export default function EntryForm({
 }: EntryFormProps) {
   const { colors } = useTheme();
   const dimensions = useContext(DimensionsContext);
+  const isExpense = typeof expense === "object" && "shares" in expense;
+  const [editExpenseShare, setEditExpenseShare] = useState(false);
 
   // Generate consistent colors for categories
   const getCategoryColor = (categoryName: string) => {
@@ -107,7 +115,7 @@ export default function EntryForm({
       "#FDCB6E", // Peach
       "#6C5CE7", // Indigo
     ];
-    
+
     const hash = categoryName.split("").reduce((a, b) => {
       a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
@@ -120,6 +128,8 @@ export default function EntryForm({
     parentSelectedDateTime || new Date(date)
   );
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [showFloatingPanel, setShowFloatingPanel] = useState(false);
+  const [showSplitExpenseSheet, setShowSplitExpenseSheet] = useState(false);
   // Filter categories based on income/expense type
   const filteredCategories = categories.filter(
     (cat) => cat.is_income === isIncome
@@ -334,8 +344,10 @@ export default function EntryForm({
           <Chip
             label={selectedCategory?.name || "Select Category"}
             sx={{
-              backgroundColor: selectedCategory?.name 
-                ? getCategoryColor(cleanCategoryName(selectedCategory.name).name)
+              backgroundColor: selectedCategory?.name
+                ? getCategoryColor(
+                    cleanCategoryName(selectedCategory.name).name
+                  )
                 : colors.border,
               color: selectedCategory?.name ? "white" : colors.text,
               fontSize: "0.8rem",
@@ -346,8 +358,10 @@ export default function EntryForm({
               textTransform: "none",
               cursor: "pointer",
               width: "fit-content",
-              boxShadow: selectedCategory?.name 
-                ? `0 2px 6px ${getCategoryColor(cleanCategoryName(selectedCategory.name).name)}40`
+              boxShadow: selectedCategory?.name
+                ? `0 2px 6px ${getCategoryColor(
+                    cleanCategoryName(selectedCategory.name).name
+                  )}40`
                 : "none",
             }}
             onClick={() => {
@@ -492,42 +506,179 @@ export default function EntryForm({
             </Typography>
           </Button>
 
-          {/* Recurring Icon */}
-          <IconButton
-            onClick={onToggleRecurring}
-            disabled={!onToggleRecurring}
-            sx={{
-              backgroundColor: colors.border,
-              color: colors.text,
-              width: 32,
-              height: 32,
-              borderRadius: 3,
-              "&:disabled": {
-                color: colors.textSecondary,
-              },
-            }}
-          >
-            <RepeatOutlined fontSize="small" />
-          </IconButton>
-          {/* Delete Icon */}
-          <IconButton
-            onClick={onDelete}
-            disabled={!onDelete}
-            sx={{
-              backgroundColor: colors.expense,
-              color: colors.background,
-              width: 32,
-              height: 32,
-              borderRadius: 3,
-              cursor: "pointer",
-              "&:hover": {
-                backgroundColor: colors.expense,
-              },
-            }}
-          >
-            <DeleteOutline fontSize="small" />
-          </IconButton>
+          {/* Group-specific icons */}
+          {isGroupExpense ? (
+            <>
+              {/* Delete Icon - positioned beside date/time picker for groups */}
+              <IconButton
+                onClick={onDelete}
+                disabled={!onDelete}
+                sx={{
+                  backgroundColor: colors.expense,
+                  color: colors.background,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 3,
+                  cursor: "pointer",
+                  "&:hover": {
+                    backgroundColor: colors.expense,
+                  },
+                }}
+              >
+                <DeleteOutline fontSize="small" />
+              </IconButton>
+
+              {/* Three dots / Cross icon */}
+              <IconButton
+                onClick={() => setShowFloatingPanel(!showFloatingPanel)}
+                sx={{
+                  backgroundColor: colors.border,
+                  color: colors.text,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 3,
+                }}
+              >
+                {showFloatingPanel ? (
+                  <Close fontSize="small" />
+                ) : (
+                  <MoreVert fontSize="small" />
+                )}
+              </IconButton>
+            </>
+          ) : (
+            <>
+              {/* Recurring Icon - non-group */}
+              <IconButton
+                onClick={onToggleRecurring}
+                disabled={!onToggleRecurring}
+                sx={{
+                  backgroundColor: colors.border,
+                  color: colors.text,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 3,
+                  "&:disabled": {
+                    color: colors.textSecondary,
+                  },
+                }}
+              >
+                <RepeatOutlined fontSize="small" />
+              </IconButton>
+              {/* Delete Icon - non-group */}
+              <IconButton
+                onClick={onDelete}
+                disabled={!onDelete}
+                sx={{
+                  backgroundColor: colors.expense,
+                  color: colors.background,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 3,
+                  cursor: "pointer",
+                  "&:hover": {
+                    backgroundColor: colors.expense,
+                  },
+                }}
+              >
+                <DeleteOutline fontSize="small" />
+              </IconButton>
+            </>
+          )}
         </Box>
+
+        {/* Overlay when floating panel is open */}
+        {isGroupExpense && showFloatingPanel && !isIncome && (
+          <Box
+            onClick={() => setShowFloatingPanel(false)}
+            sx={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.3)",
+              zIndex: 1000,
+              animation: "fadeIn 0.2s ease-out",
+              "@keyframes fadeIn": {
+                from: { opacity: 0 },
+                to: { opacity: 1 },
+              },
+            }}
+          />
+        )}
+
+        {/* Floating Panel for Group Actions */}
+        {isGroupExpense && showFloatingPanel && !isIncome && (
+          <Box
+            sx={{
+              position: "absolute",
+              right: 0,
+              top: "calc(40% - 65px)", // Position above the close icon
+              backgroundColor: colors.surface,
+              borderRadius: 3,
+              boxShadow: `0 4px 20px ${colors.textSecondary}20`,
+              p: 1,
+              mx: 2,
+              zIndex: 1001,
+              display: "flex",
+              flexDirection: "column",
+              gap: 0.5,
+              animation: "slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              "@keyframes slideInFromRight": {
+                from: {
+                  opacity: 0,
+                  transform: "translateX(20px)",
+                },
+                to: {
+                  opacity: 1,
+                  transform: "translateX(0)",
+                },
+              },
+            }}
+          >
+            {/* Recurring Icon */}
+            <IconButton
+              onClick={onToggleRecurring}
+              disabled={!onToggleRecurring}
+              sx={{
+                color: colors.text,
+                width: 36,
+                height: 36,
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  backgroundColor: colors.border,
+                  transform: "scale(1.1)",
+                },
+                "&:disabled": {
+                  color: colors.textSecondary,
+                },
+              }}
+            >
+              <RepeatOutlined fontSize="small" />
+            </IconButton>
+
+            {/* Group/Split Icon */}
+            <IconButton
+              onClick={() => {
+                setShowSplitExpenseSheet(true);
+                setShowFloatingPanel(false);
+              }}
+              sx={{
+                color: colors.text,
+                width: 36,
+                height: 36,
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  backgroundColor: colors.border,
+                  transform: "scale(1.1)",
+                },
+              }}
+            >
+              <Group fontSize="small" />
+            </IconButton>
+          </Box>
+        )}
 
         {/* Keypad */}
         <Box
@@ -619,6 +770,65 @@ export default function EntryForm({
             onCategorySelect={handleCategorySelect}
           />
         </BottomSheet>
+
+        {/* Split Expense Bottom Sheet */}
+        {isExpense && (
+          <BottomSheet
+            open={showSplitExpenseSheet}
+            onClose={() => setShowSplitExpenseSheet(false)}
+            title="Split Expense"
+            description={`$${expense?.amount.toFixed(2)}  · ${
+              isExpense && expense?.shares && expense?.shares?.length
+            } people`}
+            actionButtons={
+              <Button
+                onClick={() => {
+                  setEditExpenseShare(!editExpenseShare);
+                }}
+                sx={{
+                  color: colors.text,
+                  textTransform: "none",
+                  borderRadius: 6,
+                  backgroundColor: editExpenseShare
+                    ? colors.primary
+                    : colors.border,
+                  p: 1,
+                }}
+              >
+                {editExpenseShare ? (
+                  <Check
+                    fontSize="small"
+                    sx={{
+                      mr: 0.5,
+                      fontSize: "0.9rem",
+                      color: colors.text,
+                    }}
+                  />
+                ) : (
+                  <Edit
+                    fontSize="small"
+                    sx={{ mr: 0.5, fontSize: "0.9rem", color: colors.text }}
+                  />
+                )}
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "0.8rem",
+                    letterSpacing: 1,
+                    fontWeight: 550,
+                  }}
+                >
+                  {editExpenseShare ? "Done" : "Edit"}
+                </Typography>
+              </Button>
+            }
+          >
+            <SplitExpense
+              expense={expense}
+              editExpenseShare={editExpenseShare}
+            />
+          </BottomSheet>
+        )}
       </Box>
     </Box>
   );

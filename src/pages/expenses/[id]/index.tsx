@@ -319,7 +319,7 @@ const ExpenseDetail = () => {
         // tgUser={tgUser as TelegramUser}
         // initData={initData as string}
         // chat_id={chat_id as string}
-        // isGroupExpense={chat_id !== tgUser?.id?.toString()}
+        isGroupExpense={chat_id !== tgUser?.id?.toString()}
         onDelete={handleDelete}
         // onToggleRecurring={() => console.log("Recurring not implemented")}
         // onShowSplit={() => console.log("Show split not implemented")}
