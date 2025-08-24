@@ -341,28 +341,40 @@ export default function EntryForm({
     }
   }, [isIncome, filteredCategories.length]); // Only when income type changes or categories become available
 
-  // Detect keyboard height
+  // Detect keyboard height with debouncing
   useEffect(() => {
     const initialViewportHeight =
       window.visualViewport?.height || window.innerHeight;
+    let debounceTimeout: NodeJS.Timeout;
 
     const handleViewportChange = () => {
-      const currentViewportHeight =
-        window.visualViewport?.height || window.innerHeight;
-      const heightDifference = initialViewportHeight - currentViewportHeight;
-
-      // If viewport shrunk significantly (likely keyboard), store the keyboard height
-      if (heightDifference > 150) {
-        // Threshold to detect keyboard
-        setKeyboardHeight(heightDifference);
-      } else {
-        setKeyboardHeight(0);
+      // Clear existing timeout
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
       }
+
+      // Debounce the height change to prevent rapid updates
+      debounceTimeout = setTimeout(() => {
+        const currentViewportHeight =
+          window.visualViewport?.height || window.innerHeight;
+        const heightDifference = initialViewportHeight - currentViewportHeight;
+
+        // If viewport shrunk significantly (likely keyboard), store the keyboard height
+        if (heightDifference > 150) {
+          // Threshold to detect keyboard
+          setKeyboardHeight(heightDifference);
+        } else {
+          setKeyboardHeight(0);
+        }
+      }, 100); // 100ms debounce
     };
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener("resize", handleViewportChange);
       return () => {
+        if (debounceTimeout) {
+          clearTimeout(debounceTimeout);
+        }
         window.visualViewport?.removeEventListener(
           "resize",
           handleViewportChange
@@ -372,6 +384,9 @@ export default function EntryForm({
       // Fallback for older browsers
       window.addEventListener("resize", handleViewportChange);
       return () => {
+        if (debounceTimeout) {
+          clearTimeout(debounceTimeout);
+        }
         window.removeEventListener("resize", handleViewportChange);
       };
     }
@@ -420,7 +435,9 @@ export default function EntryForm({
   const calculateHeight = () => {
     const bottomNavigationHeight = 100;
     const baseHeight = dimensions.height - bottomNavigationHeight;
-    if (isDescriptionFocused && keyboardHeight > 0) {
+    
+    // Only apply keyboard height if both conditions are met AND keyboard is significant
+    if (isDescriptionFocused && keyboardHeight > 200) {
       return baseHeight + keyboardHeight;
     }
     return baseHeight;
@@ -496,27 +513,6 @@ export default function EntryForm({
           }}
         />
 
-        {/* Debug */}
-        <Box
-          sx={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: alpha(colors.surface, 0.8),
-            p: 1,
-            borderRadius: 1,
-          }}
-        >
-          <Typography variant="body2">
-            Height: {dimensions.height} | Keyboard: {keyboardHeight} | Focused:{" "}
-            {isDescriptionFocused ? "Yes" : "No"}
-          </Typography>
-          <Typography variant="body2">
-            Total Height: {calculateHeight()}
-          </Typography>
-        </Box>
-
         {/* Amount Display with Delete Button */}
         <Box
           sx={{
@@ -575,8 +571,16 @@ export default function EntryForm({
           onChange={(e) => onDescriptionChange(e.target.value)}
           placeholder="Enter description"
           variant="standard"
-          onFocus={() => setIsDescriptionFocused(true)}
-          onBlur={() => setIsDescriptionFocused(false)}
+          onFocus={() => {
+            // Immediate focus state update
+            setIsDescriptionFocused(true);
+          }}
+          onBlur={() => {
+            // Delayed blur to prevent flashing during keyboard close
+            setTimeout(() => {
+              setIsDescriptionFocused(false);
+            }, 200);
+          }}
           inputProps={{
             inputMode: "text",
             autoComplete: "off",
