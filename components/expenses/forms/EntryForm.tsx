@@ -341,40 +341,28 @@ export default function EntryForm({
     }
   }, [isIncome, filteredCategories.length]); // Only when income type changes or categories become available
 
-  // Detect keyboard height with debouncing
+  // Detect keyboard height
   useEffect(() => {
     const initialViewportHeight =
       window.visualViewport?.height || window.innerHeight;
-    let debounceTimeout: NodeJS.Timeout;
 
     const handleViewportChange = () => {
-      // Clear existing timeout
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
+      const currentViewportHeight =
+        window.visualViewport?.height || window.innerHeight;
+      const heightDifference = initialViewportHeight - currentViewportHeight;
+
+      // If viewport shrunk significantly (likely keyboard), store the keyboard height
+      if (heightDifference > 150) {
+        // Threshold to detect keyboard
+        setKeyboardHeight(heightDifference);
+      } else {
+        setKeyboardHeight(0);
       }
-
-      // Debounce the height change to prevent rapid updates
-      debounceTimeout = setTimeout(() => {
-        const currentViewportHeight =
-          window.visualViewport?.height || window.innerHeight;
-        const heightDifference = initialViewportHeight - currentViewportHeight;
-
-        // If viewport shrunk significantly (likely keyboard), store the keyboard height
-        if (heightDifference > 150) {
-          // Threshold to detect keyboard
-          setKeyboardHeight(heightDifference);
-        } else {
-          setKeyboardHeight(0);
-        }
-      }, 100); // 100ms debounce
     };
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener("resize", handleViewportChange);
       return () => {
-        if (debounceTimeout) {
-          clearTimeout(debounceTimeout);
-        }
         window.visualViewport?.removeEventListener(
           "resize",
           handleViewportChange
@@ -384,9 +372,6 @@ export default function EntryForm({
       // Fallback for older browsers
       window.addEventListener("resize", handleViewportChange);
       return () => {
-        if (debounceTimeout) {
-          clearTimeout(debounceTimeout);
-        }
         window.removeEventListener("resize", handleViewportChange);
       };
     }
@@ -435,9 +420,8 @@ export default function EntryForm({
   const calculateHeight = () => {
     const bottomNavigationHeight = 100;
     const baseHeight = dimensions.height - bottomNavigationHeight;
-    
-    // Only apply keyboard height if both conditions are met AND keyboard is significant
-    if (isDescriptionFocused && keyboardHeight > 200) {
+    // Only rely on keyboard height detection, not focus state
+    if (keyboardHeight > 0) {
       return baseHeight + keyboardHeight;
     }
     return baseHeight;
@@ -571,16 +555,8 @@ export default function EntryForm({
           onChange={(e) => onDescriptionChange(e.target.value)}
           placeholder="Enter description"
           variant="standard"
-          onFocus={() => {
-            // Immediate focus state update
-            setIsDescriptionFocused(true);
-          }}
-          onBlur={() => {
-            // Delayed blur to prevent flashing during keyboard close
-            setTimeout(() => {
-              setIsDescriptionFocused(false);
-            }, 200);
-          }}
+          onFocus={() => setIsDescriptionFocused(true)}
+          onBlur={() => setIsDescriptionFocused(false)}
           inputProps={{
             inputMode: "text",
             autoComplete: "off",
