@@ -1,91 +1,145 @@
-import { Avatar, Box, Divider, TextField, Typography } from "@mui/material";
+import { Box, Divider, Typography } from "@mui/material";
 import { Expense, ExpenseShare } from "../../utils/types";
 import { useTheme } from "@/contexts/ThemeContext";
-import { stringToColor } from "../../utils/stringToColor";
+import { useState, useEffect, useMemo, useCallback } from "react";
+
+import UserShare from "./UserShare";
 
 interface SplitExpenseProps {
   expense: Expense;
   editExpenseShare: boolean;
+  currentAmount?: string;
+  onSplitTypeChange?: (isCustomSplit: boolean) => void;
+  onValidationChange?: (errors: Record<string | number, string>) => void;
+  onHasChangesChange?: (hasChanges: boolean) => void;
+  onInputValuesChange?: (inputValues: Record<string | number, string>) => void;
 }
 
-const SplitExpense = ({ expense, editExpenseShare }: SplitExpenseProps) => {
+const SplitExpense = ({
+  expense,
+  editExpenseShare,
+  currentAmount,
+  onSplitTypeChange,
+  onValidationChange,
+  onHasChangesChange,
+  onInputValuesChange,
+}: SplitExpenseProps) => {
   const { colors } = useTheme();
-  const amountPerPerson = expense.shares?.length
-    ? expense.amount / expense.shares?.length
-    : expense.amount;
 
-  const UserShare = ({ share }: { share: ExpenseShare }) => {
-    return (
-      <Box
-        key={share.user_id}
-        sx={{
-          display: "flex",
-          gap: 1,
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: `1px solid ${colors.border}`,
-          "&:last-child": {
-            borderBottom: "none",
-          },
-          py: 1,
-        }}
-      >
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <Avatar
-            sx={{
-              width: 32,
-              height: 32,
-              bgcolor: stringToColor(share?.name || ""),
-            }}
-          />
-          <Box sx={{ display: "flex", flexDirection: "column" }}>
-            <Typography variant="body2" color={colors.text}>
-              {share.name}
-            </Typography>
-            <Typography variant="caption" color={colors.textSecondary}>
-              @{share.username}
-            </Typography>
-          </Box>
-        </Box>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-            alignItems: "center",
-            justifyContent: "flex-end",
-          }}
-        >
-          {editExpenseShare ? (
-            <TextField
-              value={share.share_amount.toFixed(2)}
-              onChange={(e) => {
-                share.share_amount = parseFloat(e.target.value);
-              }}
-              sx={{
-                width: "70%",
-                "& .MuiInputBase-input": {
-                  textAlign: "right",
-                  fontSize: "0.8rem",
-                  fontWeight: 500,
-                  letterSpacing: 1,
-                  px: 0.75,
-                  py: 0.5,
-                  borderRadius: 3,
-                  border: "none",
-                  color: colors.text,
-                  backgroundColor: colors.border,
-                },
-              }}
-            />
-          ) : (
-            <Typography variant="body2" color={colors.text}>
-              ${share.share_amount.toFixed(2)}
-            </Typography>
-          )}
-        </Box>
-      </Box>
+  // Use currentAmount if provided, otherwise fall back to expense.amount
+  const totalAmount = currentAmount
+    ? parseFloat(currentAmount)
+    : expense.amount;
+  const amountPerPerson = expense.shares?.length
+    ? totalAmount / expense.shares?.length
+    : totalAmount;
+
+  // Local state for shares to handle optimistic updates
+  const [localShares, setLocalShares] = useState<ExpenseShare[]>(
+    expense.shares || []
+  );
+
+  // Track input values and validation errors
+  const [inputValues, setInputValues] = useState<
+    Record<string | number, string>
+  >({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string | number, string>
+  >({});
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Notify parent component of changes
+  useEffect(() => {
+    onValidationChange?.(validationErrors);
+  }, [validationErrors, onValidationChange]);
+
+  useEffect(() => {
+    onHasChangesChange?.(hasChanges);
+  }, [hasChanges, onHasChangesChange]);
+
+  useEffect(() => {
+    onInputValuesChange?.(inputValues);
+  }, [inputValues, onInputValuesChange]);
+
+  // Initialize input values when expense changes
+  useEffect(() => {
+    if (expense.shares) {
+      setLocalShares(expense.shares);
+      const newInputValues: Record<string | number, string> = {};
+      expense.shares.forEach((share) => {
+        newInputValues[share.user_id] = share.share_amount.toFixed(2);
+      });
+      setInputValues(newInputValues);
+      setValidationErrors({});
+      setHasChanges(false);
+    }
+  }, [expense.shares]);
+
+  // Check if current state is equal split
+  const isEqualSplit = useMemo(() => {
+    if (!localShares.length) return true;
+    const expectedAmount = totalAmount / localShares.length;
+    return localShares.every(
+      (share) => Math.abs(share.share_amount - expectedAmount) < 0.01
     );
-  };
+  }, [localShares, totalAmount]);
+
+  // Notify parent component when split type changes
+  useEffect(() => {
+    onSplitTypeChange?.(!isEqualSplit);
+  }, [isEqualSplit, onSplitTypeChange]);
+
+  // Memoized handlers to prevent recreation
+  const handleInputChange = useCallback(
+    (userId: string | number, rawValue: string) => {
+      // Update input values
+      setInputValues((prev) => ({
+        ...prev,
+        [userId]: rawValue,
+      }));
+
+      // Validate the input
+      const numericValue = parseFloat(rawValue);
+
+      setValidationErrors((prevErrors) => {
+        const newErrors = { ...prevErrors };
+
+        if (rawValue.trim() === "") {
+          newErrors[userId] = "Amount cannot be empty";
+        } else if (isNaN(numericValue) || numericValue < 0) {
+          newErrors[userId] = "Please enter a valid positive number";
+        } else if (rawValue.includes("e") || rawValue.includes("E")) {
+          // Prevent scientific notation
+          newErrors[userId] = "Please enter a valid positive number";
+        } else if (!/^[0-9]*\.?[0-9]*$/.test(rawValue)) {
+          // Only allow numbers and decimal point
+          newErrors[userId] = "Please enter a valid positive number";
+        } else {
+          delete newErrors[userId];
+        }
+
+        return newErrors;
+      });
+
+      setHasChanges(true);
+    },
+    []
+  );
+
+  const handleInputBlur = useCallback(
+    (userId: string | number) => {
+      const inputValue = inputValues[userId];
+      const numericValue = parseFloat(inputValue);
+      if (!isNaN(numericValue) && numericValue >= 0) {
+        setInputValues((prev) => ({
+          ...prev,
+          [userId]: numericValue.toFixed(2),
+        }));
+      }
+    },
+    [inputValues]
+  );
+
   return (
     <Box
       sx={{
@@ -95,23 +149,38 @@ const SplitExpense = ({ expense, editExpenseShare }: SplitExpenseProps) => {
       }}
     >
       <Divider sx={{ width: "100%", my: 1, borderColor: colors.border }} />
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          textAlign: "center",
-        }}
-      >
-        <Typography variant="h4" color={colors.text}>
-          ${amountPerPerson.toFixed(2)}
-        </Typography>
-        <Typography variant="body2" color={colors.textSecondary}>
-          per people
-        </Typography>
-      </Box>
+      {!editExpenseShare && (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            position: "relative",
+          }}
+        >
+          <Typography variant="h4" color={colors.text}>
+            ${amountPerPerson.toFixed(2)}
+          </Typography>
+          <Typography variant="body2" color={colors.textSecondary}>
+            per person
+          </Typography>
+        </Box>
+      )}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
-        {expense.shares?.map((share) => (
-          <UserShare key={share.user_id} share={share} />
+        {localShares.map((share) => (
+          <UserShare
+            key={share.user_id}
+            share={share}
+            inputValue={
+              inputValues[share.user_id] || share.share_amount.toFixed(2)
+            }
+            hasError={validationErrors[share.user_id]}
+            editExpenseShare={editExpenseShare}
+            amountPerPerson={amountPerPerson}
+            onInputChange={handleInputChange}
+            onInputBlur={handleInputBlur}
+          />
         ))}
       </Box>
     </Box>

@@ -188,8 +188,9 @@ export default async function handler(
     } else if (req.method === "PUT") {
       const { description, amount, category_id, date } = req.body;
 
-      if (!description || amount === undefined || category_id === undefined) {
-        return res.status(400).json({ error: "Missing required fields" });
+      // Allow partial updates - only require amount if it's being updated
+      if (amount === undefined && !description && !category_id && !date) {
+        return res.status(400).json({ error: "No fields to update" });
       }
 
       if (isLocal) {
@@ -204,20 +205,41 @@ export default async function handler(
             return res.status(404).json({ error: "Entry not found" });
           }
 
-          // Update the entry - only include is_income field for expenses table
-          const updateFields = isIncomeBoolean
-            ? "description = $1, amount = $2, category_id = $3, date = $4, updated_at = NOW()"
-            : "description = $1, amount = $2, category_id = $3, is_income = $4, date = $5, updated_at = NOW()";
-          const updateValues = isIncomeBoolean
-            ? [description, amount, category_id, date, id, chat_id]
-            : [description, amount, category_id, isIncomeBoolean, date, id, chat_id];
+          // Build dynamic update query based on provided fields
+          const updateParts: string[] = [];
+          //eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const updateValues: any[] = [];
+          let valueIndex = 1;
+
+          if (description !== undefined) {
+            updateParts.push(`description = $${valueIndex++}`);
+            updateValues.push(description);
+          }
+          if (amount !== undefined) {
+            updateParts.push(`amount = $${valueIndex++}`);
+            updateValues.push(amount);
+          }
+          if (category_id !== undefined) {
+            updateParts.push(`category_id = $${valueIndex++}`);
+            updateValues.push(category_id);
+          }
+          if (date !== undefined) {
+            updateParts.push(`date = $${valueIndex++}`);
+            updateValues.push(date);
+          }
+          if (!isIncomeBoolean) {
+            updateParts.push(`is_income = $${valueIndex++}`);
+            updateValues.push(isIncomeBoolean);
+          }
+          
+          updateParts.push(`updated_at = NOW()`);
+          updateValues.push(id, chat_id);
+          
+          const updateFields = updateParts.join(", ");
+          const whereClause = `WHERE id = $${valueIndex++} AND chat_id = $${valueIndex++}`;
 
           await postgresClient.query(
-            `UPDATE ${tableName}
-             SET ${updateFields}
-             WHERE id = ${isIncomeBoolean ? "$5" : "$6"} AND chat_id = ${
-              isIncomeBoolean ? "$6" : "$7"
-            }`,
+            `UPDATE ${tableName} SET ${updateFields} ${whereClause}`,
             updateValues
           );
 
@@ -248,17 +270,22 @@ export default async function handler(
             return res.status(404).json({ error: "Entry not found" });
           }
 
+          // Build update object with only provided fields
+          //eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const updateData: any = {
+            updated_at: new Date().toISOString(),
+          };
+          
+          if (description !== undefined) updateData.description = description;
+          if (amount !== undefined) updateData.amount = amount;
+          if (category_id !== undefined) updateData.category_id = category_id;
+          if (date !== undefined) updateData.date = date;
+          if (!isIncomeBoolean) updateData.is_income = isIncomeBoolean;
+
           // Update the entry
           const { error: updateError } = await supabaseAdmin
             .from(tableName)
-            .update({
-              description,
-              amount,
-              category_id,
-              date,
-              ...(isIncomeBoolean ? {} : { is_income: isIncomeBoolean }), // Only include is_income for expenses table
-              updated_at: new Date().toISOString(),
-            })
+            .update(updateData)
             .eq("id", id)
             .eq("chat_id", chat_id);
 

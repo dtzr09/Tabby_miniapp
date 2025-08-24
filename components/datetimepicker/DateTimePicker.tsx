@@ -283,7 +283,6 @@ const ExpenseDateTimePicker = ({
               <Box
                 sx={{
                   width: "100%",
-                  maxWidth: "20rem",
                   margin: "auto",
                   position: "relative",
                   height: "14rem",
@@ -432,7 +431,6 @@ const ExpenseDateTimePicker = ({
           <Box
             sx={{
               width: "100%",
-              maxWidth: "20rem",
               margin: "auto",
               marginTop: "0.5rem",
               paddingTop: "0.5rem",

@@ -230,3 +230,69 @@ export const fetchExpensesForBudgets = async (
 
   return expenses;
 };
+
+export const updateExpenseAmount = async (
+  id: number,
+  amount: number,
+  telegram_id: string,
+  initData: string,
+  chat_id: string
+) => {
+  try {
+    const response = await fetch(`/api/entries/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount,
+        chat_id: chat_id,
+        initData,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("❌ Update expense amount API Error:", text);
+      throw new Error(`Update expense amount error ${response.status}: ${text}`);
+    }
+
+    return response.json();
+  } catch (err) {
+    console.error("Update expense amount failed:", err);
+    throw err;
+  }
+};
+
+export const updateExpenseShares = async (
+  id: number,
+  shares: Array<{ user_id: string | number; share_amount: number }>,
+  telegram_id: string,
+  initData: string,
+  chat_id: string
+) => {
+  try {
+    const response = await fetch(`/api/entries/${id}/shares`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        shares,
+        chat_id: chat_id,
+        initData,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("❌ Update expense shares API Error:", text);
+      throw new Error(`Update expense shares error ${response.status}: ${text}`);
+    }
+
+    return response.json();
+  } catch (err) {
+    console.error("Update expense shares failed:", err);
+    throw err;
+  }
+};

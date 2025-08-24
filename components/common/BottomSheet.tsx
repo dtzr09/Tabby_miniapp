@@ -18,6 +18,7 @@ interface BottomSheetProps {
   children?: ReactNode;
   height?: string;
   actionButtons?: ReactNode;
+  titleIcon?: ReactNode;
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({
@@ -29,6 +30,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   children,
   height,
   actionButtons,
+  titleIcon,
 }) => {
   const { colors } = useTheme();
 
@@ -135,18 +137,21 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
         >
           <Box sx={{ display: "flex", flexDirection: "column" }}>
             {/* Title */}
-            <Typography
-              variant="h6"
-              sx={{
-                color: colors.text,
-                fontWeight: 600,
-                marginBottom: description || children ? 0.5 : 1.5,
-                textAlign: "left",
-                fontSize: "1.1rem",
-              }}
-            >
-              {title || ""}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  color: colors.text,
+                  fontWeight: 600,
+                  marginBottom: description || children ? 0.5 : 1.5,
+                  textAlign: "left",
+                  fontSize: "1.1rem",
+                }}
+              >
+                {title || ""}
+              </Typography>
+              {titleIcon && titleIcon}
+            </Box>
 
             {/* Description */}
             {description && (
