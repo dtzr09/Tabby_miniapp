@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
+import useMeasure from "react-use-measure";
 import {
   Box,
   Typography,
@@ -130,6 +131,10 @@ export default function EntryForm({
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showFloatingPanel, setShowFloatingPanel] = useState(false);
   const [showSplitExpenseSheet, setShowSplitExpenseSheet] = useState(false);
+
+  // Measure the fixed bottom section height
+  const [bottomSectionRef, bottomSectionBounds] = useMeasure();
+
   // Filter categories based on income/expense type
   const filteredCategories = categories.filter(
     (cat) => cat.is_income === isIncome
@@ -338,6 +343,10 @@ export default function EntryForm({
             px: 4,
             gap: 3,
             pt: 4,
+            pb:
+              bottomSectionBounds.height > 0
+                ? `${bottomSectionBounds.height + 16}px`
+                : "200px", // Dynamic padding based on measured height
           }}
         >
           {/* Category Selector Chip*/}
@@ -455,35 +464,50 @@ export default function EntryForm({
 
         {/* Date/Time Bar with Right-Aligned Icons */}
         <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            py: 0.5,
-            gap: 1,
-            position: "relative",
-            zIndex: 1000,
-          }}
+          ref={bottomSectionRef}
+          sx={{ position: "fixed", bottom: 0, left: 0, right: 0, p: 1 }}
         >
-          {/* Date and Time */}
-          <Button
-            onClick={() => setShowDateTimePicker(true)}
+          <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              backgroundColor: colors.border,
-              px: 1,
-              py: 1,
-              borderRadius: 3,
-              textTransform: "none",
-              flex: 1,
-              justifyContent: "space-between",
+              py: 0.5,
+              gap: 1,
+              position: "relative",
+              zIndex: 1000,
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <CalendarMonth
-                fontSize="small"
-                sx={{ mr: 1, color: colors.text }}
-              />
+            {/* Date and Time */}
+            <Button
+              onClick={() => setShowDateTimePicker(true)}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: colors.border,
+                px: 1,
+                py: 1,
+                borderRadius: 3,
+                textTransform: "none",
+                flex: 1,
+                justifyContent: "space-between",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <CalendarMonth
+                  fontSize="small"
+                  sx={{ mr: 1, color: colors.text }}
+                />
+                <Typography
+                  sx={{
+                    color: colors.text,
+                    fontSize: "0.9rem",
+                    fontWeight: 500,
+                  }}
+                >
+                  {formatDate(selectedDateTime.toISOString())}
+                </Typography>
+              </Box>
+
               <Typography
                 sx={{
                   color: colors.text,
@@ -491,73 +515,153 @@ export default function EntryForm({
                   fontWeight: 500,
                 }}
               >
-                {formatDate(selectedDateTime.toISOString())}
+                {formatTime(selectedDateTime.toISOString())}
               </Typography>
-            </Box>
+            </Button>
 
-            <Typography
+            {/* Group-specific icons */}
+            {isGroupExpense && !isIncome ? (
+              <>
+                {/* Delete Icon - positioned beside date/time picker for groups */}
+                <IconButton
+                  onClick={onDelete}
+                  disabled={!onDelete}
+                  sx={{
+                    backgroundColor: colors.expense,
+                    color: colors.background,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 3,
+                    cursor: "pointer",
+                    "&:hover": {
+                      backgroundColor: colors.expense,
+                    },
+                  }}
+                >
+                  <DeleteOutline fontSize="small" />
+                </IconButton>
+
+                {/* Three dots / Cross icon */}
+                <IconButton
+                  onClick={() => setShowFloatingPanel(!showFloatingPanel)}
+                  sx={{
+                    backgroundColor: colors.border,
+                    color: colors.text,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 3,
+                  }}
+                >
+                  {showFloatingPanel ? (
+                    <Close fontSize="small" />
+                  ) : (
+                    <MoreVert fontSize="small" />
+                  )}
+                </IconButton>
+              </>
+            ) : (
+              <>
+                {/* Recurring Icon - non-group */}
+                <IconButton
+                  onClick={onToggleRecurring}
+                  disabled={!onToggleRecurring}
+                  sx={{
+                    backgroundColor: colors.border,
+                    color: colors.text,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 3,
+                    "&:disabled": {
+                      color: colors.textSecondary,
+                    },
+                  }}
+                >
+                  <RepeatOutlined fontSize="small" />
+                </IconButton>
+                {/* Delete Icon - non-group */}
+                <IconButton
+                  onClick={onDelete}
+                  disabled={!onDelete}
+                  sx={{
+                    backgroundColor: colors.expense,
+                    color: colors.background,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 3,
+                    cursor: "pointer",
+                    "&:hover": {
+                      backgroundColor: colors.expense,
+                    },
+                  }}
+                >
+                  <DeleteOutline fontSize="small" />
+                </IconButton>
+              </>
+            )}
+          </Box>
+
+          {/* Overlay when floating panel is open */}
+          {isGroupExpense && showFloatingPanel && !isIncome && (
+            <Box
+              onClick={() => setShowFloatingPanel(false)}
               sx={{
-                color: colors.text,
-                fontSize: "0.9rem",
-                fontWeight: 500,
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0,0,0,0.3)",
+                zIndex: 1000,
+                animation: "fadeIn 0.2s ease-out",
+                "@keyframes fadeIn": {
+                  from: { opacity: 0 },
+                  to: { opacity: 1 },
+                },
+              }}
+            />
+          )}
+
+          {/* Floating Panel for Group Actions */}
+          {isGroupExpense && showFloatingPanel && !isIncome && (
+            <Box
+              sx={{
+                position: "absolute",
+                right: "0.5rem",
+                top: `calc(100% - ${bottomSectionBounds.height + 80}px)`, // Position above the fixed bottom section (keypad area)
+                backgroundColor: colors.surface,
+                borderRadius: 3,
+                boxShadow: `0 4px 20px ${colors.textSecondary}20`,
+                p: 0.5,
+                zIndex: 1001,
+                display: "flex",
+                flexDirection: "column",
+                gap: 0.5,
+                animation: "slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                "@keyframes slideInFromRight": {
+                  from: {
+                    opacity: 0,
+                    transform: "translateX(20px)",
+                  },
+                  to: {
+                    opacity: 1,
+                    transform: "translateX(0)",
+                  },
+                },
               }}
             >
-              {formatTime(selectedDateTime.toISOString())}
-            </Typography>
-          </Button>
-
-          {/* Group-specific icons */}
-          {isGroupExpense ? (
-            <>
-              {/* Delete Icon - positioned beside date/time picker for groups */}
-              <IconButton
-                onClick={onDelete}
-                disabled={!onDelete}
-                sx={{
-                  backgroundColor: colors.expense,
-                  color: colors.background,
-                  width: 32,
-                  height: 32,
-                  borderRadius: 3,
-                  cursor: "pointer",
-                  "&:hover": {
-                    backgroundColor: colors.expense,
-                  },
-                }}
-              >
-                <DeleteOutline fontSize="small" />
-              </IconButton>
-
-              {/* Three dots / Cross icon */}
-              <IconButton
-                onClick={() => setShowFloatingPanel(!showFloatingPanel)}
-                sx={{
-                  backgroundColor: colors.border,
-                  color: colors.text,
-                  width: 32,
-                  height: 32,
-                  borderRadius: 3,
-                }}
-              >
-                {showFloatingPanel ? (
-                  <Close fontSize="small" />
-                ) : (
-                  <MoreVert fontSize="small" />
-                )}
-              </IconButton>
-            </>
-          ) : (
-            <>
-              {/* Recurring Icon - non-group */}
+              {/* Recurring Icon */}
               <IconButton
                 onClick={onToggleRecurring}
                 disabled={!onToggleRecurring}
                 sx={{
-                  backgroundColor: colors.border,
                   color: colors.text,
-                  width: 32,
-                  height: 32,
-                  borderRadius: 3,
+                  width: 36,
+                  height: 36,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: colors.border,
+                    transform: "scale(1.1)",
+                  },
                   "&:disabled": {
                     color: colors.textSecondary,
                   },
@@ -565,176 +669,86 @@ export default function EntryForm({
               >
                 <RepeatOutlined fontSize="small" />
               </IconButton>
-              {/* Delete Icon - non-group */}
+
+              {/* Group/Split Icon */}
               <IconButton
-                onClick={onDelete}
-                disabled={!onDelete}
+                onClick={() => {
+                  setShowSplitExpenseSheet(true);
+                  setShowFloatingPanel(false);
+                }}
                 sx={{
-                  backgroundColor: colors.expense,
-                  color: colors.background,
-                  width: 32,
-                  height: 32,
-                  borderRadius: 3,
-                  cursor: "pointer",
+                  color: colors.text,
+                  width: 36,
+                  height: 36,
+                  transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: colors.expense,
+                    backgroundColor: colors.border,
+                    transform: "scale(1.1)",
                   },
                 }}
               >
-                <DeleteOutline fontSize="small" />
+                <Group fontSize="small" />
               </IconButton>
-            </>
+            </Box>
           )}
-        </Box>
 
-        {/* Overlay when floating panel is open */}
-        {isGroupExpense && showFloatingPanel && !isIncome && (
-          <Box
-            onClick={() => setShowFloatingPanel(false)}
-            sx={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.3)",
-              zIndex: 1000,
-              animation: "fadeIn 0.2s ease-out",
-              "@keyframes fadeIn": {
-                from: { opacity: 0 },
-                to: { opacity: 1 },
-              },
-            }}
-          />
-        )}
-
-        {/* Floating Panel for Group Actions */}
-        {isGroupExpense && showFloatingPanel && !isIncome && (
+          {/* Keypad */}
           <Box
             sx={{
-              position: "fixed",
-              right: "1rem",
-              top: "calc(40% - 65px)", // Position above the close icon
-              backgroundColor: colors.surface,
-              borderRadius: 3,
-              boxShadow: `0 4px 20px ${colors.textSecondary}20`,
-              p: 1,
-              zIndex: 1001,
-              display: "flex",
-              flexDirection: "column",
-              gap: 0.5,
-              animation: "slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-              "@keyframes slideInFromRight": {
-                from: {
-                  opacity: 0,
-                  transform: "translateX(20px)",
-                },
-                to: {
-                  opacity: 1,
-                  transform: "translateX(0)",
-                },
-              },
+              mt: "auto", // Push to bottom
+              pt: 1,
             }}
           >
-            {/* Recurring Icon */}
-            <IconButton
-              onClick={onToggleRecurring}
-              disabled={!onToggleRecurring}
+            <Box
               sx={{
-                color: colors.text,
-                width: 36,
-                height: 36,
-                transition: "all 0.2s ease",
-                "&:hover": {
-                  backgroundColor: colors.border,
-                  transform: "scale(1.1)",
-                },
-                "&:disabled": {
-                  color: colors.textSecondary,
-                },
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: 1.5,
               }}
             >
-              <RepeatOutlined fontSize="small" />
-            </IconButton>
+              {/* Row 1 */}
+              {renderKeypadButton("1")}
+              {renderKeypadButton("2")}
+              {renderKeypadButton("3")}
 
-            {/* Group/Split Icon */}
-            <IconButton
-              onClick={() => {
-                setShowSplitExpenseSheet(true);
-                setShowFloatingPanel(false);
-              }}
-              sx={{
-                color: colors.text,
-                width: 36,
-                height: 36,
-                transition: "all 0.2s ease",
-                "&:hover": {
-                  backgroundColor: colors.border,
-                  transform: "scale(1.1)",
-                },
-              }}
-            >
-              <Group fontSize="small" />
-            </IconButton>
-          </Box>
-        )}
+              {/* Row 2 */}
+              {renderKeypadButton("4")}
+              {renderKeypadButton("5")}
+              {renderKeypadButton("6")}
 
-        {/* Keypad */}
-        <Box
-          sx={{
-            mt: "auto", // Push to bottom
-            pt: 1,
-          }}
-        >
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
-              gap: 1.5,
-            }}
-          >
-            {/* Row 1 */}
-            {renderKeypadButton("1")}
-            {renderKeypadButton("2")}
-            {renderKeypadButton("3")}
+              {/* Row 3 */}
+              {renderKeypadButton("7")}
+              {renderKeypadButton("8")}
+              {renderKeypadButton("9")}
 
-            {/* Row 2 */}
-            {renderKeypadButton("4")}
-            {renderKeypadButton("5")}
-            {renderKeypadButton("6")}
+              {/* Row 4 */}
+              {renderKeypadButton(".")}
+              {renderKeypadButton("0")}
 
-            {/* Row 3 */}
-            {renderKeypadButton("7")}
-            {renderKeypadButton("8")}
-            {renderKeypadButton("9")}
-
-            {/* Row 4 */}
-            {renderKeypadButton(".")}
-            {renderKeypadButton("0")}
-
-            {/* Submit Button (Save) */}
-            <Button
-              onClick={() => {
-                onDateTimeChange?.(selectedDateTime);
-                onSubmit?.();
-              }}
-              disabled={!onSubmit || currentAmount === "0" || !hasChanges}
-              sx={{
-                height: 72,
-                borderRadius: 3,
-                backgroundColor: colors.background,
-                color: colors.text,
-                border: `2px solid ${
-                  hasChanges ? colors.text : alpha(colors.text, 0.1)
-                }`,
-                "&:disabled": {
+              {/* Submit Button (Save) */}
+              <Button
+                onClick={() => {
+                  onDateTimeChange?.(selectedDateTime);
+                  onSubmit?.();
+                }}
+                disabled={!onSubmit || currentAmount === "0" || !hasChanges}
+                sx={{
+                  height: 72,
+                  borderRadius: 3,
                   backgroundColor: colors.background,
-                  color: alpha(colors.text, 0.1),
-                },
-              }}
-            >
-              <CheckOutlined sx={{ fontSize: "2rem" }} />
-            </Button>
+                  color: colors.text,
+                  border: `2px solid ${
+                    hasChanges ? colors.text : alpha(colors.text, 0.1)
+                  }`,
+                  "&:disabled": {
+                    backgroundColor: colors.background,
+                    color: alpha(colors.text, 0.1),
+                  },
+                }}
+              >
+                <CheckOutlined sx={{ fontSize: "2rem" }} />
+              </Button>
+            </Box>
           </Box>
         </Box>
 
