@@ -101,13 +101,22 @@ const YearScrollPicker = ({
         isScrollingRef.current = false;
         snapToNearestItem();
       }
-    }, 150);
+    }, 100);
   };
 
-  // Keep only mouse drag for desktop, remove touch interference
+  // Handle mouse down for desktop
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     setStartY(e.clientY);
+    if (scrollRef.current) {
+      setScrollTop(scrollRef.current.scrollTop);
+    }
+  };
+
+  // Handle touch start for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    setStartY(e.touches[0].clientY);
     if (scrollRef.current) {
       setScrollTop(scrollRef.current.scrollTop);
     }
@@ -145,6 +154,12 @@ const YearScrollPicker = ({
         snapToNearestItem();
       }, 10);
     };
+    const handleGlobalTouchEnd = () => {
+      setIsDragging(false);
+      setTimeout(() => {
+        snapToNearestItem();
+      }, 10);
+    };
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (isDragging && scrollRef.current) {
         e.preventDefault();
@@ -152,15 +167,26 @@ const YearScrollPicker = ({
         scrollRef.current.scrollTop = scrollTop + walk;
       }
     };
+    const handleGlobalTouchMove = (e: TouchEvent) => {
+      if (isDragging && scrollRef.current) {
+        e.preventDefault();
+        const walk = (e.touches[0].clientY - startY) * -1;
+        scrollRef.current.scrollTop = scrollTop + walk;
+      }
+    };
 
     if (isDragging) {
       document.addEventListener("mousemove", handleGlobalMouseMove);
       document.addEventListener("mouseup", handleGlobalMouseUp);
+      document.addEventListener("touchmove", handleGlobalTouchMove, { passive: false });
+      document.addEventListener("touchend", handleGlobalTouchEnd);
     }
 
     return () => {
       document.removeEventListener("mousemove", handleGlobalMouseMove);
       document.removeEventListener("mouseup", handleGlobalMouseUp);
+      document.removeEventListener("touchmove", handleGlobalTouchMove);
+      document.removeEventListener("touchend", handleGlobalTouchEnd);
     };
   }, [isDragging, startY, scrollTop]);
 
@@ -222,6 +248,7 @@ const YearScrollPicker = ({
         }}
         onScroll={handleScroll}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         onWheel={handleWheel}
         style={{
           scrollBehavior: "auto", // Always use auto for responsive scrolling
