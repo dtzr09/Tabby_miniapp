@@ -34,6 +34,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import DateTimePicker from "../../datetimepicker/DateTimePicker";
 import CategoryPicker from "../CategoryPicker";
+import { cleanCategoryName } from "../../../utils/categoryUtils";
 
 interface EntryFormProps {
   // control: Control<ExpenseFormData>;
@@ -86,6 +87,33 @@ export default function EntryForm({
 }: EntryFormProps) {
   const { colors } = useTheme();
   const dimensions = useContext(DimensionsContext);
+
+  // Generate consistent colors for categories
+  const getCategoryColor = (categoryName: string) => {
+    const colorPalette = [
+      "#FF6B6B", // Red
+      "#4ECDC4", // Teal
+      "#45B7D1", // Blue
+      "#96CEB4", // Green
+      "#FECA57", // Yellow
+      "#FF9FF3", // Pink
+      "#54A0FF", // Light Blue
+      "#5F27CD", // Purple
+      "#00D2D3", // Cyan
+      "#FF9F43", // Orange
+      "#A55EEA", // Violet
+      "#26DE81", // Mint
+      "#FD79A8", // Rose
+      "#FDCB6E", // Peach
+      "#6C5CE7", // Indigo
+    ];
+    
+    const hash = categoryName.split("").reduce((a, b) => {
+      a = (a << 5) - a + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    return colorPalette[Math.abs(hash) % colorPalette.length];
+  };
   // const { data: user } = useUser(tgUser?.id, initData, chat_id as string);
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
   const [selectedDateTime, setSelectedDateTime] = useState(
@@ -306,8 +334,10 @@ export default function EntryForm({
           <Chip
             label={selectedCategory?.name || "Select Category"}
             sx={{
-              backgroundColor: colors.border,
-              color: colors.text,
+              backgroundColor: selectedCategory?.name 
+                ? getCategoryColor(cleanCategoryName(selectedCategory.name).name)
+                : colors.border,
+              color: selectedCategory?.name ? "white" : colors.text,
               fontSize: "0.8rem",
               fontWeight: 500,
               borderRadius: 2,
@@ -316,6 +346,9 @@ export default function EntryForm({
               textTransform: "none",
               cursor: "pointer",
               width: "fit-content",
+              boxShadow: selectedCategory?.name 
+                ? `0 2px 6px ${getCategoryColor(cleanCategoryName(selectedCategory.name).name)}40`
+                : "none",
             }}
             onClick={() => {
               setShowCategoryPicker(true);
