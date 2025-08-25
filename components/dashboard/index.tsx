@@ -57,13 +57,13 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   // Fetch user data from database
   const { data: dbUser, isLoading: isUserLoading } = useUser(
     tgUser?.id,
-    initData || undefined,
+    initData,
     selectedGroupId || undefined
   );
 
   const { data: allEntries, isLoading: isAllEntriesLoading } = useAllEntries(
     tgUser?.id,
-    initData || undefined,
+    initData,
     selectedGroupId || undefined
   );
 
