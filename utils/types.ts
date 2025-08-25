@@ -133,9 +133,8 @@ export interface ExpenseFormData {
   amount: string;
   category_id: string | number;
   date: string;
+  shares: ExpenseShare[];
 }
-
-// New types to replace 'any' usage
 
 export interface Group {
   id?: string;

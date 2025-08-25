@@ -1,44 +1,23 @@
-import {
-  backButton,
-  init,
-  showPopup,
-  settingsButton,
-} from "@telegram-apps/sdk";
+import { backButton, init, settingsButton } from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Button, Alert } from "@mui/material";
-import {
-  Category,
-  ExpenseFormData,
-  TelegramWebApp,
-} from "../../../../utils/types";
-import { useForm } from "react-hook-form";
 import DeleteExpenseDialog from "../../../../components/expenses/utils/DeleteExpenseDialog";
-import { TelegramUser } from "../../../../components/dashboard";
 import EntryForm from "../../../../components/expenses/forms/EntryForm";
 import LoadingSkeleton from "../../../../components/dashboard/LoadingSkeleton";
 import { useExpense } from "../../../../hooks/useExpense";
 import { useAllEntries } from "../../../../hooks/useAllEntries";
-import { useUser } from "../../../../hooks/useUser";
-import { invalidateExpenseCache } from "../../../../utils/cache";
 import { AppLayout } from "../../../../components/AppLayout";
 import { useTelegramWebApp } from "../../../../hooks/useTelegramWebApp";
 
 const ExpenseDetail = () => {
   const router = useRouter();
-  const { id: entryId, isIncome, chat_id, isGroupView } = router.query;
+  const { id: entryId, isIncome, chat_id } = router.query;
   const { user: tgUser, initData } = useTelegramWebApp();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [currentAmount, setCurrentAmount] = useState("0");
-  const [description, setDescription] = useState("");
-  const [selectedDateTime, setSelectedDateTime] = useState<Date>(new Date());
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number>(0);
-  const [isUserEditingDateTime, setIsUserEditingDateTime] = useState(false);
-  const [justSaved, setJustSaved] = useState(false);
 
   // Get categories from useAllEntries
   const { categories } = useAllEntries(tgUser?.id, initData, chat_id as string);
-  const { data: user } = useUser(tgUser?.id, initData, chat_id as string);
 
   // Get expense data with cache-first strategy
   const {
@@ -46,7 +25,6 @@ const ExpenseDetail = () => {
     isLoading,
     isError,
     error,
-    updateExpenseInCache,
     deleteExpenseFromCache,
   } = useExpense({
     id: entryId as string,
@@ -55,56 +33,6 @@ const ExpenseDetail = () => {
     initData: initData,
     chat_id: chat_id as string,
   });
-
-  const defaultValues: ExpenseFormData = {
-    description: "",
-    amount: "",
-    category_id: 0,
-    date: new Date().toISOString(),
-  };
-
-  const {
-    // control,
-    handleSubmit,
-    formState: { isDirty },
-    reset,
-    setValue,
-  } = useForm<ExpenseFormData>({
-    defaultValues,
-    mode: "onChange",
-  });
-
-  const hasExpenseShares =
-    isGroupView !== "true" && expense?.shares && expense.shares.length > 0;
-
-  // Reset form when expense data changes (but not after we just saved)
-  useEffect(() => {
-    if (expense && !justSaved) {
-      const amount = hasExpenseShares
-        ? expense.shares
-            .find((share: { user_id: number }) => share.user_id === user?.id)
-            ?.share_amount.toString()
-        : expense.amount.toString();
-
-      setCurrentAmount(amount || "0");
-      setDescription(expense.description || "");
-      // Only update datetime from expense if user is not actively editing it
-      if (!isUserEditingDateTime) {
-        setSelectedDateTime(expense.date ? new Date(expense.date) : new Date());
-      }
-      setSelectedCategoryId(expense.category?.id || 0);
-
-      reset(
-        {
-          description: expense.description || "",
-          amount: amount || "",
-          category_id: expense.category?.id || 0,
-          date: expense.date || new Date().toISOString(),
-        },
-        { keepDirty: false }
-      );
-    }
-  }, [expense, reset, user, isGroupView, hasExpenseShares, justSaved]);
 
   // Initialize Telegram WebApp
   useEffect(() => {
@@ -140,133 +68,8 @@ const ExpenseDetail = () => {
     };
   }, [entryId, router]);
 
-  const onSubmit = useCallback(
-    async (data: ExpenseFormData) => {
-      try {
-        const webApp = window.Telegram?.WebApp as TelegramWebApp;
-        const user = webApp.initDataUnsafe?.user;
-        const webAppInitData = webApp.initData;
-
-        if (!user?.id || !webAppInitData || !entryId || !expense) {
-          console.error("Missing required data");
-          return;
-        }
-
-        // Create the updated expense object
-        const updatedExpense = {
-          ...expense,
-          description: data.description,
-          amount: parseFloat(data.amount),
-          category: categories.find((c) => c.id === data.category_id),
-          date: selectedDateTime.toISOString(),
-          updated_at: new Date().toISOString(), // Include updated_at timestamp
-        };
-
-        // Optimistically update the cache
-        updateExpenseInCache(updatedExpense);
-
-        // Convert selectedDateTime to UTC for backend
-        const utcDateTime = selectedDateTime.toISOString();
-
-        // Make the API call in the background
-        const response = await fetch(`/api/entries/${entryId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: user.id.toString(),
-            initData: webAppInitData,
-            ...data,
-            amount: parseFloat(data.amount),
-            isIncome: isIncome === "true",
-            date: utcDateTime,
-          }),
-        });
-
-        if (!response.ok) {
-          // If update fails, show error but don't block navigation
-          showPopup({
-            title: "Error",
-            message: "Failed to update. Please refresh the page.",
-            buttons: [{ type: "ok" }],
-          });
-          return;
-        }
-
-        // Set flag to prevent form reset after successful save
-        setJustSaved(true);
-
-        // Invalidate expense cache after successful update
-        invalidateExpenseCache(user.id.toString(), chat_id as string);
-        console.log("🗑️ Cache invalidated after expense update");
-
-        showPopup({
-          title: "Success",
-          message: `${
-            isIncome === "true" ? "Income" : "Expense"
-          } updated successfully`,
-          buttons: [{ type: "ok" }],
-        });
-
-        // Reset the flag after cache has been updated
-        setTimeout(() => {
-          setJustSaved(false);
-        }, 1000);
-      } catch (err) {
-        console.error("Error updating entry:", err);
-        showPopup({
-          title: "Error",
-          message: "Failed to update. Please refresh the page.",
-          buttons: [{ type: "ok" }],
-        });
-      }
-    },
-    [entryId, isIncome, expense, categories, updateExpenseInCache, chat_id]
-  );
-
-  // Handler functions for the new EntryForm
-  const handleAmountChange = (value: string) => {
-    setCurrentAmount(value);
-    // Update the react-hook-form control as well
-    const formValue = value === "0" ? "" : value;
-    setValue("amount", formValue, { shouldDirty: true });
-  };
-
-  const handleDescriptionChange = (value: string) => {
-    setDescription(value);
-    setValue("description", value, { shouldDirty: true });
-  };
-
-  const handleDelete = () => {
-    setShowDeleteDialog(true);
-  };
-
-  const handleFormSubmit = () => {
-    // Update form data before submitting
-    setValue("description", description, { shouldDirty: true });
-    setValue("amount", currentAmount === "0" ? "" : currentAmount, {
-      shouldDirty: true,
-    });
-    setValue("category_id", selectedCategoryId, { shouldDirty: true });
-    // Save directly without confirmation
-    handleSubmit(onSubmit)();
-  };
-
-  const handleCategoryChange = (category: Category) => {
-    setSelectedCategoryId(Number(category.id));
-    setValue("category_id", category.id, { shouldDirty: true });
-  };
-
-  const handleDateTimeChange = (newDateTime: Date) => {
-    setIsUserEditingDateTime(true);
-    setSelectedDateTime(newDateTime);
-    // Update the form date field to mark form as dirty
-    setValue("date", newDateTime.toISOString(), { shouldDirty: true });
-    // Reset the flag after a short delay to allow the update to complete
-    setTimeout(() => setIsUserEditingDateTime(false), 1000);
-  };
-
   // Handle loading and error states
-  if (isLoading || !expense) {
+  if (isLoading || !expense || categories.length === 0) {
     return <LoadingSkeleton />;
   }
 
@@ -292,28 +95,15 @@ const ExpenseDetail = () => {
   return (
     <AppLayout>
       <EntryForm
-        // control={control}
-        categories={categories}
+        entryId={entryId as string}
         isIncome={isIncome === "true"}
-        // isLoading={isLoading}
-        date={expense.date}
         expense={expense}
-        tgUser={tgUser as TelegramUser}
-        initData={initData as string}
+        categories={categories}
         chat_id={chat_id as string}
         isGroupExpense={chat_id !== tgUser?.id?.toString()}
-        onDelete={handleDelete}
+        setShowDeleteDialog={setShowDeleteDialog}
         // onToggleRecurring={() => console.log("Recurring not implemented")}
         // onShowSplit={() => console.log("Show split not implemented")}
-        onSubmit={handleFormSubmit}
-        currentAmount={currentAmount}
-        onAmountChange={handleAmountChange}
-        description={description}
-        onDescriptionChange={handleDescriptionChange}
-        onCategoryChange={handleCategoryChange}
-        onDateTimeChange={handleDateTimeChange}
-        selectedDateTime={selectedDateTime}
-        hasChanges={isDirty}
       />
 
       <DeleteExpenseDialog

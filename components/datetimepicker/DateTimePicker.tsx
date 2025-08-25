@@ -111,9 +111,9 @@ const ExpenseDateTimePicker = ({
   }, [date]);
 
   // Remove the automatic time update effect to prevent infinite loops
-  // useEffect(() => {
-  //   handleTimeChange();
-  // }, [selectedHour, selectedMinute, selectedPeriod]);
+  useEffect(() => {
+    handleTimeChange();
+  }, [selectedHour, selectedMinute, selectedPeriod]);
 
   const handleContainerClick = () => {
     if (showTimePicker) {

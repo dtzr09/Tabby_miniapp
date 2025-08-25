@@ -8,20 +8,20 @@ interface UserShareProps {
   share: ExpenseShare;
   inputValue: string;
   hasError: string | undefined;
-  editExpenseShare: boolean;
   amountPerPerson: number;
   onInputChange: (userId: string | number, value: string) => void;
   onInputBlur: (userId: string | number) => void;
+  isCustomSplit: boolean;
 }
 
 const UserShare = ({
   share,
   inputValue,
   hasError,
-  editExpenseShare,
   amountPerPerson,
   onInputChange,
   onInputBlur,
+  isCustomSplit,
 }: UserShareProps) => {
   const { colors } = useTheme();
 
@@ -76,7 +76,7 @@ const UserShare = ({
           justifyContent: "flex-end",
         }}
       >
-        {editExpenseShare ? (
+        {isCustomSplit ? (
           <Box
             sx={{
               display: "flex",

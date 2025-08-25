@@ -57,7 +57,9 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({
           {categories.map((cat: Category) => {
             const cleanedCategory = cleanCategoryName(cat.name);
             const categoryColor = getCategoryColor(cleanedCategory.name);
-            const isSelected = selectedCategory === cleanedCategory.name;
+            const cleanedSelectedCategory = cleanCategoryName(selectedCategory);
+            const isSelected =
+              cleanedSelectedCategory.name === cleanedCategory.name;
 
             return (
               <ListItem key={cat.name} sx={{ padding: 0, mb: 0.5 }}>

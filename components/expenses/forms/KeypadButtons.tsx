@@ -4,12 +4,9 @@ import { alpha, Box, Button } from "@mui/material";
 import React from "react";
 
 interface KeypadButtonsProps {
-  onDateTimeChange?: (dateTime: Date) => void;
   onSubmit?: () => void;
   currentAmount: string;
   hasChanges?: boolean;
-  originalIsCustomSplit: () => boolean;
-  editExpenseShare: boolean;
   isCustomSplit: boolean;
   onAmountChange: (amount: string) => void;
   onBackspace: () => void;
@@ -21,7 +18,7 @@ const KeypadButtons = (props: KeypadButtonsProps) => {
   // Handle keypad input
   const handleKeypadPress = (value: string) => {
     // Only disable amount editing when actively editing a custom split
-    if (props.editExpenseShare && props.isCustomSplit) {
+    if (props.isCustomSplit) {
       return;
     }
 
@@ -39,7 +36,7 @@ const KeypadButtons = (props: KeypadButtonsProps) => {
 
   // Render keypad button
   const renderKeypadButton = (value: string, isSpecial = false) => {
-    const isDisabled = props.originalIsCustomSplit();
+    const isDisabled = props.isCustomSplit;
     return (
       <Button
         key={value}
@@ -113,7 +110,6 @@ const KeypadButtons = (props: KeypadButtonsProps) => {
         {/* Submit Button (Save) */}
         <Button
           onClick={() => {
-            props.onDateTimeChange?.(props.selectedDateTime);
             props.onSubmit?.();
           }}
           disabled={

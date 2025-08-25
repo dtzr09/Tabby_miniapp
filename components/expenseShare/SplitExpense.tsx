@@ -7,19 +7,18 @@ import UserShare from "./UserShare";
 
 interface SplitExpenseProps {
   expense: Expense;
-  editExpenseShare: boolean;
   currentAmount?: string;
   onSplitTypeChange?: (isCustomSplit: boolean) => void;
   onValidationChange?: (errors: Record<string | number, string>) => void;
   onHasChangesChange?: (hasChanges: boolean) => void;
   onInputValuesChange?: (inputValues: Record<string | number, string>) => void;
-  
+  isCustomSplit: boolean;
 }
 
 const SplitExpense = ({
   expense,
-  editExpenseShare,
   currentAmount,
+  isCustomSplit,
   onSplitTypeChange,
   onValidationChange,
   onHasChangesChange,
@@ -150,7 +149,7 @@ const SplitExpense = ({
       }}
     >
       <Divider sx={{ width: "100%", my: 1, borderColor: colors.border }} />
-      {!editExpenseShare && (
+      {!isCustomSplit && (
         <Box
           sx={{
             display: "flex",
@@ -177,7 +176,7 @@ const SplitExpense = ({
               inputValues[share.user_id] || share.share_amount.toFixed(2)
             }
             hasError={validationErrors[share.user_id]}
-            editExpenseShare={editExpenseShare}
+            isCustomSplit={isCustomSplit}
             amountPerPerson={amountPerPerson}
             onInputChange={handleInputChange}
             onInputBlur={handleInputBlur}

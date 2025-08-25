@@ -13,10 +13,10 @@ interface SplitExpenseBottomSheetProps {
   setShowSplitExpenseSheet: (show: boolean) => void;
   splitHasChanges: boolean;
   setSplitHasChanges: (hasChanges: boolean) => void;
-  editExpenseShare: boolean;
   setEditExpenseShare: (edit: boolean) => void;
   handleSplitApplyChanges: () => void;
   handleSplitModeToggle: () => void;
+  resetSplitChanges: () => void;
   splitValidationErrors: Record<string, string>;
   expenseShares: ExpenseShare[];
   expense: Expense | undefined;
@@ -27,6 +27,7 @@ interface SplitExpenseBottomSheetProps {
   splitInputValues: Record<string | number, string>;
   setSplitInputValues: (values: Record<string | number, string>) => void;
   setSplitValidationErrors: (errors: Record<string, string>) => void;
+  isDirty: boolean;
 }
 const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
   const { colors } = useTheme();
@@ -35,9 +36,8 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
       open={props.showSplitExpenseSheet}
       onClose={() => {
         props.setShowSplitExpenseSheet(false);
-        // Reset changes when closing the sheet
-        props.setSplitHasChanges(false);
-        props.setEditExpenseShare(false);
+        // Reset all split changes when closing the sheet without saving
+        props.resetSplitChanges();
       }}
       title="Split Expense"
       titleIcon={
@@ -48,7 +48,6 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
               : undefined
           }
           currentAmount={props.currentAmount}
-          isEditMode={props.editExpenseShare}
         />
       }
       description={`$${parseFloat(props.displayAmount).toFixed(2)}  •  ${
@@ -58,9 +57,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
         {
           text: "Save",
           onClick: props.handleSplitApplyChanges,
-          disabled:
-            Object.keys(props.splitValidationErrors).length > 0 ||
-            !props.splitHasChanges,
+          disabled: !props.isDirty,
           variant: "primary",
         },
       ]}
@@ -77,7 +74,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
               p: 1,
             }}
           >
-            {props.editExpenseShare && !props.isCustomSplit ? (
+            {props.isCustomSplit ? (
               <GraphicEq
                 fontSize="small"
                 sx={{
@@ -105,7 +102,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
                 fontWeight: 550,
               }}
             >
-              {props.editExpenseShare ? "Split Evenly" : "Custom Split"}
+              {props.isCustomSplit ? "Split Evenly" : "Custom Split"}
             </Typography>
           </Button>
         </Box>
@@ -114,7 +111,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
       {props.expense && (
         <SplitExpense
           expense={{ ...props.expense, shares: props.expenseShares }}
-          editExpenseShare={props.editExpenseShare}
+          isCustomSplit={props.isCustomSplit}
           currentAmount={props.currentAmount}
           onValidationChange={props.setSplitValidationErrors}
           onHasChangesChange={props.setSplitHasChanges}
