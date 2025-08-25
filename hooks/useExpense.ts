@@ -6,7 +6,7 @@ interface UseExpenseProps {
   id: string | number;
   isIncome: boolean;
   userId?: string;
-  initData?: string;
+  initData?: string | null;
   chat_id?: string;
 }
 

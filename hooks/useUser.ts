@@ -4,7 +4,7 @@ import { User } from "../utils/types";
 
 export const useUser = (
   telegramId: string | undefined,
-  initData: string | undefined,
+  initData: string | null,
   chatId?: string
 ) => {
   return useQuery<User | null>({
@@ -17,4 +17,4 @@ export const useUser = (
     },
     enabled: !!telegramId && !!initData,
   });
-}; 
+};

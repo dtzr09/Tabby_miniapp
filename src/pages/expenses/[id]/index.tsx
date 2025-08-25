@@ -22,13 +22,13 @@ import { useAllEntries } from "../../../../hooks/useAllEntries";
 import { useUser } from "../../../../hooks/useUser";
 import { invalidateExpenseCache } from "../../../../utils/cache";
 import { AppLayout } from "../../../../components/AppLayout";
+import { useTelegramWebApp } from "../../../../hooks/useTelegramWebApp";
 
 const ExpenseDetail = () => {
   const router = useRouter();
   const { id: entryId, isIncome, chat_id, isGroupView } = router.query;
+  const { user: tgUser, initData } = useTelegramWebApp();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
-  const [initData, setInitData] = useState<string | undefined>(undefined);
   const [currentAmount, setCurrentAmount] = useState("0");
   const [description, setDescription] = useState("");
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(new Date());
@@ -52,7 +52,7 @@ const ExpenseDetail = () => {
     id: entryId as string,
     isIncome: isIncome === "true",
     userId: tgUser?.id,
-    initData,
+    initData: initData,
     chat_id: chat_id as string,
   });
 
@@ -121,24 +121,6 @@ const ExpenseDetail = () => {
         if (settingsButton.isMounted()) {
           settingsButton.hide();
         }
-
-        const webApp = window.Telegram?.WebApp as TelegramWebApp;
-        if (!webApp?.initData) {
-          console.log("⏳ Waiting for Telegram WebApp to initialize...");
-          setTimeout(initializeApp, 25);
-          return;
-        }
-
-        const user = webApp.initDataUnsafe?.user;
-        const webAppInitData = webApp.initData;
-
-        if (!user?.id || !webAppInitData || !entryId) {
-          console.error("Missing required data");
-          return;
-        }
-
-        setTgUser(user as TelegramUser);
-        setInitData(webAppInitData);
       } catch (err) {
         console.error("Error initializing expense detail:", err);
       }

@@ -10,7 +10,7 @@ interface KeypadButtonsProps {
   hasChanges?: boolean;
   originalIsCustomSplit: () => boolean;
   editExpenseShare: boolean;
-  isCustomSplit: () => boolean;
+  isCustomSplit: boolean;
   onAmountChange: (amount: string) => void;
   onBackspace: () => void;
   selectedDateTime: Date;
@@ -21,7 +21,7 @@ const KeypadButtons = (props: KeypadButtonsProps) => {
   // Handle keypad input
   const handleKeypadPress = (value: string) => {
     // Only disable amount editing when actively editing a custom split
-    if (props.editExpenseShare && props.isCustomSplit()) {
+    if (props.editExpenseShare && props.isCustomSplit) {
       return;
     }
 

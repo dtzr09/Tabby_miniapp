@@ -19,7 +19,7 @@ interface DatetimeBarProps {
   selectedDateTime: Date;
   showFloatingPanel: boolean;
   setShowFloatingPanel: (show: boolean) => void;
-  isCustomSplit: () => boolean;
+  isCustomSplit: boolean;
   setEditExpenseShare: (edit: boolean) => void;
   setShowSplitExpenseSheet: (show: boolean) => void;
   bottomSectionBounds: { height: number };
@@ -99,8 +99,8 @@ const DatetimeBar = (props: DatetimeBarProps) => {
         <Box
           sx={{
             position: "fixed",
-            right: "0.8rem",
-            bottom: `${props.bottomSectionBounds.height - 12}px`, // Position just above the MoreVert icon
+            right: "1rem",
+            bottom: `${props.bottomSectionBounds.height + 28}px`, // Position just above the MoreVert icon
             backgroundColor: colors.surface,
             borderRadius: 3,
             boxShadow: `0 4px 20px ${colors.textSecondary}20`,
@@ -147,7 +147,7 @@ const DatetimeBar = (props: DatetimeBarProps) => {
           <IconButton
             onClick={() => {
               // Auto-enable edit mode for custom splits
-              if (props.isCustomSplit()) {
+              if (props.isCustomSplit) {
                 props.setEditExpenseShare(true);
               } else {
                 props.setEditExpenseShare(false);

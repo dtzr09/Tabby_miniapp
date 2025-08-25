@@ -234,7 +234,6 @@ export const fetchExpensesForBudgets = async (
 export const updateExpenseAmount = async (
   id: number,
   amount: number,
-  telegram_id: string,
   initData: string,
   chat_id: string
 ) => {
@@ -254,7 +253,9 @@ export const updateExpenseAmount = async (
     if (!response.ok) {
       const text = await response.text();
       console.error("❌ Update expense amount API Error:", text);
-      throw new Error(`Update expense amount error ${response.status}: ${text}`);
+      throw new Error(
+        `Update expense amount error ${response.status}: ${text}`
+      );
     }
 
     return response.json();
@@ -267,7 +268,6 @@ export const updateExpenseAmount = async (
 export const updateExpenseShares = async (
   id: number,
   shares: Array<{ user_id: string | number; share_amount: number }>,
-  telegram_id: string,
   initData: string,
   chat_id: string
 ) => {
@@ -287,7 +287,9 @@ export const updateExpenseShares = async (
     if (!response.ok) {
       const text = await response.text();
       console.error("❌ Update expense shares API Error:", text);
-      throw new Error(`Update expense shares error ${response.status}: ${text}`);
+      throw new Error(
+        `Update expense shares error ${response.status}: ${text}`
+      );
     }
 
     return response.json();

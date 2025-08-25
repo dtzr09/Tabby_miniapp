@@ -13,6 +13,7 @@ interface SplitExpenseProps {
   onValidationChange?: (errors: Record<string | number, string>) => void;
   onHasChangesChange?: (hasChanges: boolean) => void;
   onInputValuesChange?: (inputValues: Record<string | number, string>) => void;
+  
 }
 
 const SplitExpense = ({

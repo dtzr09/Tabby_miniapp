@@ -2,11 +2,7 @@ import { useEffect, useState } from "react";
 import { init } from "@telegram-apps/sdk";
 import { TelegramWebApp } from "../utils/types";
 import { appCache } from "../utils/cache";
-
-// Import the TelegramUser interface from dashboard to maintain consistency
-interface TelegramUser {
-  id: string;
-}
+import { TelegramUser } from "../components/dashboard";
 
 interface TelegramWebAppData {
   webApp: TelegramWebApp | null;
@@ -89,7 +85,6 @@ export const useTelegramWebApp = (): TelegramWebAppData => {
     };
 
     initializeTelegram();
-
   }, []);
 
   return state;

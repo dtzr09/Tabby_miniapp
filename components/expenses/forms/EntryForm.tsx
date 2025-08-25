@@ -98,16 +98,9 @@ export default function EntryForm({
       (share) => Math.abs(share.share_amount - amountPerPerson) < 0.01
     );
   };
+  const [isCustomSplit, setIsCustomSplit] = useState(originalIsCustomSplit());
 
   // Check if this is a custom split (not equal split)
-  const isCustomSplit = () => {
-    if (!isExpense || !expense?.shares?.length) return false;
-    const currentAmountValue = parseFloat(currentAmount || "0");
-    const amountPerPerson = currentAmountValue / expense.shares.length;
-    return !expense.shares.every(
-      (share) => Math.abs(share.share_amount - amountPerPerson) < 0.01
-    );
-  };
 
   const [editExpenseShare, setEditExpenseShare] = useState(false);
 
@@ -176,7 +169,6 @@ export default function EntryForm({
       await updateExpenseAmount(
         expense.id,
         newTotalFromShares,
-        tgUser.id.toString(),
         initData,
         chat_id
       );
@@ -188,7 +180,6 @@ export default function EntryForm({
           user_id: s.user_id,
           share_amount: s.share_amount,
         })),
-        tgUser.id.toString(),
         initData,
         chat_id
       );
@@ -401,7 +392,7 @@ export default function EntryForm({
   // Handle backspace
   const handleBackspace = () => {
     // Only disable amount editing when actively editing a custom split
-    if (editExpenseShare && isCustomSplit()) {
+    if (editExpenseShare && isCustomSplit) {
       return;
     }
 
@@ -715,7 +706,7 @@ export default function EntryForm({
               {/* Edit/Equal Split Toggle Button */}
               <Button
                 onClick={() => {
-                  if (editExpenseShare && isCustomSplit()) {
+                  if (editExpenseShare && isCustomSplit) {
                     // Switching from custom split to equal split - populate equal amounts
                     if (expense?.shares) {
                       const totalAmount = parseFloat(displayAmount);
@@ -731,8 +722,9 @@ export default function EntryForm({
                       });
                       setSplitInputValues(newInputValues);
                       setSplitHasChanges(true); // Enable save button for this change
+                      setIsCustomSplit(false);
                     }
-                  } else if (editExpenseShare && !isCustomSplit()) {
+                  } else if (editExpenseShare && !isCustomSplit) {
                     // Switching from equal split to custom split - check if values actually changed
                     if (expense?.shares) {
                       const totalAmount = parseFloat(displayAmount);
@@ -752,6 +744,7 @@ export default function EntryForm({
                       });
 
                       setSplitHasChanges(hasChanges);
+                      setIsCustomSplit(true);
                     }
                   } else if (!editExpenseShare) {
                     // Initialize input values with current shares
@@ -779,7 +772,7 @@ export default function EntryForm({
                   p: 1,
                 }}
               >
-                {editExpenseShare && !isCustomSplit() ? (
+                {editExpenseShare && !isCustomSplit ? (
                   <GraphicEq
                     fontSize="small"
                     sx={{
