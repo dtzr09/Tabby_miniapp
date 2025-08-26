@@ -17,6 +17,7 @@ export interface GroupSwitcherProps {
   setSelectedGroupId?: (groupId: string | null) => void;
   userId?: string;
   initData?: string;
+  toggleWidth?: number;
 }
 
 const GroupSwitcher = (props: GroupSwitcherProps) => {
@@ -83,7 +84,6 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
           gap: 0.3,
           py: 1,
           color: colors.text,
-          backgroundColor: colors.card,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flex: 1 }}>
@@ -107,6 +107,9 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
               lineHeight: "1rem",
               textAlign: "left",
               flex: 1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
             {props.groups?.find((group) => group.id === props.selectedGroupId)

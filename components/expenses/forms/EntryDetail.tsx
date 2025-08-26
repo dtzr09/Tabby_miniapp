@@ -34,7 +34,7 @@ interface EntryDetailProps {
   isIncome: boolean;
 }
 const EntryDetail = (props: EntryDetailProps) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const amountScrollRef = useRef<HTMLDivElement>(null);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
@@ -47,7 +47,10 @@ const EntryDetail = (props: EntryDetailProps) => {
     if (category) {
       props.handleFormValues(category.id, FormValues.CATEGORY_ID);
     } else {
-      console.error("Selected category not found in filteredCategories:", categoryName);
+      console.error(
+        "Selected category not found in filteredCategories:",
+        categoryName
+      );
     }
   };
 
@@ -58,6 +61,10 @@ const EntryDetail = (props: EntryDetailProps) => {
       props.handleFormValues(props.currentAmount, FormValues.AMOUNT);
     }
   }, [props.currentAmount]);
+
+  const categoryColor = getCategoryColor(
+    cleanCategoryName(props.selectedCategory.name).name
+  );
 
   return (
     /* Top Section - Main Display Area */
@@ -81,8 +88,8 @@ const EntryDetail = (props: EntryDetailProps) => {
           <Box
             sx={{
               position: "absolute",
-              top: 16,
-              right: 16,
+              top: 32,
+              right: 24,
               zIndex: 100,
             }}
           >
@@ -98,11 +105,7 @@ const EntryDetail = (props: EntryDetailProps) => {
         <Chip
           label={props.selectedCategory?.name || "Select Category"}
           sx={{
-            backgroundColor: props.selectedCategory?.name
-              ? getCategoryColor(
-                  cleanCategoryName(props.selectedCategory.name).name
-                )
-              : colors.border,
+            backgroundColor: isDark ? alpha(categoryColor, 0.4) : categoryColor,
             color: props.selectedCategory?.name ? "white" : colors.text,
             fontSize: "0.8rem",
             fontWeight: 500,
@@ -112,11 +115,10 @@ const EntryDetail = (props: EntryDetailProps) => {
             textTransform: "none",
             cursor: "pointer",
             width: "fit-content",
-            boxShadow: props.selectedCategory?.name
-              ? `0 2px 6px ${getCategoryColor(
-                  cleanCategoryName(props.selectedCategory.name).name
-                )}40`
-              : "none",
+            "&:hover": {
+              backgroundColor: alpha(categoryColor, 0.5),
+              color: props.selectedCategory?.name ? "white" : colors.text,
+            },
           }}
           onClick={() => {
             setShowCategoryPicker(true);

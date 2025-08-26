@@ -18,7 +18,7 @@ export default function ExpenseSummaryCard({
         px: 4,
         py: 2,
         borderRadius: 4,
-        bgcolor: colors.card,
+        bgcolor: colors.background,
         border: `1px solid ${colors.border}`,
         boxShadow: 0,
         flex: 1,

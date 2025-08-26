@@ -35,7 +35,7 @@ const TimeRangeToggle = ({
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, py: 1 }}>
         <IconButton
           sx={{
-            color: colors.primary,
+            color: colors.text,
             p: 0,
             "&.Mui-disabled": {
               color: colors.textSecondary,
@@ -54,7 +54,7 @@ const TimeRangeToggle = ({
         </Typography>
         <IconButton
           sx={{
-            color: colors.primary,
+            color: colors.text,
             p: 0,
             "&.Mui-disabled": {
               color: colors.textSecondary,

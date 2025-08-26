@@ -23,6 +23,10 @@ import { getPersonalExpensesFromGroup } from "../../utils/getPersonalExpensesFro
 import { fetchUserCount } from "../../services/userCount";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
 import { AppLayout } from "../AppLayout";
+import {
+  saveNavigationState,
+  loadNavigationState,
+} from "../../utils/navigationState";
 
 export interface TelegramUser {
   id: string;
@@ -145,7 +149,13 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
       if (user && telegramInitData) {
         setTgUser(user);
         setInitData(telegramInitData);
-        if (user.id) {
+
+        // Load navigation state from localStorage
+        const savedState = loadNavigationState();
+        if (savedState) {
+          setSelectedGroupId(savedState.selectedGroupId);
+          setIsGroupView(savedState.isGroupView);
+        } else if (user.id) {
           setSelectedGroupId(user.id.toString());
         }
       }
@@ -189,7 +199,16 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   const hasBudget =
     currentMonthExpenses.budgets.length > 0 && summaryData.totalBudget > 0;
 
-  const handleViewToggle = () => setIsGroupView(!isGroupView);
+  const handleViewToggle = () => {
+    const newIsGroupView = !isGroupView;
+    setIsGroupView(newIsGroupView);
+
+    // Save state to localStorage
+    saveNavigationState({
+      selectedGroupId,
+      isGroupView: newIsGroupView,
+    });
+  };
 
   // Show welcome screen if no data and no groups
   if (!hasData && !hasGroups) {
@@ -240,31 +259,40 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
               <Box
                 sx={{
                   display: "flex",
-                  flexDirection: "column",
                   gap: 1,
                   width: "100%",
+                  alignItems: "center",
                 }}
               >
-                <GroupSwitcher
-                  groups={[
-                    {
-                      id: tgUser?.id?.toString() || null,
-                      name: "Personal",
-                      icon: (
-                        <PersonOutlineOutlined sx={{ fontSize: "1.2rem" }} />
-                      ),
-                    },
-                    ...(groups?.map((group: Group) => ({
-                      id: group.chat_id,
-                      name: group.name,
-                      icon: <GroupOutlined sx={{ fontSize: "1.2rem" }} />,
-                    })) || []),
-                  ]}
-                  selectedGroupId={selectedGroupId}
-                  setSelectedGroupId={setSelectedGroupId}
-                  userId={tgUser?.id}
-                  initData={initData || undefined}
-                />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <GroupSwitcher
+                    groups={[
+                      {
+                        id: tgUser?.id?.toString() || null,
+                        name: "Personal",
+                        icon: (
+                          <PersonOutlineOutlined sx={{ fontSize: "1.2rem" }} />
+                        ),
+                      },
+                      ...(groups?.map((group: Group) => ({
+                        id: group.chat_id,
+                        name: group.name,
+                        icon: <GroupOutlined sx={{ fontSize: "1.2rem" }} />,
+                      })) || []),
+                    ]}
+                    selectedGroupId={selectedGroupId}
+                    setSelectedGroupId={(groupId: string | null) => {
+                      setSelectedGroupId(groupId);
+                      // Save state to localStorage
+                      saveNavigationState({
+                        selectedGroupId: groupId,
+                        isGroupView,
+                      });
+                    }}
+                    userId={tgUser?.id}
+                    initData={initData || undefined}
+                  />
+                </Box>
 
                 {selectedGroupId !== null &&
                   selectedGroupId !== tgUser?.id?.toString() && (

@@ -81,7 +81,7 @@ const ExpensesPieChart = (props: ExpensesPieChartProps) => {
             justifyContent: "center",
             alignItems: "center",
             borderRadius: "50%",
-            backgroundColor: colors.card,
+            backgroundColor: colors.background,
             boxShadow: `inset 0 0 0 1px ${colors.border}`,
           }}
         >

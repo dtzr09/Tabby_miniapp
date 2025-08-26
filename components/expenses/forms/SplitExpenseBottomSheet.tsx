@@ -98,7 +98,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
                   mr: 0.5,
                   fontSize: "0.9rem",
                   color: colors.text,
-                  opacity: disableSplitModeToggle ? 0.5 : 1,
+                  opacity: disableSplitModeToggle ? 0.3 : 1,
                 }}
               />
             ) : (
@@ -108,7 +108,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
                   mr: 0.5,
                   fontSize: "0.9rem",
                   color: colors.text,
-                  opacity: disableSplitModeToggle ? 0.5 : 1,
+                  opacity: disableSplitModeToggle ? 0.3 : 1,
                 }}
               />
             )}

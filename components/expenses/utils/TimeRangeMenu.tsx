@@ -33,7 +33,7 @@ export default function TimeRangeMenu({
       <IconButton
         onClick={handleClick}
         sx={{
-          color: colors.primary,
+          color: colors.text,
           p: 0,
           ml: 1,
           fontSize: "0.7rem",
@@ -77,14 +77,14 @@ export default function TimeRangeMenu({
               minHeight: 28,
               py: 0.2,
               px: 1,
-              color: colors.text,
+              color: colors.textSecondary,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               gap: 0.5,
 
               "&.selected": {
-                color: colors.primary,
+                color: colors.text,
                 fontWeight: 600,
               },
             },
@@ -97,7 +97,7 @@ export default function TimeRangeMenu({
         >
           Week
           {viewType === "Week" && (
-            <CheckIcon sx={{ fontSize: "0.7rem", color: colors.primary }} />
+            <CheckIcon sx={{ fontSize: "0.7rem", color: colors.text }} />
           )}
         </MenuItem>
         <MenuItem
@@ -106,7 +106,7 @@ export default function TimeRangeMenu({
         >
           Month
           {viewType === "Month" && (
-            <CheckIcon sx={{ fontSize: "0.7rem", color: colors.primary }} />
+            <CheckIcon sx={{ fontSize: "0.7rem", color: colors.text }} />
           )}
         </MenuItem>
       </Menu>

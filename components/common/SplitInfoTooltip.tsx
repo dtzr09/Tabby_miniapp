@@ -23,9 +23,10 @@ const SplitInfoTooltip = ({
   const amountPerPerson = expense?.shares?.length
     ? currentAmountValue / expense.shares.length
     : currentAmountValue;
-  const isEqualSplit = expense?.shares?.every(
-    (share) => Math.abs(share.share_amount - amountPerPerson) < 0.01
-  ) ?? true;
+  const isEqualSplit =
+    expense?.shares?.every(
+      (share) => Math.abs(share.share_amount - amountPerPerson) < 0.01
+    ) ?? true;
 
   // Create tooltip content based on edit state
   const getTooltipContent = () => {
@@ -48,7 +49,7 @@ const SplitInfoTooltip = ({
   return (
     <Tooltip
       title={getTooltipContent()}
-      placement="top"
+      placement="top-end"
       open={open}
       onClose={handleClose}
       disableHoverListener
@@ -75,10 +76,6 @@ const SplitInfoTooltip = ({
         sx={{
           padding: 0.25,
           color: colors.textSecondary,
-          "&:hover": {
-            color: colors.primary,
-            backgroundColor: "transparent",
-          },
         }}
       >
         <InfoOutlined sx={{ fontSize: "1rem" }} />

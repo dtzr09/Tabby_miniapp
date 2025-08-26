@@ -250,7 +250,7 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
         <Typography
           variant="overline"
           sx={{
-            color: colors.primary,
+            color: colors.textSecondary,
             fontWeight: 600,
             fontSize: "0.7rem",
             letterSpacing: "0.08em",
@@ -334,7 +334,7 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
           <Typography
             variant="overline"
             sx={{
-              color: colors.primary,
+              color: colors.textSecondary,
               fontWeight: 600,
               fontSize: "0.7rem",
               letterSpacing: "0.08em",
@@ -410,15 +410,9 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
         title="Edit Category"
         buttons={[
           {
-            text: "Cancel",
-            onClick: () =>
-              setEditDialog({ open: false, category: null, newName: "" }),
-            variant: "primary",
-          },
-          {
-            text: "Save Changes",
+            text: "Save",
             onClick: confirmEdit,
-            variant: "secondary",
+            variant: "primary",
             disabled: !editDialog.newName.trim(),
           },
         ]}
@@ -478,11 +472,6 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
             text: "Delete",
             onClick: confirmDelete,
             variant: "destructive",
-          },
-          {
-            text: "Cancel",
-            onClick: () => setDeleteDialog({ open: false, category: null }),
-            variant: "secondary",
           },
         ]}
       />

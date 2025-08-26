@@ -129,7 +129,7 @@ export default function ExpenseList({
       sx={{
         borderRadius: 3,
         boxShadow: 0,
-        bgcolor: colors.card,
+        bgcolor: colors.background,
         color: colors.text,
         border: `1px solid ${colors.border}`,
         height: 600,

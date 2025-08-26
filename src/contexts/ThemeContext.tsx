@@ -32,7 +32,7 @@ const COLORS = {
       card: "#fafbfc",
       cardBg: "#eaf2fe",
       incomeExpenseCard: "#f8fafc",
-      border: "#fafbfc",
+      border: "#e2e8f0",
       input: "#f8fafc",
     },
   },
@@ -66,7 +66,7 @@ const COLORS = {
       card: "#1f2937",
       cardBg: "#1e2a38",
       incomeExpenseCard: "#283442",
-      border: "#1f2937",
+      border: "#1e293b",
       input: "#4a5e80",
     },
   },
@@ -204,6 +204,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     setMounted(true);
+    // Load saved theme preference from localStorage
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("tabby_theme_preference") as "light" | "dark" | "auto" | null;
+      if (savedTheme) {
+        setManualTheme(savedTheme);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -241,6 +248,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const setThemeMode = (newTheme: "light" | "dark" | "auto") => {
     setManualTheme(newTheme);
+    
+    // Save theme preference to localStorage
+    if (typeof window !== "undefined") {
+      localStorage.setItem("tabby_theme_preference", newTheme);
+    }
+    
     if (newTheme === "light") {
       setIsDark(false);
     } else if (newTheme === "dark") {

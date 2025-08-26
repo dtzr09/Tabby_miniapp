@@ -128,7 +128,7 @@ export default function BalanceCard({
     <Card
       sx={{
         borderRadius: 3,
-        bgcolor: colors.card,
+        bgcolor: colors.background,
         boxShadow: 0,
         border: `1px solid ${colors.border}`,
       }}

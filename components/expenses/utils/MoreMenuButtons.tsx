@@ -90,7 +90,7 @@ export default function MoreMenuButtons({
                 sx={{
                   fontSize: "0.8rem",
                   fontWeight: 600,
-                  color: colors.primary,
+                  color: colors.text,
                 }}
               >
                 {filterLabel}

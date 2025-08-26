@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Button, Typography, List, ListItem } from "@mui/material";
+import { Box, Button, Typography, List, ListItem, alpha } from "@mui/material";
 import { Check } from "@mui/icons-material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Category } from "../../utils/types";
@@ -20,7 +20,7 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({
   onCategorySelect,
   categories,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const handleCategorySelect = (categoryName: string) => {
     onCategorySelect(categoryName);
@@ -56,7 +56,7 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({
         <List sx={{ padding: 0 }}>
           {categories.map((cat: Category) => {
             const cleanedCategory = cleanCategoryName(cat.name);
-            const categoryColor = getCategoryColor(cleanedCategory.name);
+            const categoryColor = getCategoryColor(cleanedCategory.name, isDark);
             const cleanedSelectedCategory = cleanCategoryName(selectedCategory);
             const isSelected =
               cleanedSelectedCategory.name === cleanedCategory.name;
@@ -92,7 +92,7 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({
                       width: 40,
                       height: 40,
                       borderRadius: "50%",
-                      backgroundColor: categoryColor,
+                      backgroundColor: isDark ? alpha(categoryColor, 0.4) : categoryColor,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",

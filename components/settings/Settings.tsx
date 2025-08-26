@@ -630,14 +630,10 @@ const Settings = ({ onViewChange }: SettingsProps) => {
           label={currentGroupName}
           onClick={handleGroupMenuOpen}
           sx={{
-            bgcolor: colors.card,
             color: colors.text,
             border: `1px solid ${colors.border}`,
             fontSize: "0.75rem",
             height: "28px",
-            "&:hover": {
-              bgcolor: colors.surface,
-            },
           }}
           clickable
         />
