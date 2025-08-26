@@ -134,12 +134,11 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
           paper: {
             sx: {
               width: anchorEl?.offsetWidth,
-              mt: 0.2,
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              boxShadow: `0 2px 4px -1px ${colors.border}`,
-              borderRadius: 2.5,
-              px: 0.5,
+              mt: 0.5,
+              backgroundColor: colors.background,
+              border: `1px solid ${colors.border}`,
+              borderRadius: 3,
+              px: 1,
               py: 0.1,
             },
           },
@@ -160,9 +159,9 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
               backgroundColor:
                 group.id === props.selectedGroupId ||
                 (group.id === null && props.selectedGroupId === null)
-                  ? colors.incomeExpenseCard
+                  ? colors.border
                   : "transparent",
-              borderRadius: 3,
+              borderRadius: 2,
               py: 0.5,
               px: 1,
               fontSize: "0.8rem",
