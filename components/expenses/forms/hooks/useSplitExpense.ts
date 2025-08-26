@@ -33,15 +33,7 @@ export const useSplitExpense = ({
   const queryClient = useQueryClient();
   const { user: tgUser, initData } = useTelegramWebApp();
   
-  // Flag to prevent useEffect from running during save operations
-  const [isSaving, setIsSaving] = useState(false);
-  
-  // Debug state for UI display
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  
-  const addDebugLog = useCallback((message: string) => {
-    setDebugLogs(prev => [...prev.slice(-9), message]); // Keep last 10 messages
-  }, []);
+
 
   const originalIsCustomSplit = useMemo(() => {
     if (!isExpense || !expense?.shares?.length) return false;
@@ -87,22 +79,12 @@ export const useSplitExpense = ({
 
   // Sync form state when expense changes (e.g., after successful save)
   useEffect(() => {
-    if (expense?.shares && expense?.amount && !isSaving) {
-      addDebugLog("🔍 useEffect triggered - Syncing form state with expense data");
-      addDebugLog(`🔍 Expense object amount: ${expense.amount}`);
-      addDebugLog(`🔍 Expense object shares: ${JSON.stringify(expense.shares)}`);
-      
-      // Check what's actually in the cache
-      const cachedExpense = queryClient.getQueryData(["expense", expense.id]);
-      addDebugLog(`🔍 Cached expense data: ${JSON.stringify(cachedExpense)}`);
-      
-      addDebugLog(`🔍 Setting amount to: ${expense.amount.toString()}`);
-      addDebugLog(`🔍 Setting shares to: ${JSON.stringify(expense.shares)}`);
+    if (expense?.shares && expense?.amount) {
       // Update form state to match the current expense data
       setValue(FormValues.AMOUNT, expense.amount.toString(), { shouldDirty: false });
       setValue(FormValues.SHARES, expense.shares, { shouldDirty: false });
     }
-  }, [expense?.shares, expense?.amount, setValue, isSaving, addDebugLog, queryClient, expense?.id]);
+  }, [expense?.shares, expense?.amount, setValue]);
 
   // Custom setSplitInputValues that also updates form state
   const handleSplitInputValuesChange = useCallback(
@@ -212,9 +194,7 @@ export const useSplitExpense = ({
     const hasErrors = Object.keys(splitValidationErrors).length > 0;
     if (hasErrors) return;
     
-    // Set saving flag to prevent useEffect from interfering
-    setIsSaving(true);
-    addDebugLog("🔍 Starting save operation - isSaving set to true");
+
 
     // Create updated shares array based on split mode
     let updatedShares: ExpenseShare[];
@@ -274,78 +254,41 @@ export const useSplitExpense = ({
       );
 
       // Update cache after successful API calls
-      addDebugLog("🔍 Updating expense cache with new values");
-      addDebugLog(`🔍 Cache key: ["expense", ${expense.id}]`);
-      addDebugLog(`🔍 New total amount: ${newTotalFromShares}`);
-      addDebugLog(`🔍 New shares: ${JSON.stringify(updatedShares)}`);
-      
       queryClient.setQueryData(
         ["expense", expense.id],
         (oldData: Expense | undefined) => {
-          if (!oldData) {
-            addDebugLog("🔍 No old data found in expense cache");
-            return oldData;
-          }
-          addDebugLog(`🔍 Old expense shares: ${JSON.stringify(oldData.shares)}`);
-          addDebugLog(`🔍 Old expense amount: ${oldData.amount}`);
-          
-          const newData = {
+          if (!oldData) return oldData;
+          return {
             ...oldData,
             amount: newTotalFromShares,
             shares: updatedShares,
           };
-          
-          addDebugLog(`🔍 New expense data: ${JSON.stringify(newData)}`);
-          return newData;
         }
       );
 
       // Update allEntries cache
-      addDebugLog("🔍 Updating allEntries cache with new values");
-      addDebugLog(`🔍 Cache key: ["allEntries", ${tgUser.id.toString()}, ${chat_id}]`);
-      
       queryClient.setQueryData(
         ["allEntries", tgUser.id.toString(), chat_id],
         (oldData: { expenses: Expense[] } | undefined) => {
-          if (!oldData || !oldData.expenses) {
-            addDebugLog("🔍 No old data found in allEntries cache");
-            return oldData;
-          }
-
-          addDebugLog(`🔍 Found ${oldData.expenses.length} expenses in allEntries cache`);
-          
-          const updatedExpenses = oldData.expenses.map((exp: Expense) => {
-            if (exp.id === expense.id) {
-              addDebugLog(`🔍 Updating expense ${exp.id} in allEntries cache`);
-              addDebugLog(`🔍 Old: amount=${exp.amount}, shares=${JSON.stringify(exp.shares)}`);
-              addDebugLog(`🔍 New: amount=${newTotalFromShares}, shares=${JSON.stringify(updatedShares)}`);
-              return { ...exp, amount: newTotalFromShares, shares: updatedShares };
-            }
-            return exp;
-          });
+          if (!oldData || !oldData.expenses) return oldData;
 
           return {
             ...oldData,
-            expenses: updatedExpenses,
+            expenses: oldData.expenses.map((exp: Expense) =>
+              exp.id === expense.id
+                ? { ...exp, amount: newTotalFromShares, shares: updatedShares }
+                : exp
+            ),
           };
         }
       );
       
       // Force the useExpense hook to re-render with updated cache data
       if (refreshCache) {
-        addDebugLog("🔍 Calling refreshCache to force useExpense re-render");
-        addDebugLog("🔍 Before refreshCache - expense object still has old values");
-        addDebugLog(`🔍 Current expense.amount: ${expense.amount}`);
-        addDebugLog(`🔍 Current expense.shares: ${JSON.stringify(expense.shares)}`);
         refreshCache();
-        addDebugLog("🔍 After refreshCache called");
-      } else {
-        addDebugLog("🔍 refreshCache function not available");
       }
 
       // Update current amount in the form and mark as not dirty since we just saved
-      addDebugLog(`🔍 Before setValue - Setting amount to: ${newTotalFromShares.toString()}`);
-      addDebugLog(`🔍 Current expense amount: ${expense.amount}`);
       setValue(FormValues.AMOUNT, newTotalFromShares.toString(), { shouldDirty: false });
       setSplitHasChanges(false);
 
@@ -358,28 +301,15 @@ export const useSplitExpense = ({
         setSplitInputValues(updatedInputValues);
         
         // Also update the form shares field to match the new amounts
-        addDebugLog(`🔍 Before setValue - Setting shares to: ${JSON.stringify(updatedShares)}`);
-        addDebugLog(`🔍 Current expense shares: ${JSON.stringify(expense.shares)}`);
         setValue(FormValues.SHARES, updatedShares, { shouldDirty: false });
         
         // Note: Don't call reset() here as it can cause issues with other form fields like date
         // Instead, just use setValue to update the specific fields we need
       }
       
-      addDebugLog("🔍 After save - Split changes set to false, form values updated");
-      
-      // Reset saving flag
-      setIsSaving(false);
-      addDebugLog("🔍 Save operation complete - isSaving set to false");
-      
       return true;
     } catch (error) {
       console.error("Failed to update expense:", error);
-      
-      // Reset saving flag on error too
-      setIsSaving(false);
-      addDebugLog("🔍 Save operation failed - isSaving set to false");
-      
       return false;
     }
   }, [
@@ -394,7 +324,6 @@ export const useSplitExpense = ({
     isCustomSplit,
     queryClient,
     setValue,
-    setIsSaving,
     refreshCache,
   ]);
 
@@ -446,7 +375,5 @@ export const useSplitExpense = ({
     originalIsCustomSplit,
     handleSplitModeToggle,
     debugInfo,
-    debugLogs,
-    isSaving,
   };
 };

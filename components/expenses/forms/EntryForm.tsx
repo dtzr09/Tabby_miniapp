@@ -58,8 +58,7 @@ export default function EntryForm({
   const isExpense = typeof expense === "object" && "shares" in expense;
   const keyboardHeight = useKeyboardHeight();
 
-  // Debug panel state
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
+
 
   // React Hook Form setup
   const defaultValues: ExpenseFormData = {
@@ -168,8 +167,6 @@ export default function EntryForm({
     handleSplitApplyChanges,
     resetSplitChanges,
     handleSplitModeToggle,
-    debugLogs,
-    isSaving,
   } = useSplitExpense({
     expense: expense as Expense,
     isExpense,
@@ -179,7 +176,7 @@ export default function EntryForm({
     refreshCache,
   });
 
-  // Debug: Track when split expense changes are applied - now visible in debug panel
+
 
   // UI state
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
@@ -334,91 +331,6 @@ export default function EntryForm({
         />
       )}
 
-      {/* Debug Toggle Button */}
-      <Box
-        onClick={() => setShowDebugPanel(!showDebugPanel)}
-        sx={{
-          position: "fixed",
-          bottom: 20,
-          right: 20,
-          width: 40,
-          height: 40,
-          backgroundColor: "rgba(0,0,0,0.6)",
-          color: "white",
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          zIndex: 1001,
-          fontSize: "16px",
-        }}
-      >
-        🐛
-      </Box>
-
-      {/* Debug Panel */}
-      {showDebugPanel && (
-        <Box
-          sx={{
-            position: "fixed",
-            bottom: 70,
-            right: 20,
-            width: 300,
-            maxHeight: 200,
-            backgroundColor: "rgba(0,0,0,0.8)",
-            color: "white",
-            padding: 1,
-            borderRadius: 1,
-            fontSize: "12px",
-            overflow: "auto",
-            zIndex: 1000,
-            fontFamily: "monospace",
-          }}
-        >
-          <Box
-            sx={{
-              fontWeight: "bold",
-              marginBottom: 1,
-              borderBottom: "1px solid white",
-            }}
-          >
-            Debug Info
-          </Box>
-          <Box sx={{ marginBottom: 1 }}>
-            Form isDirty: {isDirty ? "YES" : "NO"}
-          </Box>
-          <Box sx={{ marginBottom: 1 }}>
-            Split Changes: {splitHasChanges ? "YES" : "NO"}
-          </Box>
-          <Box sx={{ marginBottom: 1 }}>
-            Is Saving: {isSaving ? "YES" : "NO"}
-          </Box>
-          <Box sx={{ marginBottom: 1 }}>Current Amount: {currentAmount}</Box>
-          <Box sx={{ marginBottom: 1 }}>Display Amount: {displayAmount}</Box>
-          <Box
-            sx={{
-              marginBottom: 1,
-              borderTop: "1px solid white",
-              paddingTop: 1,
-            }}
-          >
-            Debug Logs:
-          </Box>
-          {debugLogs.map((log, index) => (
-            <Box
-              key={index}
-              sx={{
-                fontSize: "10px",
-                marginBottom: 0.5,
-                wordBreak: "break-word",
-              }}
-            >
-              {log}
-            </Box>
-          ))}
-        </Box>
-      )}
     </>
   );
 }

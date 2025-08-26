@@ -62,6 +62,12 @@ declare global {
 
 function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
+    // Initialize Eruda for mobile debugging - only on client side
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      import('eruda').then((eruda) => {
+        eruda.default.init();
+      });
+    }
     function applyViewportHeight() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tg = (window as any).Telegram?.WebApp;
