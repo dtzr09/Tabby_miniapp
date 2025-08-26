@@ -1,4 +1,9 @@
-import { backButton, init, settingsButton } from "@telegram-apps/sdk";
+import {
+  backButton,
+  init,
+  settingsButton,
+  showPopup,
+} from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { Box, Button, Alert } from "@mui/material";
@@ -104,7 +109,17 @@ const ExpenseDetail = () => {
         isGroupExpense={chat_id !== tgUser?.id?.toString()}
         setShowDeleteDialog={setShowDeleteDialog}
         refreshCache={refreshCache}
-        // onToggleRecurring={() => console.log("Recurring not implemented")}
+        onToggleRecurring={() => {
+          try {
+            showPopup({
+              title: "Coming Soon",
+              message: "Recurring expenses will be available soon!",
+              buttons: [{ type: "ok" }],
+            });
+          } catch {
+            console.log("Recurring expenses will be available soon!");
+          }
+        }}
         // onShowSplit={() => console.log("Show split not implemented")}
       />
 

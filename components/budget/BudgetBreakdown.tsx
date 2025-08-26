@@ -77,7 +77,7 @@ export default function BudgetBreakdown({
                       width: 24,
                       height: 24,
                       borderRadius: "50%",
-                      bgcolor: alpha(category.color, 0.1),
+                      bgcolor: alpha(category.color, 0.2),
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
