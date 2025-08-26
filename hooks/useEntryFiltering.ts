@@ -39,7 +39,7 @@ export const useEntryFiltering = (
         isIncome: expense.is_income,
         isPersonalShare: personalData.isPersonalShare,
         originalAmount: personalData.originalAmount,
-        userShare: personalData.userShare,
+        shares: personalData.userShare ? [personalData.userShare] : undefined,
         chat_id: expense.chat_id,
       });
     });

@@ -6,17 +6,23 @@ import {
   Expense,
   Income,
   ExpenseFormData,
+  ExpenseShare,
+  UnifiedEntry,
 } from "../../../../utils/types";
 import { useTelegramWebApp } from "../../../../hooks/useTelegramWebApp";
 import { useExpense } from "../../../../hooks/useExpense";
 import { invalidateExpenseCache } from "../../../../utils/cache";
+import {
+  updateExpenseAmount,
+  updateExpenseShares,
+} from "../../../../services/expenses";
 
 interface UseFormManagementProps {
   entryId?: string;
   expense?: Expense | Income;
   isIncome: boolean;
   categories: Category[];
-  chat_id?: string;
+  chat_id: string;
   selectedCategoryId: number;
   selectedDateTime: Date;
   handleSubmit: UseFormHandleSubmit<ExpenseFormData>;
@@ -64,59 +70,140 @@ export const useFormManagement = ({
     async (data: ExpenseFormData) => {
       try {
         if (!tgUser?.id || !initData || !entryId || !expense) {
-          console.error("Missing required data");
+          console.error("Missing required data", {
+            tgUser: !!tgUser?.id,
+            initData: !!initData,
+            entryId,
+            expense: !!expense,
+          });
           return;
         }
 
-        const updatedExpense = {
-          ...expense,
-          description: data.description,
-          amount: parseFloat(data.amount),
-          category: selectedCategory.name,
-          date: data.date, // Use the form's date format directly
-          isIncome: isIncome,
-        };
+        // Validate entryId is a valid number
+        if (entryId === "undefined" || isNaN(Number(entryId))) {
+          console.error("Invalid entryId:", entryId);
+          return;
+        }
+
+        const newAmount = parseFloat(data.amount);
+
+        // Check if this is a group expense with shares
+        const isGroupExpense =
+          !isIncome &&
+          "shares" in expense &&
+          expense.shares &&
+          expense.shares.length > 0;
+
+        // For group expenses, calculate evenly split shares
+        let updatedShares: ExpenseShare[] | undefined;
+        if (isGroupExpense) {
+          const shares = (expense as Expense).shares!;
+          const shareAmount = newAmount / shares.length;
+
+          updatedShares = shares.map((share: ExpenseShare) => ({
+            ...share, // Preserve all user details (name, username, etc.)
+            share_amount: shareAmount,
+          }));
+        }
+
+        // Create properly typed updated expense
+        const updatedExpense: UnifiedEntry = isGroupExpense
+          ? {
+              ...(expense as Expense),
+              description: data.description,
+              amount: newAmount,
+              category: selectedCategory.name,
+              date: data.date,
+              shares: updatedShares,
+              isIncome: isIncome,
+            }
+          : {
+              ...expense,
+              description: data.description,
+              amount: newAmount,
+              category: selectedCategory.name,
+              date: data.date,
+              isIncome: isIncome,
+            };
 
         // Optimistically update the cache
         updateExpenseInCache(updatedExpense);
 
         // Convert selectedDateTime to UTC for backend
-        const utcDateTime = selectedDateTime.toISOString();
+        if (!(selectedDateTime instanceof Date) || isNaN(selectedDateTime.getTime())) {
+          console.warn("Invalid selectedDateTime:", selectedDateTime, "using current date instead");
+        }
+        const utcDateTime = selectedDateTime instanceof Date && !isNaN(selectedDateTime.getTime()) 
+          ? selectedDateTime.toISOString() 
+          : new Date().toISOString();
 
-        // Make the API call in the background
-        const response = await fetch(`/api/entries/${entryId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: tgUser.id.toString(),
-            initData: initData,
-            ...data,
-            category_id: selectedCategoryId, // Use the current selected category ID
-            amount: parseFloat(data.amount),
-            isIncome: isIncome,
-            date: utcDateTime,
-          }),
-        });
+        try {
+          // Update expense amount first
+          await updateExpenseAmount(
+            Number(entryId),
+            newAmount,
+            initData,
+            chat_id
+          );
 
-        if (!response.ok) {
-          // If update fails, show error but don't block navigation
+          // If it's a group expense, also update the shares
+          if (isGroupExpense && updatedShares) {
+            await updateExpenseShares(
+              Number(entryId),
+              updatedShares.map((s: ExpenseShare) => ({
+                user_id: s.user_id,
+                share_amount: s.share_amount,
+                // Preserve other user details if they exist
+                ...(s.name && { name: s.name }),
+                ...(s.username && { username: s.username }),
+              })),
+              initData,
+              chat_id
+            );
+          }
+
+          // Make the API call for other fields in the background
+          const response = await fetch(`/api/entries/${entryId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chat_id,
+              initData: initData,
+              ...data,
+              category_id: selectedCategoryId, // Use the current selected category ID
+              amount: newAmount,
+              isIncome: isIncome,
+              date: utcDateTime,
+            }),
+          });
+
+          if (!response.ok) {
+            // If update fails, show error but don't block navigation
+            showPopup({
+              title: "Error",
+              message: "Failed to update. Please refresh the page.",
+              buttons: [{ type: "ok" }],
+            });
+            return;
+          }
+
+          // Invalidate expense cache after successful update
+          invalidateExpenseCache(tgUser.id.toString(), chat_id);
+          console.log("🗑️ Cache invalidated after expense update");
+
+          showPopup({
+            title: "Success",
+            message: `${isIncome ? "Income" : "Expense"} updated successfully`,
+            buttons: [{ type: "ok" }],
+          });
+        } catch (err) {
+          console.error("Error updating entry:", err);
           showPopup({
             title: "Error",
             message: "Failed to update. Please refresh the page.",
             buttons: [{ type: "ok" }],
           });
-          return;
         }
-
-        // Invalidate expense cache after successful update
-        invalidateExpenseCache(tgUser.id.toString(), chat_id as string);
-        console.log("🗑️ Cache invalidated after expense update");
-
-        showPopup({
-          title: "Success",
-          message: `${isIncome ? "Income" : "Expense"} updated successfully`,
-          buttons: [{ type: "ok" }],
-        });
       } catch (err) {
         console.error("Error updating entry:", err);
         showPopup({
@@ -136,6 +223,7 @@ export const useFormManagement = ({
       chat_id,
       tgUser,
       initData,
+      selectedCategoryId,
     ]
   );
 

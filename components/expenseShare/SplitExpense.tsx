@@ -64,16 +64,29 @@ const SplitExpense = ({
   // Initialize input values when expense changes
   useEffect(() => {
     if (expense.shares) {
-      setLocalShares(expense.shares);
+      // Sort shares so payer appears first
+      const sortedShares = [...expense.shares].sort((a, b) => {
+        // If no payer_id is set, maintain original order
+        if (!expense.payer_id) return 0;
+        
+        const aIsPayer = a.user_id === expense.payer_id;
+        const bIsPayer = b.user_id === expense.payer_id;
+        if (aIsPayer && !bIsPayer) return -1;
+        if (!aIsPayer && bIsPayer) return 1;
+        return 0;
+      });
+      
+      setLocalShares(sortedShares);
       const newInputValues: Record<string | number, string> = {};
-      expense.shares.forEach((share) => {
+      sortedShares.forEach((share) => {
         newInputValues[share.user_id] = share.share_amount.toFixed(2);
       });
       setInputValues(newInputValues);
       setValidationErrors({});
       setHasChanges(false);
+      
     }
-  }, [expense.shares]);
+  }, [expense.shares, expense.payer_id]);
 
   // Check if current state is equal split
   const isEqualSplit = useMemo(() => {
@@ -180,6 +193,7 @@ const SplitExpense = ({
             amountPerPerson={amountPerPerson}
             onInputChange={handleInputChange}
             onInputBlur={handleInputBlur}
+            isPayer={!!expense.payer_id && share.user_id === expense.payer_id}
           />
         ))}
       </Box>

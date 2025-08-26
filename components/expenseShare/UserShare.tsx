@@ -12,6 +12,7 @@ interface UserShareProps {
   onInputChange: (userId: string | number, value: string) => void;
   onInputBlur: (userId: string | number) => void;
   isCustomSplit: boolean;
+  isPayer: boolean;
 }
 
 const UserShare = ({
@@ -22,6 +23,7 @@ const UserShare = ({
   onInputChange,
   onInputBlur,
   isCustomSplit,
+  isPayer,
 }: UserShareProps) => {
   const { colors } = useTheme();
 
@@ -62,6 +64,16 @@ const UserShare = ({
         <Box sx={{ display: "flex", flexDirection: "column" }}>
           <Typography variant="body2" color={colors.text}>
             {share.name}
+            {isPayer && (
+              <Typography
+                component="span"
+                variant="body2"
+                color={colors.textSecondary}
+                sx={{ ml: 0.5, fontSize: "0.75rem" }}
+              >
+                (payer)
+              </Typography>
+            )}
           </Typography>
           <Typography variant="caption" color={colors.textSecondary}>
             @{share.username}

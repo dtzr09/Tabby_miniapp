@@ -55,7 +55,7 @@ export const getPersonalExpensesFromGroup = (
         ...expense,
         amount: userShare?.share_amount || 0, // Use the user's share amount instead of total
         original_amount: expense.amount, // Keep the original total amount for reference
-        user_share: userShare, // Include the full share object
+        shares: userShare ? [userShare] : undefined, // Include the user's share as an array
       };
     });
 };

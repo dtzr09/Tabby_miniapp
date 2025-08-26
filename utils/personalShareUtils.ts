@@ -4,7 +4,7 @@ export interface PersonalShareData {
   amount: number;
   isPersonalShare: boolean;
   originalAmount: number;
-  userShare?: ExpenseShare;
+  userShare?: ExpenseShare; // Keep this for backward compatibility, but it represents a single share
 }
 
 export const getPersonalAmount = (

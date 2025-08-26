@@ -38,6 +38,7 @@ export interface Expense {
   date: string;
   is_income: boolean;
   category: Category;
+  payer_id?: string | number;
   shares?: Array<ExpenseShare>;
   chat_id?: string;
 }
@@ -51,6 +52,8 @@ export interface ExpenseShare {
 }
 
 // New unified entry type for display components
+// Note: UserShare interface removed - using ExpenseShare instead for consistency
+
 export interface UnifiedEntry {
   id: number;
   description: string;
@@ -61,10 +64,7 @@ export interface UnifiedEntry {
   isIncome: boolean;
   isPersonalShare?: boolean;
   originalAmount?: number;
-  userShare?: {
-    user_id: string | number;
-    share_amount: number;
-  };
+  shares?: ExpenseShare[]; // Use ExpenseShare to preserve user details (name, username, etc.)
   chat_id?: string;
 }
 

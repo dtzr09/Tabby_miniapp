@@ -14,7 +14,7 @@ interface SplitExpenseBottomSheetProps {
   splitHasChanges: boolean;
   setSplitHasChanges: (hasChanges: boolean) => void;
   setEditExpenseShare: (edit: boolean) => void;
-  handleSplitApplyChanges: () => void;
+  handleSplitApplyChanges: () => Promise<boolean | undefined>;
   handleSplitModeToggle: () => void;
   resetSplitChanges: () => void;
   splitValidationErrors: Record<string, string>;
@@ -28,16 +28,27 @@ interface SplitExpenseBottomSheetProps {
   setSplitInputValues: (values: Record<string | number, string>) => void;
   setSplitValidationErrors: (errors: Record<string, string>) => void;
   isDirty: boolean;
+  debugInfo?: string;
 }
 const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
   const { colors } = useTheme();
+  const disableSplitModeToggle =
+    props.expenseShares.length < 2 &&
+    Boolean(
+      props.expenseShares.find(
+        (share) => share.user_id === props.expense?.payer_id
+      )
+    );
+
   return (
     <BottomSheet
       open={props.showSplitExpenseSheet}
       onClose={() => {
         props.setShowSplitExpenseSheet(false);
-        // Reset all split changes when closing the sheet without saving
-        props.resetSplitChanges();
+        // Only reset split changes if there are unsaved changes
+        if (props.splitHasChanges) {
+          props.resetSplitChanges();
+        }
       }}
       title="Split Expense"
       titleIcon={
@@ -52,11 +63,16 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
       }
       description={`$${parseFloat(props.displayAmount).toFixed(2)}  •  ${
         props.isExpense && props.expenseShares && props.expenseShares.length
-      } people`}
+      } people${props.debugInfo ? ` • ${props.debugInfo}` : ''}`}
       buttons={[
         {
           text: "Save",
-          onClick: props.handleSplitApplyChanges,
+          onClick: async () => {
+            const success = await props.handleSplitApplyChanges();
+            if (success) {
+              props.setShowSplitExpenseSheet(false);
+            }
+          },
           disabled: !props.isDirty,
           variant: "primary",
         },
@@ -66,6 +82,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
           {/* Edit/Equal Split Toggle Button */}
           <Button
             onClick={props.handleSplitModeToggle}
+            disabled={disableSplitModeToggle}
             sx={{
               color: colors.text,
               textTransform: "none",
@@ -81,6 +98,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
                   mr: 0.5,
                   fontSize: "0.9rem",
                   color: colors.text,
+                  opacity: disableSplitModeToggle ? 0.5 : 1,
                 }}
               />
             ) : (
@@ -90,6 +108,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
                   mr: 0.5,
                   fontSize: "0.9rem",
                   color: colors.text,
+                  opacity: disableSplitModeToggle ? 0.5 : 1,
                 }}
               />
             )}

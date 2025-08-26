@@ -34,11 +34,12 @@ interface EntryFormProps {
   entryId?: string;
   isIncome: boolean;
   categories: Category[];
-  chat_id?: string;
+  chat_id: string;
   expense?: Expense | Income;
   isGroupExpense?: boolean;
   onToggleRecurring?: () => void;
   setShowDeleteDialog: (show: boolean) => void;
+  refreshCache?: () => void;
 }
 
 export default function EntryForm({
@@ -50,11 +51,15 @@ export default function EntryForm({
   isGroupExpense = false,
   onToggleRecurring,
   setShowDeleteDialog,
+  refreshCache,
 }: EntryFormProps) {
   const { colors } = useTheme();
   const dimensions = useContext(DimensionsContext);
   const isExpense = typeof expense === "object" && "shares" in expense;
   const keyboardHeight = useKeyboardHeight();
+
+  // Debug panel state
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   // React Hook Form setup
   const defaultValues: ExpenseFormData = {
@@ -84,6 +89,8 @@ export default function EntryForm({
   const description = watch("description");
   const selectedCategoryId = watch("category_id");
   const selectedDateTime = watch("date");
+
+  // Debug form state changes - now visible in debug panel
 
   useEffect(() => {
     if (expense) {
@@ -129,12 +136,17 @@ export default function EntryForm({
     categories,
     chat_id,
     selectedCategoryId: selectedCategoryId as number,
-    selectedDateTime: new Date(selectedDateTime),
+    selectedDateTime:
+      selectedDateTime && selectedDateTime !== ""
+        ? new Date(selectedDateTime)
+        : expense?.date
+        ? new Date(expense.date)
+        : new Date(),
     handleSubmit,
   });
 
   type FormValue = string | number | ExpenseShare[];
-  
+
   const handleFormValues = (value: FormValue, name: FormValues) => {
     setValue(name, value, {
       shouldDirty: true,
@@ -145,7 +157,6 @@ export default function EntryForm({
   // Split expense logic
   const {
     isCustomSplit,
-    setIsCustomSplit,
     setEditExpenseShare,
     splitValidationErrors,
     splitHasChanges,
@@ -156,13 +167,19 @@ export default function EntryForm({
     displayAmount,
     handleSplitApplyChanges,
     resetSplitChanges,
+    handleSplitModeToggle,
+    debugLogs,
+    isSaving,
   } = useSplitExpense({
     expense: expense as Expense,
     isExpense,
     chat_id,
     currentAmount,
     setValue,
+    refreshCache,
   });
+
+  // Debug: Track when split expense changes are applied - now visible in debug panel
 
   // UI state
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
@@ -301,7 +318,7 @@ export default function EntryForm({
           setSplitHasChanges={setSplitHasChanges}
           setEditExpenseShare={setEditExpenseShare}
           handleSplitApplyChanges={handleSplitApplyChanges}
-          handleSplitModeToggle={() => setIsCustomSplit(!isCustomSplit)}
+          handleSplitModeToggle={handleSplitModeToggle}
           resetSplitChanges={resetSplitChanges}
           splitValidationErrors={splitValidationErrors}
           expenseShares={expense?.shares || []}
@@ -315,6 +332,92 @@ export default function EntryForm({
           setSplitValidationErrors={setSplitValidationErrors}
           isDirty={isDirty}
         />
+      )}
+
+      {/* Debug Toggle Button */}
+      <Box
+        onClick={() => setShowDebugPanel(!showDebugPanel)}
+        sx={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          width: 40,
+          height: 40,
+          backgroundColor: "rgba(0,0,0,0.6)",
+          color: "white",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          zIndex: 1001,
+          fontSize: "16px",
+        }}
+      >
+        🐛
+      </Box>
+
+      {/* Debug Panel */}
+      {showDebugPanel && (
+        <Box
+          sx={{
+            position: "fixed",
+            bottom: 70,
+            right: 20,
+            width: 300,
+            maxHeight: 200,
+            backgroundColor: "rgba(0,0,0,0.8)",
+            color: "white",
+            padding: 1,
+            borderRadius: 1,
+            fontSize: "12px",
+            overflow: "auto",
+            zIndex: 1000,
+            fontFamily: "monospace",
+          }}
+        >
+          <Box
+            sx={{
+              fontWeight: "bold",
+              marginBottom: 1,
+              borderBottom: "1px solid white",
+            }}
+          >
+            Debug Info
+          </Box>
+          <Box sx={{ marginBottom: 1 }}>
+            Form isDirty: {isDirty ? "YES" : "NO"}
+          </Box>
+          <Box sx={{ marginBottom: 1 }}>
+            Split Changes: {splitHasChanges ? "YES" : "NO"}
+          </Box>
+          <Box sx={{ marginBottom: 1 }}>
+            Is Saving: {isSaving ? "YES" : "NO"}
+          </Box>
+          <Box sx={{ marginBottom: 1 }}>Current Amount: {currentAmount}</Box>
+          <Box sx={{ marginBottom: 1 }}>Display Amount: {displayAmount}</Box>
+          <Box
+            sx={{
+              marginBottom: 1,
+              borderTop: "1px solid white",
+              paddingTop: 1,
+            }}
+          >
+            Debug Logs:
+          </Box>
+          {debugLogs.map((log, index) => (
+            <Box
+              key={index}
+              sx={{
+                fontSize: "10px",
+                marginBottom: 0.5,
+                wordBreak: "break-word",
+              }}
+            >
+              {log}
+            </Box>
+          ))}
+        </Box>
       )}
     </>
   );

@@ -231,10 +231,10 @@ export default async function handler(
             updateParts.push(`is_income = $${valueIndex++}`);
             updateValues.push(isIncomeBoolean);
           }
-          
+
           updateParts.push(`updated_at = NOW()`);
           updateValues.push(id, chat_id);
-          
+
           const updateFields = updateParts.join(", ");
           const whereClause = `WHERE id = $${valueIndex++} AND chat_id = $${valueIndex++}`;
 
@@ -275,7 +275,7 @@ export default async function handler(
           const updateData: any = {
             updated_at: new Date().toISOString(),
           };
-          
+
           if (description !== undefined) updateData.description = description;
           if (amount !== undefined) updateData.amount = amount;
           if (category_id !== undefined) updateData.category_id = category_id;

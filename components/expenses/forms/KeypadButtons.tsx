@@ -74,6 +74,10 @@ const KeypadButtons = (props: KeypadButtonsProps) => {
       </Button>
     );
   };
+
+  const disableSubmit =
+    !props.onSubmit || props.currentAmount === "0" || !props.hasChanges;
+
   return (
     <Box
       sx={{
@@ -112,16 +116,14 @@ const KeypadButtons = (props: KeypadButtonsProps) => {
           onClick={() => {
             props.onSubmit?.();
           }}
-          disabled={
-            !props.onSubmit || props.currentAmount === "0" || !props.hasChanges
-          }
+          disabled={disableSubmit}
           sx={{
             height: 72,
             borderRadius: 3,
             backgroundColor: colors.background,
             color: colors.text,
             border: `2px solid ${
-              props.hasChanges ? colors.text : alpha(colors.text, 0.1)
+              disableSubmit ? alpha(colors.text, 0.1) : colors.text
             }`,
             "&:disabled": {
               backgroundColor: colors.background,

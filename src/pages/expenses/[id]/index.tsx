@@ -26,6 +26,7 @@ const ExpenseDetail = () => {
     isError,
     error,
     deleteExpenseFromCache,
+    refreshCache,
   } = useExpense({
     id: entryId as string,
     isIncome: isIncome === "true",
@@ -102,6 +103,7 @@ const ExpenseDetail = () => {
         chat_id={chat_id as string}
         isGroupExpense={chat_id !== tgUser?.id?.toString()}
         setShowDeleteDialog={setShowDeleteDialog}
+        refreshCache={refreshCache}
         // onToggleRecurring={() => console.log("Recurring not implemented")}
         // onShowSplit={() => console.log("Show split not implemented")}
       />
