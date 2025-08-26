@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 
-export const TIME_ITEM_HEIGHT = 28; // Slightly taller for better row gap spacing
+export const TIME_ITEM_HEIGHT = 38; // Balanced height for proper spacing
 export const MONTH_YEAR_ITEM_HEIGHT = 32; // Larger height for month/year pickers
 export const ITEM_HEIGHT = 32; // Default for time pickers
 export const SPACER_ITEMS = 2; // Reduced spacers for 5-item view
@@ -33,11 +33,11 @@ const TimeScrollPicker = ({
         const containerHeight = scrollRef.current.clientHeight;
         const centerOffset = containerHeight / 2;
 
-        // Position selected item exactly in center with overlay
+        // Position selected item exactly in center with overlay - account for padding
         const targetScroll =
           (SPACER_ITEMS + scrollValue) * TIME_ITEM_HEIGHT -
           centerOffset +
-          TIME_ITEM_HEIGHT / 2;
+          TIME_ITEM_HEIGHT / 2; // Adjusted offset to center items in overlay
         scrollRef.current.scrollTop = Math.max(0, targetScroll);
       }
     };
@@ -54,7 +54,7 @@ const TimeScrollPicker = ({
       const containerHeight = scrollRef.current.clientHeight;
       const centerOffset = containerHeight / 2;
 
-      // Find nearest item accounting for spacers and centering
+      // Find nearest item accounting for spacers, centering, and padding
       let adjustedIndex =
         Math.round(
           (scrollTop + centerOffset - TIME_ITEM_HEIGHT / 2) / TIME_ITEM_HEIGHT
@@ -69,12 +69,11 @@ const TimeScrollPicker = ({
         onChange(adjustedIndex);
       }
 
-      // Snap to centered position
+      // Snap to centered position - account for padding
       const targetScroll =
         (SPACER_ITEMS + adjustedIndex) * TIME_ITEM_HEIGHT -
         centerOffset +
         TIME_ITEM_HEIGHT / 2;
-
       if (immediate) {
         scrollRef.current.scrollTop = Math.max(0, targetScroll);
       } else {
@@ -165,7 +164,9 @@ const TimeScrollPicker = ({
     if (isDragging) {
       document.addEventListener("mousemove", handleGlobalMouseMove);
       document.addEventListener("mouseup", handleGlobalMouseUp);
-      document.addEventListener("touchmove", handleGlobalTouchMove, { passive: false });
+      document.addEventListener("touchmove", handleGlobalTouchMove, {
+        passive: false,
+      });
       document.addEventListener("touchend", handleGlobalTouchEnd);
     }
 
@@ -195,12 +196,12 @@ const TimeScrollPicker = ({
     <Box
       sx={{
         position: "relative",
-        height: "8rem", // Reduced overall height
-        width: "2.5rem", // Slightly wider for better overlay fit
+        height: "12rem", // Further increased overall height
+        width: "4rem", // Much wider for better touch area
         overflow: "hidden",
         zIndex: 99,
-        minWidth: "2.5rem", // Ensure minimum width
-        maxWidth: "2.5rem", // Ensure maximum width
+        minWidth: "4rem", // Ensure minimum width
+        maxWidth: "4rem", // Ensure maximum width
       }}
     >
       {/* Selection overlay - positioned at item level */}
@@ -208,10 +209,10 @@ const TimeScrollPicker = ({
         sx={{
           position: "absolute",
           top: "50%",
-          left: "0.2rem",
-          right: "0.2rem",
+          left: "0.5rem",
+          right: "0.5rem",
           transform: "translateY(-50%)",
-          height: "2rem",
+          height: "2.25rem",
           borderRadius: 2,
           zIndex: 5,
         }}
@@ -221,18 +222,18 @@ const TimeScrollPicker = ({
         ref={scrollRef}
         sx={{
           position: "absolute", // Cover entire picker area for touch
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: "100%",
+          top: "8px", // Create top padding space
+          left: "8px", // Create left padding space
+          right: "8px", // Create right padding space
+          bottom: "8px", // Create bottom padding space
+          height: "calc(100% - 16px)", // Adjust height for vertical padding
           overflowY: "auto",
           scrollbarWidth: "none",
           cursor: isDragging ? "grabbing" : "grab",
           WebkitOverflowScrolling: "touch", // Enable momentum scrolling on iOS
           overscrollBehavior: "contain", // Prevent overscroll from affecting parent elements
           touchAction: "pan-y", // Only allow vertical scrolling
-          perspective: "600px", // Add perspective for 3D effect
+          perspective: "1000px", // iOS-style perspective for natural curve
           perspectiveOrigin: "center center", // Center the perspective
           "&::-webkit-scrollbar": {
             display: "none",
@@ -260,11 +261,17 @@ const TimeScrollPicker = ({
             const distanceFromCenter = itemIndex - selectedIndex;
             const absDistance = Math.abs(distanceFromCenter);
 
-            // Calculate balanced skeuomorphic rotating dial transformation
-            const rotationX = distanceFromCenter * 12; // Reduced rotation for more uniform spacing
-            const scale = 1 - absDistance * 0.08; // Less dramatic scale to maintain spacing
-            const opacity = Math.max(0.4, 1 - absDistance * 0.18); // Gentler fade for better visibility
-            const translateZ = -absDistance * 8; // Less aggressive Z translation
+            // Calculate iOS-style cylindrical transformation
+            const rotationX = distanceFromCenter * 15; // iOS-like rotation angle
+            const cylinderRadius = 80; // Larger radius for natural iOS curve
+
+            // Calculate position on cylinder surface
+            const radians = (rotationX * Math.PI) / 180;
+            const translateZ = cylinderRadius * (Math.cos(radians) - 1);
+
+            // iOS-style opacity and scaling
+            const scale = Math.max(0.8, 1 - absDistance * 0.1);
+            const opacity = Math.max(0.2, 1 - Math.pow(absDistance, 1.5) * 0.3);
 
             return (
               <Box
@@ -274,16 +281,15 @@ const TimeScrollPicker = ({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "1.25rem",
+                  fontSize: "1.5rem",
                   color: item === value ? colors.text : colors.textSecondary,
-                  px: "0.5rem", // Reduced padding for more compact design
+                  px: "1.5rem", // Extra padding for comfortable spacing
                   fontWeight: item === value ? 600 : 400,
                   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                   transform: `
-                    perspective(500px) 
                     rotateX(${rotationX}deg) 
-                    scale(${Math.max(0.6, scale)}) 
                     translateZ(${translateZ}px)
+                    scale(${scale})
                   `,
                   opacity: opacity,
                   transformStyle: "preserve-3d",

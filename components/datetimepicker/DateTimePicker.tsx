@@ -373,12 +373,13 @@ const ExpenseDateTimePicker = ({
                       backgroundColor: colors.surface,
                       borderRadius: 2,
                       position: "absolute",
-                      bottom: -10,
+                      bottom: 0,
                       right: 0,
                       zIndex: 20,
                       width: "fit-content",
                       p: "0.25rem",
                       mx: 1,
+                      boxShadow: "0 0 30px 8px rgba(0, 0, 0, 0.4)",
                     }}
                   >
                     <Box sx={{ position: "relative" }}>
@@ -386,14 +387,13 @@ const ExpenseDateTimePicker = ({
                         sx={{
                           position: "absolute",
                           top: "50%",
-                          left: "0.2rem",
-                          right: "0.2rem",
+                          left: "0.8rem",
+                          right: "0.8rem",
                           transform: "translateY(-50%)",
                           height: "2rem",
                           backgroundColor: "rgba(75, 85, 99,0.4)",
-                          borderRadius: 2,
+                          borderRadius: 3,
                           zIndex: 1,
-                          border: "1px solid rgba(255, 255, 255, 0.1)",
                         }}
                       />
                       <Box
@@ -401,6 +401,8 @@ const ExpenseDateTimePicker = ({
                           display: "grid",
                           gridTemplateColumns: "1fr 1fr 1fr",
                           alignItems: "center",
+                          py: 0.8,
+                          px: 1,
                         }}
                       >
                         <TimeScrollPicker
