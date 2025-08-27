@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 export const useKeyboardHeight = () => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastValidKeyboardHeight = useRef(0);
 
   // Detect keyboard height
   useEffect(() => {
@@ -21,10 +22,15 @@ export const useKeyboardHeight = () => {
 
       // If viewport shrunk significantly (likely keyboard), update immediately
       if (heightDifference > 150) {
-        setKeyboardHeight(heightDifference);
+        const newHeight = heightDifference;
+        lastValidKeyboardHeight.current = newHeight;
+        setKeyboardHeight(newHeight);
       } else {
-        // When keyboard is closing, reset height immediately
-        setKeyboardHeight(0);
+        // When keyboard is closing, add small debounce to prevent intermediate values
+        debounceTimeoutRef.current = setTimeout(() => {
+          setKeyboardHeight(0);
+          lastValidKeyboardHeight.current = 0;
+        }, 50); // Very short debounce to smooth the transition
       }
     };
 
