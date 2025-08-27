@@ -202,12 +202,12 @@ export default function EntryForm({
   // Measure the fixed bottom section height
   const [bottomSectionRef, bottomSectionBounds] = useMeasure();
 
-  // Calculate dynamic height based on keyboard state
+  // Use initial device height minus bottom nav, ignoring keyboard changes
   const calculateHeight = () => {
+    // Use the initial screen dimensions, not current viewport which changes with keyboard
+    const initialHeight = window.screen.height || dimensions.height;
     const bottomNavigationHeight = 100;
-    const baseHeight = dimensions.height - bottomNavigationHeight;
-    // Don't add keyboard height - the viewport already adjusts for it
-    return baseHeight;
+    return initialHeight - bottomNavigationHeight;
   };
 
   // Custom backspace handler that works with the form
