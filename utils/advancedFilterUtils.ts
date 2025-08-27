@@ -89,7 +89,7 @@ export const getUniqueCategories = (entries: UnifiedEntry[]) => {
   const categories = new Set<string>();
   entries.forEach(entry => {
     if (entry.category) {
-      categories.add(entry.category);
+      categories.add(entry.category.name);
     }
   });
   return Array.from(categories);

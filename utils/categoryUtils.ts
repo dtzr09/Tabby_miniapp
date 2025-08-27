@@ -39,7 +39,7 @@ export const getUniqueCategories = (
   const categoryMap = new Map<string, { name: string; raw_name: string }>();
 
   entries.forEach((entry) => {
-    const rawName = entry.category || "Other";
+    const rawName = entry.category?.name || "Other";
     const cleanedCategory = cleanCategoryName(rawName);
 
     // Use the cleaned name as the key to ensure uniqueness
