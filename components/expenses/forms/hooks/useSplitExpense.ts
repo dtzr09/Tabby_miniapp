@@ -9,7 +9,10 @@ import {
   updateExpenseAmount,
   updateExpenseShares,
 } from "../../../../services/expenses";
-import { sumCurrencyValues, divideAmountEvenly } from "../../../../utils/currencyUtils";
+import {
+  sumCurrencyValues,
+  divideAmountEvenly,
+} from "../../../../utils/currencyUtils";
 import { UseFormSetValue } from "react-hook-form";
 import { useTelegramWebApp } from "../../../../hooks/useTelegramWebApp";
 import { FormValues } from "../EntryForm";
@@ -33,8 +36,6 @@ export const useSplitExpense = ({
 }: UseSplitExpenseProps) => {
   const queryClient = useQueryClient();
   const { user: tgUser, initData } = useTelegramWebApp();
-  
-
 
   const originalIsCustomSplit = useMemo(() => {
     if (!isExpense || !expense?.shares?.length) return false;
@@ -82,7 +83,9 @@ export const useSplitExpense = ({
   useEffect(() => {
     if (expense?.shares && expense?.amount) {
       // Update form state to match the current expense data
-      setValue(FormValues.AMOUNT, expense.amount.toString(), { shouldDirty: false });
+      setValue(FormValues.AMOUNT, expense.amount.toString(), {
+        shouldDirty: false,
+      });
       setValue(FormValues.SHARES, expense.shares, { shouldDirty: false });
     }
   }, [expense?.shares, expense?.amount, setValue]);
@@ -106,7 +109,9 @@ export const useSplitExpense = ({
         });
 
         // Calculate new total amount with proper currency precision
-        const shareAmounts = updatedShares.map((share: ExpenseShare) => share.share_amount);
+        const shareAmounts = updatedShares.map(
+          (share: ExpenseShare) => share.share_amount
+        );
         const newTotal = sumCurrencyValues(shareAmounts);
 
         // Format the amount consistently with the original defaultValues format
@@ -129,7 +134,7 @@ export const useSplitExpense = ({
       const originalAmount = expense.amount.toString();
       setValue(FormValues.AMOUNT, originalAmount);
     }
-    
+
     // Reset shares back to original values
     if (expense?.shares) {
       setValue(FormValues.SHARES, expense.shares);
@@ -138,7 +143,7 @@ export const useSplitExpense = ({
     // Reset split state
     setSplitHasChanges(false);
     setEditExpenseShare(false);
-    
+
     // Reset custom split back to original state
     setIsCustomSplit(originalIsCustomSplit);
   }, [expense?.amount, expense?.shares, setValue, originalIsCustomSplit]);
@@ -147,14 +152,14 @@ export const useSplitExpense = ({
   const displayAmount = useMemo(() => {
     if (isExpense && expense?.shares) {
       const shares = expense.shares;
-      
+
       // Only use splitInputValues if we have changes and are actively editing
       const hasInputChanges = Object.keys(splitInputValues).length > 0;
       const shouldUseInputValues = hasInputChanges && splitHasChanges;
-      
+
       if (shouldUseInputValues) {
         // Calculate from input values when user is actively editing
-        const amounts = shares.map(share => {
+        const amounts = shares.map((share) => {
           const inputValue = splitInputValues[share.user_id];
           if (inputValue) {
             const numericValue = parseFloat(inputValue);
@@ -166,7 +171,7 @@ export const useSplitExpense = ({
         return total.toFixed(2);
       } else {
         // Use actual expense share amounts as the source of truth
-        const shareAmounts = shares.map(share => share.share_amount);
+        const shareAmounts = shares.map((share) => share.share_amount);
         const total = sumCurrencyValues(shareAmounts);
         return total.toFixed(2);
       }
@@ -178,13 +183,26 @@ export const useSplitExpense = ({
   // Debug info for UI
   const debugInfo = useMemo(() => {
     if (!isExpense || !expense?.shares) return "";
-    
+
     const hasInputChanges = Object.keys(splitInputValues).length > 0;
     const shouldUseInputValues = hasInputChanges && splitHasChanges;
-    const shareAmounts = expense.shares.map(s => s.share_amount).join(',');
-    
-    return `Debug: ${shouldUseInputValues ? 'Using inputs' : 'Using expense data'} | HasChanges: ${splitHasChanges} | InputVals: ${JSON.stringify(splitInputValues)} | ExpenseAmt: ${expense.amount} | ShareAmts: ${shareAmounts} | CurrentAmt: ${currentAmount} | DisplayAmt: ${displayAmount}`;
-  }, [splitInputValues, splitHasChanges, isExpense, expense, currentAmount, displayAmount]);
+    const shareAmounts = expense.shares.map((s) => s.share_amount).join(",");
+
+    return `Debug: ${
+      shouldUseInputValues ? "Using inputs" : "Using expense data"
+    } | HasChanges: ${splitHasChanges} | InputVals: ${JSON.stringify(
+      splitInputValues
+    )} | ExpenseAmt: ${
+      expense.amount
+    } | ShareAmts: ${shareAmounts} | CurrentAmt: ${currentAmount} | DisplayAmt: ${displayAmount}`;
+  }, [
+    splitInputValues,
+    splitHasChanges,
+    isExpense,
+    expense,
+    currentAmount,
+    displayAmount,
+  ]);
 
   // Handle split expense changes
   const handleSplitApplyChanges = useCallback(async () => {
@@ -194,8 +212,6 @@ export const useSplitExpense = ({
     // Check if there are validation errors
     const hasErrors = Object.keys(splitValidationErrors).length > 0;
     if (hasErrors) return;
-    
-
 
     // Create updated shares array based on split mode
     let updatedShares: ExpenseShare[];
@@ -208,7 +224,9 @@ export const useSplitExpense = ({
         const numericValue = parseFloat(inputValue);
         return {
           ...share,
-          share_amount: !isNaN(numericValue) ? numericValue : share.share_amount,
+          share_amount: !isNaN(numericValue)
+            ? numericValue
+            : share.share_amount,
         };
       });
       newTotalFromShares = updatedShares.reduce(
@@ -218,14 +236,17 @@ export const useSplitExpense = ({
     } else {
       // For even split, calculate evenly distributed amounts
       const totalAmount = parseFloat(currentAmount) || expense.amount;
-      const evenShareAmount = divideAmountEvenly(totalAmount, expense.shares.length);
-      
+      const evenShareAmount = divideAmountEvenly(
+        totalAmount,
+        expense.shares.length
+      );
+
       updatedShares = expense.shares.map((share: ExpenseShare) => ({
         ...share,
         share_amount: evenShareAmount,
       }));
       newTotalFromShares = totalAmount;
-      
+
       // Update split input values to reflect even split amounts
       const evenSplitInputValues: Record<string | number, string> = {};
       expense.shares.forEach((share: ExpenseShare) => {
@@ -240,7 +261,8 @@ export const useSplitExpense = ({
         expense.id,
         newTotalFromShares,
         initData,
-        chat_id
+        chat_id,
+        false
       );
 
       // Then update expense shares
@@ -283,14 +305,16 @@ export const useSplitExpense = ({
           };
         }
       );
-      
+
       // Force the useExpense hook to re-render with updated cache data
       if (refreshCache) {
         refreshCache();
       }
 
       // Update current amount in the form and mark as not dirty since we just saved
-      setValue(FormValues.AMOUNT, newTotalFromShares.toString(), { shouldDirty: false });
+      setValue(FormValues.AMOUNT, newTotalFromShares.toString(), {
+        shouldDirty: false,
+      });
       setSplitHasChanges(false);
 
       // Reset split input values to match the new amounts
@@ -300,14 +324,14 @@ export const useSplitExpense = ({
           updatedInputValues[share.user_id] = share.share_amount.toString();
         });
         setSplitInputValues(updatedInputValues);
-        
+
         // Also update the form shares field to match the new amounts
         setValue(FormValues.SHARES, updatedShares, { shouldDirty: false });
-        
+
         // Note: Don't call reset() here as it can cause issues with other form fields like date
         // Instead, just use setValue to update the specific fields we need
       }
-      
+
       return true;
     } catch (error) {
       console.error("Failed to update expense:", error);
@@ -332,32 +356,40 @@ export const useSplitExpense = ({
   const handleSplitModeToggle = useCallback(() => {
     const newIsCustomSplit = !isCustomSplit;
     setIsCustomSplit(newIsCustomSplit);
-    
+
     // If toggling from custom split to even split, calculate even amounts
     if (isCustomSplit && !newIsCustomSplit && expense?.shares) {
       // Use the current amount from the form, or fall back to expense amount
-      const totalAmount = parseFloat(currentAmount) || (expense?.amount || 0);
+      const totalAmount = parseFloat(currentAmount) || expense?.amount || 0;
       const shares = expense.shares;
       const evenShareAmount = divideAmountEvenly(totalAmount, shares.length);
-      
+
       // Create new input values with even split amounts
       const newInputValues: Record<string | number, string> = {};
       shares.forEach((share: ExpenseShare) => {
         newInputValues[share.user_id] = evenShareAmount.toFixed(2);
       });
-      
+
       // Create updated shares for the form
       const updatedShares = shares.map((share: ExpenseShare) => ({
         ...share,
         share_amount: evenShareAmount,
       }));
-      
+
       // Update both the split input values and the form shares field
       handleSplitInputValuesChange(newInputValues);
       setValue(FormValues.SHARES, updatedShares, { shouldDirty: true });
       setSplitHasChanges(true);
     }
-  }, [isCustomSplit, expense?.shares, currentAmount, expense?.amount, handleSplitInputValuesChange, setSplitHasChanges, setValue]);
+  }, [
+    isCustomSplit,
+    expense?.shares,
+    currentAmount,
+    expense?.amount,
+    handleSplitInputValuesChange,
+    setSplitHasChanges,
+    setValue,
+  ]);
 
   return {
     isCustomSplit,
