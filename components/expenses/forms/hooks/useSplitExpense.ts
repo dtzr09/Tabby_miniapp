@@ -237,18 +237,14 @@ export const useSplitExpense = ({
       setSplitInputValues(evenSplitInputValues);
     }
 
-    // Immediately update cache for instant UI feedback
-    queryClient.setQueryData(
-      ["expense", expense.id],
-      (oldData: Expense | undefined) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          amount: newTotalFromShares,
-          shares: updatedShares,
-        };
-      }
-    );
+    // Immediately update individual expense cache for instant UI feedback
+    const updatedExpense = {
+      ...expense,
+      amount: newTotalFromShares,
+      shares: updatedShares,
+    };
+    
+    queryClient.setQueryData(["expense", expense.id], updatedExpense);
 
     // Update allEntries cache immediately
     queryClient.setQueryData(
@@ -288,6 +284,9 @@ export const useSplitExpense = ({
     if (refreshCache) {
       refreshCache();
     }
+    
+    // Also trigger a cache invalidation to ensure hooks pick up the changes
+    queryClient.invalidateQueries({ queryKey: ["expense", expense.id] });
 
     // Handle API calls in background (don't await)
     Promise.all([
