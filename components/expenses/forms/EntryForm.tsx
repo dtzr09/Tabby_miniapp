@@ -88,6 +88,9 @@ export default function EntryForm({
   const selectedCategoryId = watch("category_id");
   const selectedDateTime = watch("date");
 
+  // State to prevent form reset after split save
+  const [recentSplitSave, setRecentSplitSave] = useState(false);
+
   // Debug form state changes - now visible in debug panel
 
   // Form management hook
@@ -173,13 +176,23 @@ export default function EntryForm({
             : [],
       };
 
-      // Only reset form if we're not in the middle of split changes
+      // Only reset form if we're not in the middle of split changes or recently saved split changes
       // This prevents the form from reverting when split expense updates happen
-      if (!splitHasChanges) {
+      if (!splitHasChanges && !recentSplitSave) {
         reset(newDefaultValues);
       }
     }
-  }, [expense, reset, isExpense, categories, splitHasChanges]);
+  }, [expense, reset, isExpense, categories, splitHasChanges, recentSplitSave]);
+
+  // Clear recentSplitSave flag after a short delay
+  useEffect(() => {
+    if (recentSplitSave) {
+      const timer = setTimeout(() => {
+        setRecentSplitSave(false);
+      }, 100); // Short delay to prevent immediate form reset
+      return () => clearTimeout(timer);
+    }
+  }, [recentSplitSave]);
 
   // UI state
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
@@ -193,10 +206,7 @@ export default function EntryForm({
   const calculateHeight = () => {
     const bottomNavigationHeight = 100;
     const baseHeight = dimensions.height - bottomNavigationHeight;
-    // Only rely on keyboard height detection, not focus state
-    if (keyboardHeight > 0) {
-      return baseHeight + keyboardHeight;
-    }
+    // Don't add keyboard height - the viewport already adjusts for it
     return baseHeight;
   };
 
@@ -207,6 +217,12 @@ export default function EntryForm({
       (value) => handleFormValues(value, FormValues.AMOUNT),
       isCustomSplit
     );
+  };
+
+  // Wrapped split apply changes to prevent form reset
+  const wrappedHandleSplitApplyChanges = async () => {
+    setRecentSplitSave(true);
+    return await handleSplitApplyChanges();
   };
 
   if (isLoading) {
@@ -318,7 +334,7 @@ export default function EntryForm({
           splitHasChanges={splitHasChanges}
           setSplitHasChanges={setSplitHasChanges}
           setEditExpenseShare={setEditExpenseShare}
-          handleSplitApplyChanges={handleSplitApplyChanges}
+          handleSplitApplyChanges={wrappedHandleSplitApplyChanges}
           handleSplitModeToggle={handleSplitModeToggle}
           resetSplitChanges={resetSplitChanges}
           splitValidationErrors={splitValidationErrors}
