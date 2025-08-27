@@ -193,7 +193,6 @@ export default function EntryForm({
   const calculateHeight = () => {
     const bottomNavigationHeight = 100;
     const baseHeight = dimensions.height - bottomNavigationHeight;
-
     // Only rely on keyboard height detection, not focus state
     if (keyboardHeight > 0) {
       return baseHeight + keyboardHeight;
@@ -336,10 +335,8 @@ export default function EntryForm({
         />
       )}
 
-      {/* Debug Panel - Show in development or when debug flag is set */}
-      {(process.env.NODE_ENV === "development" ||
-        (typeof window !== "undefined" &&
-          window.localStorage?.getItem("debug") === "true")) && (
+      {/* Debug Panel - Always show */}
+      {
         <DebugPanel
           keyboardHeight={keyboardHeight}
           formState={{
@@ -367,7 +364,7 @@ export default function EntryForm({
             },
           }}
         />
-      )}
+      }
     </>
   );
 }

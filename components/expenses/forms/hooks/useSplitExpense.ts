@@ -55,11 +55,16 @@ export const useSplitExpense = ({
   }, [isExpense, expense]);
 
   const [isCustomSplit, setIsCustomSplit] = useState(false);
+  const [splitModeOverride, setSplitModeOverride] = useState<boolean | null>(null);
 
-  // Update isCustomSplit when originalIsCustomSplit changes
+  // Update isCustomSplit when originalIsCustomSplit changes, but respect user override
   useEffect(() => {
-    setIsCustomSplit(originalIsCustomSplit);
-  }, [originalIsCustomSplit]);
+    if (splitModeOverride !== null) {
+      setIsCustomSplit(splitModeOverride);
+    } else {
+      setIsCustomSplit(originalIsCustomSplit);
+    }
+  }, [originalIsCustomSplit, splitModeOverride]);
 
   const [editExpenseShare, setEditExpenseShare] = useState(false);
 
@@ -145,6 +150,7 @@ export const useSplitExpense = ({
     setEditExpenseShare(false);
 
     // Reset custom split back to original state
+    setSplitModeOverride(null); // Clear override to go back to original calculation
     setIsCustomSplit(originalIsCustomSplit);
   }, [expense?.amount, expense?.shares, setValue, originalIsCustomSplit]);
 
@@ -275,6 +281,9 @@ export const useSplitExpense = ({
     });
     setSplitInputValues(updatedInputValues);
 
+    // Preserve the current split mode by setting override
+    setSplitModeOverride(isCustomSplit);
+
     // Force the useExpense hook to re-render with updated cache data
     if (refreshCache) {
       refreshCache();
@@ -362,6 +371,7 @@ export const useSplitExpense = ({
   const handleSplitModeToggle = useCallback(() => {
     const newIsCustomSplit = !isCustomSplit;
     setIsCustomSplit(newIsCustomSplit);
+    setSplitModeOverride(newIsCustomSplit);
 
     // If toggling from custom split to even split, calculate even amounts
     if (isCustomSplit && !newIsCustomSplit && expense?.shares) {
