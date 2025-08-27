@@ -10,14 +10,9 @@ import YearScrollPicker from "./YearScrollPicker";
 export interface DateTimePickerProps {
   date: Date;
   onDateChange: (date: Date) => void;
-  onClose?: () => void;
 }
 
-const ExpenseDateTimePicker = ({
-  date,
-  onDateChange,
-  onClose,
-}: DateTimePickerProps) => {
+const ExpenseDateTimePicker = ({ date, onDateChange }: DateTimePickerProps) => {
   const [selectedDate, setSelectedDate] = useState(date);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -110,15 +105,9 @@ const ExpenseDateTimePicker = ({
     setSelectedPeriod(date.getHours() >= 12 ? "PM" : "AM");
   }, [date]);
 
-  // Remove the automatic time update effect to prevent infinite loops
-  useEffect(() => {
-    handleTimeChange();
-  }, [selectedHour, selectedMinute, selectedPeriod]);
-
   const handleContainerClick = () => {
     if (showTimePicker) {
       setShowTimePicker(false);
-      onClose?.();
     }
   };
 
@@ -355,7 +344,6 @@ const ExpenseDateTimePicker = ({
                           newDate.setDate(day);
                           setSelectedDate(newDate);
                           onDateChange(newDate);
-                          onClose?.();
                         }
                       }}
                       disabled={!day}

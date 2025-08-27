@@ -8,12 +8,13 @@ export const fetchAllEntries = async (
 ): Promise<AllEntriesResponse> => {
   try {
     // Check cache first
-    const cacheKey = `allEntries_${telegram_id}_${chat_id || 'personal'}`;
+    const cacheKey = `allEntries_${telegram_id}_${chat_id || "personal"}`;
     const cachedData = appCache.get<AllEntriesResponse>(cacheKey);
-    
+
     if (cachedData) {
       return cachedData;
     }
+
     const params = new URLSearchParams({
       telegram_id,
       initData,

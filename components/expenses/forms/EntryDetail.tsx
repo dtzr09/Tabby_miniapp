@@ -60,7 +60,7 @@ const EntryDetail = (props: EntryDetailProps) => {
       amountScrollRef.current.scrollLeft = amountScrollRef.current.scrollWidth;
       props.handleFormValues(props.currentAmount, FormValues.AMOUNT);
     }
-  }, [props.currentAmount]);
+  }, [props.currentAmount, props.handleFormValues]);
 
   const categoryColor = getCategoryColor(
     cleanCategoryName(props.selectedCategory.name).name

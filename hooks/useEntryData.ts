@@ -5,6 +5,7 @@ import { Expense, Category, AllEntriesResponse } from "../utils/types";
 interface UseEntryDataProps {
   entryId: string;
   isIncome: boolean;
+  chat_id?: string;
 }
 
 interface UseEntryDataReturn {
@@ -17,6 +18,7 @@ interface UseEntryDataReturn {
 export const useEntryData = ({
   entryId,
   isIncome,
+  chat_id,
 }: UseEntryDataProps): UseEntryDataReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [expense, setExpense] = useState<Expense | null>(null);
@@ -55,6 +57,7 @@ export const useEntryData = ({
         const cachedData = queryClient.getQueryData<AllEntriesResponse>([
           "allEntries",
           telegram_id,
+          chat_id,
         ]);
 
         if (cachedData) {
@@ -91,7 +94,7 @@ export const useEntryData = ({
         return false;
       }
     },
-    [entryId, isIncome, queryClient]
+    [entryId, isIncome, queryClient, chat_id]
   );
 
   const loadData = useCallback(

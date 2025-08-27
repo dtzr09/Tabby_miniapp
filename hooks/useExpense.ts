@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo } from "react";
 import { AllEntriesResponse } from "../utils/types";
 import { UnifiedEntry } from "../utils/types";
 
@@ -19,30 +19,49 @@ export const useExpense = ({
   chat_id,
 }: UseExpenseProps) => {
   const queryClient = useQueryClient();
+  
 
-  // Force re-render when cache updates
-  const [cacheVersion, setCacheVersion] = useState(0);
-
-  // Function to get data from cache
-  const getFromCache = () => {
+  // Memoized function to get data from cache
+  const getExpenseFromCache = useMemo(() => {
+    // First try to get from allEntries cache
     const allEntriesData = queryClient.getQueryData<AllEntriesResponse>([
       "allEntries",
-      userId,
+      userId?.toString(),
       chat_id,
     ]);
 
-    if (!allEntriesData) return undefined;
+    if (allEntriesData) {
+      // Look in either expenses or income array based on isIncome flag
+      const entry = isIncome
+        ? allEntriesData.income.find((e) => e.id.toString() === id.toString())
+        : allEntriesData.expenses.find((e) => e.id.toString() === id.toString());
 
-    // Look in either expenses or income array based on isIncome flag
-    const entry = isIncome
-      ? allEntriesData.income.find((e) => e.id.toString() === id.toString())
-      : allEntriesData.expenses.find((e) => e.id.toString() === id.toString());
+      if (entry) {
+        return entry;
+      }
+    }
 
-    return entry;
-  };
+    // Fallback to individual expense cache
+    if (id) {
+      const individualExpenseData = queryClient.getQueryData([
+        "expense",
+        id.toString(),
+      ]);
+
+      if (individualExpenseData) {
+        return individualExpenseData;
+      }
+    }
+
+    return undefined;
+  }, [queryClient, userId, chat_id, id, isIncome]);
+
 
   // Function to update expense in all relevant caches
   const updateExpenseInCache = (updatedExpense: UnifiedEntry) => {
+    // Update in individual expense cache first
+    queryClient.setQueryData(["expense", id], updatedExpense);
+
     // Update in allEntries cache
     queryClient.setQueryData<AllEntriesResponse>(
       ["allEntries", userId, chat_id],
@@ -50,29 +69,16 @@ export const useExpense = ({
         if (!oldData) return oldData;
 
         const targetArray = isIncome ? "income" : "expenses";
-        const otherArray = isIncome ? "expenses" : "income";
-
-        console.log(
-          "🐛 updateExpenseInCache - Updated Expense:",
-          updatedExpense
-        );
-        console.log("🐛 updateExpenseInCache - Old Data:", oldData);
-
-        return {
+        const updatedData = {
           ...oldData,
           [targetArray]: oldData[targetArray].map((entry) =>
             entry.id.toString() === id.toString() ? updatedExpense : entry
           ),
-          [otherArray]: oldData[otherArray],
         };
+
+        return updatedData;
       }
     );
-
-    // Update in individual expense cache
-    queryClient.setQueryData(["expense", id], updatedExpense);
-
-    // Force re-render by incrementing cache version
-    setCacheVersion((prev) => prev + 1);
   };
 
   // Function to delete expense from all caches
@@ -100,7 +106,7 @@ export const useExpense = ({
   };
 
   const query = useQuery({
-    queryKey: ["expense", id, cacheVersion], // Include cacheVersion to force re-render
+    queryKey: ["expense", id],
     queryFn: async () => {
       if (!userId || !initData) {
         throw new Error("Missing required data");
@@ -122,26 +128,31 @@ export const useExpense = ({
         throw new Error(`Failed to fetch expense: ${text}`);
       }
 
-      return response.json();
+      const data = await response.json();
+      
+      // Update cache with fresh data from API
+      queryClient.setQueryData(["expense", id], data);
+      
+      return data;
     },
-    initialData: getFromCache,
-    placeholderData: getFromCache, // This ensures we never have a loading state
+    initialData: getExpenseFromCache,
     enabled: !!userId && !!initData,
-    staleTime: 0, // Consider cached data immediately stale
-    gcTime: 300000, // Keep unused data in cache for 5 minutes
-    refetchOnMount: false, // Don't refetch on mount since we have cache
-    refetchOnWindowFocus: false, // Don't refetch on window focus
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+    gcTime: 1000 * 60 * 10, // Keep unused data in cache for 10 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
-  // Always return the most current data from cache, even if query.data is stale
-  // Include cacheVersion in dependency to force re-render when cache updates
-  const currentData = queryClient.getQueryData(["expense", id]) || query.data;
+  // Use cache data if available, otherwise use query data
+  const currentData = getExpenseFromCache || query.data;
 
   return {
     ...query,
-    data: currentData, // Use the most current data from cache
+    data: currentData,
     updateExpenseInCache,
     deleteExpenseFromCache,
-    refreshCache: () => setCacheVersion((prev) => prev + 1), // Manual cache refresh
+    refreshCache: () => {
+      queryClient.invalidateQueries({ queryKey: ["expense", id] });
+    },
   };
 };

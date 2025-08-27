@@ -20,7 +20,7 @@ export const useAllEntries = (
     isLoading: isCategoriesLoading,
     isError: isCategoriesError,
   } = useQuery({
-    queryKey: ["categories", userId],
+    queryKey: ["categories", userId?.toString()],
     queryFn: async () => {
       if (!userId || !initData) return { categories: [] };
 
@@ -45,7 +45,7 @@ export const useAllEntries = (
     isLoading: isEntriesLoading,
     isError: isEntriesError,
   } = useQuery<AllEntriesResponse>({
-    queryKey: ["allEntries", userId, chat_id],
+    queryKey: ["allEntries", userId?.toString(), chat_id],
     queryFn: () => {
       if (userId && initData) {
         return fetchAllEntries(userId, initData, chat_id);
@@ -53,7 +53,7 @@ export const useAllEntries = (
       return Promise.resolve({ expenses: [], income: [], budgets: [] });
     },
     enabled: !!userId && !!initData,
-    staleTime: 60000, // Consider data fresh for 1 minute
+    staleTime: 0, // Always consider stale so invalidation works immediately
     gcTime: 120000, // Cache for 10 minutes
     refetchOnWindowFocus: false, // Disable refetch on focus for better performance
   });

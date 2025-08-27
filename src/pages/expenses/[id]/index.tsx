@@ -32,6 +32,7 @@ const ExpenseDetail = () => {
     error,
     deleteExpenseFromCache,
     refreshCache,
+    updateExpenseInCache,
   } = useExpense({
     id: entryId as string,
     isIncome: isIncome === "true",
@@ -109,6 +110,7 @@ const ExpenseDetail = () => {
         isGroupExpense={chat_id !== tgUser?.id?.toString()}
         setShowDeleteDialog={setShowDeleteDialog}
         refreshCache={refreshCache}
+        updateExpenseInCache={updateExpenseInCache}
         onToggleRecurring={() => {
           try {
             showPopup({

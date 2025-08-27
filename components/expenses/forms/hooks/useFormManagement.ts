@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { UseFormHandleSubmit, UseFormReset } from "react-hook-form";
+import { UseFormHandleSubmit, UseFormReset, FieldNamesMarkedBoolean } from "react-hook-form";
 import { showPopup } from "@telegram-apps/sdk";
 import {
   Category,
@@ -28,6 +28,7 @@ interface UseFormManagementProps {
   selectedDateTime: Date;
   handleSubmit: UseFormHandleSubmit<ExpenseFormData>;
   reset: UseFormReset<ExpenseFormData>;
+  formState?: { dirtyFields: FieldNamesMarkedBoolean<ExpenseFormData> };
 }
 
 export const useFormManagement = ({
@@ -40,6 +41,7 @@ export const useFormManagement = ({
   selectedDateTime,
   handleSubmit,
   reset,
+  formState,
 }: UseFormManagementProps) => {
   // Get Telegram data and query client
   const { user: tgUser, initData } = useTelegramWebApp();
@@ -73,12 +75,6 @@ export const useFormManagement = ({
     async (data: ExpenseFormData) => {
       try {
         if (!tgUser?.id || !initData || !entryId || !expense) {
-          console.error("Missing required data", {
-            tgUser: !!tgUser?.id,
-            initData: !!initData,
-            entryId,
-            expense: !!expense,
-          });
           return;
         }
 
@@ -87,11 +83,10 @@ export const useFormManagement = ({
 
         // Validate entryId is a valid number
         if (entryId === "undefined" || isNaN(Number(entryId))) {
-          console.error("Invalid entryId:", entryId);
           return;
         }
 
-        const newAmount = parseFloat(data.amount);
+        let newAmount = parseFloat(data.amount);
 
         // Check if this is a group expense with shares
         const isGroupExpense =
@@ -100,16 +95,42 @@ export const useFormManagement = ({
           expense.shares &&
           expense.shares.length > 0;
 
-        // For group expenses, calculate evenly split shares
+        // For group expenses, handle share calculations
         let updatedShares: ExpenseShare[] | undefined;
         if (isGroupExpense) {
           const shares = (expense as Expense).shares!;
-          const shareAmount = divideAmountEvenly(newAmount, shares.length);
-
-          updatedShares = shares.map((share: ExpenseShare) => ({
-            ...share, // Preserve all user details (name, username, etc.)
-            share_amount: shareAmount,
-          }));
+          
+          // First, determine if this expense is currently in even split mode
+          const firstShareAmount = shares[0].share_amount;
+          const isCurrentlyEvenSplit = shares.every(
+            share => Math.abs(share.share_amount - firstShareAmount) < 0.01
+          );
+          
+          // Check what changed
+          const amountFieldChanged = formState?.dirtyFields?.amount || newAmount !== expense.amount;
+          const sharesChanged = data.shares && data.shares.length > 0;
+          
+          if (isCurrentlyEvenSplit && amountFieldChanged) {
+            // Even split mode + amount changed: recalculate shares from new amount
+            const evenShareAmount = divideAmountEvenly(newAmount, shares.length);
+            updatedShares = shares.map(share => ({
+              ...share,
+              share_amount: evenShareAmount,
+            }));
+          } else if (sharesChanged) {
+            // Custom split: shares were updated, calculate total from shares
+            updatedShares = data.shares;
+            const calculatedAmount = data.shares.reduce((sum: number, share: ExpenseShare) => sum + share.share_amount, 0);
+            newAmount = calculatedAmount;
+          } else if (!isCurrentlyEvenSplit && amountFieldChanged) {
+            // Custom split mode but amount was changed - preserve original shares
+            updatedShares = shares;
+            // Revert to original amount calculated from shares
+            newAmount = shares.reduce((sum: number, share: ExpenseShare) => sum + share.share_amount, 0);
+          } else {
+            // No changes detected, preserve existing shares
+            updatedShares = shares;
+          }
         }
 
         // Create properly typed updated expense - match the expected UnifiedEntry structure
@@ -151,13 +172,6 @@ export const useFormManagement = ({
             : new Date().toISOString();
 
         try {
-          console.log("🐛 useFormManagement - Sending data:", {
-            ...data,
-            category_id: selectedCategoryId || expense.category?.id || 0, // Fallback to original category ID
-            amount: newAmount,
-            isIncome: isIncome,
-            date: utcDateTime,
-          });
           // Update expense amount first
           await updateExpenseAmount(
             Number(entryId),
@@ -218,16 +232,14 @@ export const useFormManagement = ({
           //   message: `${isIncome ? "Income" : "Expense"} updated successfully`,
           //   buttons: [{ type: "ok" }],
           // });
-        } catch (err) {
-          console.error("Error updating entry:", err);
+        } catch {
           showPopup({
             title: "Error",
             message: "Failed to update. Please refresh the page.",
             buttons: [{ type: "ok" }],
           });
         }
-      } catch (err) {
-        console.error("Error updating entry:", err);
+      } catch {
         showPopup({
           title: "Error",
           message: "Failed to update. Please refresh the page.",
@@ -246,7 +258,9 @@ export const useFormManagement = ({
       tgUser,
       initData,
       selectedCategoryId,
+      selectedCategory,
       reset,
+      formState?.dirtyFields?.amount,
     ]
   );
 

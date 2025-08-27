@@ -11,17 +11,16 @@ import {
   ExpenseFormData,
   Category,
   ExpenseShare,
+  UnifiedEntry,
 } from "../../../utils/types";
 import DateTimePicker from "../../datetimepicker/DateTimePicker";
 import KeypadButtons from "./KeypadButtons";
 import DatetimeBar from "./DatetimeBar";
 import SplitExpenseBottomSheet from "./SplitExpenseBottomSheet";
 import EntryDetail from "./EntryDetail";
-import { useKeyboardHeight } from "./hooks/useKeyboardHeight";
 import { useFormManagement } from "./hooks/useFormManagement";
 import { useSplitExpense } from "./hooks/useSplitExpense";
 import LoadingSkeleton from "../../dashboard/LoadingSkeleton";
-import DebugPanel from "../../debug/DebugPanel";
 
 export enum FormValues {
   DESCRIPTION = "description",
@@ -41,6 +40,7 @@ interface EntryFormProps {
   onToggleRecurring?: () => void;
   setShowDeleteDialog: (show: boolean) => void;
   refreshCache?: () => void;
+  updateExpenseInCache?: (updatedExpense: UnifiedEntry) => void;
 }
 
 export default function EntryForm({
@@ -53,11 +53,11 @@ export default function EntryForm({
   onToggleRecurring,
   setShowDeleteDialog,
   refreshCache,
+  updateExpenseInCache,
 }: EntryFormProps) {
   const { colors } = useTheme();
   const dimensions = useContext(DimensionsContext);
   const isExpense = typeof expense === "object" && "shares" in expense;
-  const keyboardHeight = useKeyboardHeight();
 
   // React Hook Form setup
   const defaultValues: ExpenseFormData = {
@@ -76,7 +76,7 @@ export default function EntryForm({
     watch,
     setValue,
     reset,
-    formState: { isDirty, isLoading },
+    formState: { isDirty, isLoading, dirtyFields },
   } = useForm<ExpenseFormData>({
     defaultValues,
     mode: "onChange",
@@ -90,8 +90,6 @@ export default function EntryForm({
 
   // State to prevent form reset after split save
   const [recentSplitSave, setRecentSplitSave] = useState(false);
-
-  // Debug form state changes - now visible in debug panel
 
   // Form management hook
   const {
@@ -114,6 +112,7 @@ export default function EntryForm({
         : new Date(),
     handleSubmit,
     reset,
+    formState: { dirtyFields },
   });
 
   type FormValue = string | number | ExpenseShare[];
@@ -146,6 +145,8 @@ export default function EntryForm({
     currentAmount,
     setValue,
     refreshCache,
+    recentSplitSave,
+    updateExpenseInCache,
   });
 
   useEffect(() => {
@@ -184,12 +185,12 @@ export default function EntryForm({
     }
   }, [expense, reset, isExpense, categories, splitHasChanges, recentSplitSave]);
 
-  // Clear recentSplitSave flag after a short delay
+  // Clear recentSplitSave flag after a longer delay to account for cache updates
   useEffect(() => {
     if (recentSplitSave) {
       const timer = setTimeout(() => {
         setRecentSplitSave(false);
-      }, 100); // Short delay to prevent immediate form reset
+      }, 500); // Longer delay to prevent form reset after split saves
       return () => clearTimeout(timer);
     }
   }, [recentSplitSave]);
@@ -204,8 +205,13 @@ export default function EntryForm({
 
   // Use initial device height minus bottom nav, ignoring keyboard changes
   const calculateHeight = () => {
-    // Use the initial screen dimensions, not current viewport which changes with keyboard
-    const initialHeight = window.screen.height || dimensions.height;
+    let initialHeight = 0;
+    if (window.screen.height < 1920) {
+      // Use the initial screen dimensions, not current viewport which changes with keyboard
+      initialHeight = window.screen.height || dimensions.height;
+    } else {
+      initialHeight = dimensions.height;
+    }
     const bottomNavigationHeight = 100;
     return initialHeight - bottomNavigationHeight;
   };
@@ -222,7 +228,8 @@ export default function EntryForm({
   // Wrapped split apply changes to prevent form reset
   const wrappedHandleSplitApplyChanges = async () => {
     setRecentSplitSave(true);
-    return await handleSplitApplyChanges();
+    const result = await handleSplitApplyChanges();
+    return result;
   };
 
   if (isLoading) {
@@ -323,7 +330,6 @@ export default function EntryForm({
           onDateChange={(newDateTime) => {
             handleFormValues(newDateTime.toISOString(), FormValues.DATE);
           }}
-          onClose={() => setShowDateTimePicker(false)}
         />
       </BottomSheet>
       {/* Split Expense Bottom Sheet */}
@@ -350,37 +356,6 @@ export default function EntryForm({
           isDirty={isDirty}
         />
       )}
-
-      {/* Debug Panel - Always show */}
-      {
-        <DebugPanel
-          keyboardHeight={keyboardHeight}
-          formState={{
-            isDirty,
-            isValid: true, // We can add actual validation status if needed
-            currentAmount,
-            description,
-            selectedDateTime,
-          }}
-          dimensions={dimensions}
-          additionalInfo={{
-            isExpense,
-            isGroupExpense,
-            isIncome,
-            entryId,
-            chat_id,
-            isCustomSplit,
-            splitHasChanges,
-            heightInfo: {
-              calculatedHeight: calculateHeight(),
-              baseHeight: dimensions.height - 100,
-              keyboardHeight,
-              dimensionsHeight: dimensions.height,
-              bottomNavigationHeight: 100,
-            },
-          }}
-        />
-      }
     </>
   );
 }
