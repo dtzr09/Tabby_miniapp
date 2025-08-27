@@ -264,6 +264,44 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
           </Box>
         )}
 
+        {/* Height Debug Info */}
+        {additionalInfo?.heightInfo && (
+          <Box sx={{ mb: 2 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 1, color: colors.primary }}
+            >
+              Height Calculation
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+              <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                Final Height: <strong>{additionalInfo.heightInfo.calculatedHeight}px</strong>
+              </Typography>
+              <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                Base Height: <strong>{additionalInfo.heightInfo.baseHeight}px</strong>
+              </Typography>
+              <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                Screen Height: <strong>{additionalInfo.heightInfo.dimensionsHeight}px</strong>
+              </Typography>
+              <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                Bottom Nav: <strong>{additionalInfo.heightInfo.bottomNavigationHeight}px</strong>
+              </Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
+                <Chip
+                  label={`Keyboard: ${additionalInfo.heightInfo.keyboardHeight}px`}
+                  size="small"
+                  color={additionalInfo.heightInfo.keyboardHeight > 0 ? "success" : "default"}
+                />
+                <Chip
+                  label={additionalInfo.heightInfo.keyboardHeight > 0 ? "KB Active" : "KB Inactive"}
+                  size="small"
+                  color={additionalInfo.heightInfo.keyboardHeight > 0 ? "warning" : "default"}
+                />
+              </Box>
+            </Box>
+          </Box>
+        )}
+
         {/* Additional Info */}
         {Object.keys(additionalInfo).length > 0 && (
           <Box>
@@ -274,21 +312,24 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
               Additional Info
             </Typography>
             <Box sx={{ maxHeight: 200, overflowY: "auto" }}>
-              {Object.entries(additionalInfo).map(([key, value]) => (
-                <Typography
-                  key={key}
-                  variant="body2"
-                  sx={{
-                    color: colors.textSecondary,
-                    mb: 0.5,
-                    fontFamily: "monospace",
-                    fontSize: "0.75rem",
-                    wordBreak: "break-all",
-                  }}
-                >
-                  <strong>{key}:</strong> {JSON.stringify(value)}
-                </Typography>
-              ))}
+              {Object.entries(additionalInfo).map(([key, value]) => {
+                if (key === 'heightInfo') return null; // Skip heightInfo as we display it separately
+                return (
+                  <Typography
+                    key={key}
+                    variant="body2"
+                    sx={{
+                      color: colors.textSecondary,
+                      mb: 0.5,
+                      fontFamily: "monospace",
+                      fontSize: "0.75rem",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    <strong>{key}:</strong> {JSON.stringify(value)}
+                  </Typography>
+                );
+              })}
             </Box>
           </Box>
         )}

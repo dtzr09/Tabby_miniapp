@@ -189,10 +189,16 @@ export default function EntryForm({
   // Measure the fixed bottom section height
   const [bottomSectionRef, bottomSectionBounds] = useMeasure();
 
-  // Calculate static height - keyboard should not affect form height
+  // Calculate dynamic height based on keyboard state
   const calculateHeight = () => {
     const bottomNavigationHeight = 100;
-    return dimensions.height - bottomNavigationHeight;
+    const baseHeight = dimensions.height - bottomNavigationHeight;
+
+    // Only rely on keyboard height detection, not focus state
+    if (keyboardHeight > 0) {
+      return baseHeight + keyboardHeight;
+    }
+    return baseHeight;
   };
 
   // Custom backspace handler that works with the form
@@ -352,7 +358,13 @@ export default function EntryForm({
             chat_id,
             isCustomSplit,
             splitHasChanges,
-            calculatedHeight: calculateHeight(),
+            heightInfo: {
+              calculatedHeight: calculateHeight(),
+              baseHeight: dimensions.height - 100,
+              keyboardHeight,
+              dimensionsHeight: dimensions.height,
+              bottomNavigationHeight: 100,
+            },
           }}
         />
       )}
