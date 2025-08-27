@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { UseFormHandleSubmit } from "react-hook-form";
+import { UseFormHandleSubmit, UseFormReset } from "react-hook-form";
 import { showPopup } from "@telegram-apps/sdk";
 import {
   Category,
@@ -27,6 +27,7 @@ interface UseFormManagementProps {
   selectedCategoryId: number;
   selectedDateTime: Date;
   handleSubmit: UseFormHandleSubmit<ExpenseFormData>;
+  reset: UseFormReset<ExpenseFormData>;
 }
 
 export const useFormManagement = ({
@@ -38,6 +39,7 @@ export const useFormManagement = ({
   selectedCategoryId,
   selectedDateTime,
   handleSubmit,
+  reset,
 }: UseFormManagementProps) => {
   // Get Telegram data and query client
   const { user: tgUser, initData } = useTelegramWebApp();
@@ -79,6 +81,9 @@ export const useFormManagement = ({
           });
           return;
         }
+
+        // Immediately reset form's dirty state to show user their changes are being saved
+        reset(data, { keepDirty: false });
 
         // Validate entryId is a valid number
         if (entryId === "undefined" || isNaN(Number(entryId))) {
@@ -146,12 +151,20 @@ export const useFormManagement = ({
             : new Date().toISOString();
 
         try {
+          console.log("🐛 useFormManagement - Sending data:", {
+            ...data,
+            category_id: selectedCategoryId || expense.category?.id || 0, // Fallback to original category ID
+            amount: newAmount,
+            isIncome: isIncome,
+            date: utcDateTime,
+          });
           // Update expense amount first
           await updateExpenseAmount(
             Number(entryId),
             newAmount,
             initData,
-            chat_id
+            chat_id,
+            isIncome
           );
 
           // If it's a group expense, also update the shares
@@ -169,6 +182,7 @@ export const useFormManagement = ({
               chat_id
             );
           }
+
           // Make the API call for other fields in the background
           const response = await fetch(`/api/entries/${entryId}`, {
             method: "PUT",
@@ -197,10 +211,6 @@ export const useFormManagement = ({
           // Invalidate simple cache
           invalidateExpenseCache(tgUser.id.toString(), chat_id);
 
-          console.log(
-            "🐛 useFormManagement - Updated Expense:",
-            updatedExpense
-          );
           updateExpenseInCache(updatedExpense);
 
           // showPopup({
@@ -236,6 +246,7 @@ export const useFormManagement = ({
       tgUser,
       initData,
       selectedCategoryId,
+      reset,
     ]
   );
 

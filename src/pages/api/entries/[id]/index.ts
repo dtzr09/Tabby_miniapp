@@ -190,7 +190,12 @@ export default async function handler(
       const { description, amount, category_id, date } = req.body;
 
       // Allow partial updates - only require amount if it's being updated
-      if (amount === undefined && !description && !category_id && !date) {
+      if (
+        amount === undefined &&
+        !description &&
+        category_id === undefined &&
+        !date
+      ) {
         return res.status(400).json({ error: "No fields to update" });
       }
 
@@ -278,7 +283,8 @@ export default async function handler(
           };
 
           if (description !== undefined) updateData.description = description;
-          if (amount !== undefined) updateData.amount = roundToCents(parseFloat(amount));
+          if (amount !== undefined)
+            updateData.amount = roundToCents(parseFloat(amount));
           if (category_id !== undefined) updateData.category_id = category_id;
           if (date !== undefined) updateData.date = date;
           if (!isIncomeBoolean) updateData.is_income = isIncomeBoolean;

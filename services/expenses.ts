@@ -235,7 +235,8 @@ export const updateExpenseAmount = async (
   id: number,
   amount: number,
   initData: string,
-  chat_id: string
+  chat_id: string,
+  isIncome: boolean
 ) => {
   try {
     const response = await fetch(`/api/entries/${id}`, {
@@ -247,6 +248,7 @@ export const updateExpenseAmount = async (
         amount,
         chat_id: chat_id,
         initData,
+        isIncome,
       }),
     });
 

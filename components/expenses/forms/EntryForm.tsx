@@ -21,6 +21,7 @@ import { useKeyboardHeight } from "./hooks/useKeyboardHeight";
 import { useFormManagement } from "./hooks/useFormManagement";
 import { useSplitExpense } from "./hooks/useSplitExpense";
 import LoadingSkeleton from "../../dashboard/LoadingSkeleton";
+import DebugPanel from "../../debug/DebugPanel";
 
 export enum FormValues {
   DESCRIPTION = "description",
@@ -85,13 +86,6 @@ export default function EntryForm({
   const currentAmount = watch("amount");
   const description = watch("description");
   const selectedCategoryId = watch("category_id");
-
-  // Debug what the form is watching
-  console.log("🐛 EntryForm - Form State:", {
-    selectedCategoryId: selectedCategoryId,
-    selectedCategoryIdType: typeof selectedCategoryId,
-    watchedFormData: watch(),
-  });
   const selectedDateTime = watch("date");
 
   // Debug form state changes - now visible in debug panel
@@ -147,6 +141,7 @@ export default function EntryForm({
         ? new Date(expense.date)
         : new Date(),
     handleSubmit,
+    reset,
   });
 
   type FormValue = string | number | ExpenseShare[];
@@ -200,6 +195,7 @@ export default function EntryForm({
     return baseHeight;
   };
 
+  console.log("🐛 EntryForm - calculateHeight:", calculateHeight());
   // Custom backspace handler that works with the form
   const handleFormBackspace = () => {
     handleBackspace(
@@ -331,6 +327,33 @@ export default function EntryForm({
           setSplitInputValues={setSplitInputValues}
           setSplitValidationErrors={setSplitValidationErrors}
           isDirty={isDirty}
+        />
+      )}
+
+      {/* Debug Panel - Show in development or when debug flag is set */}
+      {(process.env.NODE_ENV === "development" ||
+        (typeof window !== "undefined" &&
+          window.localStorage?.getItem("debug") === "true")) && (
+        <DebugPanel
+          keyboardHeight={keyboardHeight}
+          formState={{
+            isDirty,
+            isValid: true, // We can add actual validation status if needed
+            currentAmount,
+            description,
+            selectedDateTime,
+          }}
+          dimensions={dimensions}
+          additionalInfo={{
+            isExpense,
+            isGroupExpense,
+            isIncome,
+            entryId,
+            chat_id,
+            isCustomSplit,
+            splitHasChanges,
+            calculatedHeight: calculateHeight(),
+          }}
         />
       )}
     </>
