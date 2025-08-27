@@ -34,9 +34,9 @@ export default function FilterViews({
     // Get unique categories with their income/expense status
     const categoriesMap = new Map<string, CategoryInfo>();
     entries.forEach((entry) => {
-      if (entry.category) {
-        categoriesMap.set(entry.category, {
-          name: entry.category,
+      if (entry.category && entry.category.name) {
+        categoriesMap.set(entry.category.name, {
+          name: entry.category.name,
           isIncome: entry.isIncome,
         });
       }

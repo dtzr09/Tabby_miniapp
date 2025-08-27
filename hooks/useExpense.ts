@@ -19,7 +19,7 @@ export const useExpense = ({
   chat_id,
 }: UseExpenseProps) => {
   const queryClient = useQueryClient();
-  
+
   // Force re-render when cache updates
   const [cacheVersion, setCacheVersion] = useState(0);
 
@@ -43,7 +43,6 @@ export const useExpense = ({
 
   // Function to update expense in all relevant caches
   const updateExpenseInCache = (updatedExpense: UnifiedEntry) => {
-    
     // Update in allEntries cache
     queryClient.setQueryData<AllEntriesResponse>(
       ["allEntries", userId, chat_id],
@@ -52,6 +51,12 @@ export const useExpense = ({
 
         const targetArray = isIncome ? "income" : "expenses";
         const otherArray = isIncome ? "expenses" : "income";
+
+        console.log(
+          "🐛 updateExpenseInCache - Updated Expense:",
+          updatedExpense
+        );
+        console.log("🐛 updateExpenseInCache - Old Data:", oldData);
 
         return {
           ...oldData,
@@ -65,9 +70,9 @@ export const useExpense = ({
 
     // Update in individual expense cache
     queryClient.setQueryData(["expense", id], updatedExpense);
-    
+
     // Force re-render by incrementing cache version
-    setCacheVersion(prev => prev + 1);
+    setCacheVersion((prev) => prev + 1);
   };
 
   // Function to delete expense from all caches
@@ -137,6 +142,6 @@ export const useExpense = ({
     data: currentData, // Use the most current data from cache
     updateExpenseInCache,
     deleteExpenseFromCache,
-    refreshCache: () => setCacheVersion(prev => prev + 1), // Manual cache refresh
+    refreshCache: () => setCacheVersion((prev) => prev + 1), // Manual cache refresh
   };
 };

@@ -3,6 +3,7 @@ import { validateTelegramWebApp } from "../../../../../lib/validateTelegram";
 import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
 import { postgresClient } from "../../../../../lib/postgresClient";
 import { BOT_TOKEN, isLocal } from "../../../../../utils/utils";
+import { roundToCents } from "../../../../../lib/currencyUtils";
 
 export default async function handler(
   req: NextApiRequest,
@@ -34,17 +35,20 @@ export default async function handler(
     if (isLocal) {
       // Update existing shares (much more efficient than delete/recreate)
       for (const share of shares) {
+        // Round share amount to prevent floating point precision issues
+        const roundedShareAmount = roundToCents(parseFloat(share.share_amount));
+        
         // First try to update existing share
         const updateResult = await postgresClient.query(
           "UPDATE expense_shares SET share_amount = $1 WHERE expense_id = $2 AND user_id = $3",
-          [share.share_amount, id, share.user_id]
+          [roundedShareAmount, id, share.user_id]
         );
 
         // If no rows were updated, insert new share (for equal -> custom split conversion)
         if (updateResult.rowCount === 0) {
           await postgresClient.query(
             "INSERT INTO expense_shares (expense_id, user_id, share_amount) VALUES ($1, $2, $3)",
-            [id, share.user_id, share.share_amount]
+            [id, share.user_id, roundedShareAmount]
           );
         }
       }
@@ -71,10 +75,13 @@ export default async function handler(
 
       // Update existing shares (much more efficient than delete/recreate)
       for (const share of shares) {
+        // Round share amount to prevent floating point precision issues
+        const roundedShareAmount = roundToCents(parseFloat(share.share_amount));
+        
         // First try to update existing share
         const { data: updateData, error: updateError } = await supabaseAdmin
           .from("expense_shares")
-          .update({ share_amount: share.share_amount })
+          .update({ share_amount: roundedShareAmount })
           .eq("expense_id", id)
           .eq("user_id", share.user_id)
           .select();
@@ -91,7 +98,7 @@ export default async function handler(
             .insert({
               expense_id: id,
               user_id: share.user_id,
-              share_amount: share.share_amount,
+              share_amount: roundedShareAmount,
             });
 
           if (insertError) {

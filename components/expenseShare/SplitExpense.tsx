@@ -2,6 +2,7 @@ import { Box, Divider, Typography } from "@mui/material";
 import { Expense, ExpenseShare } from "../../utils/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { divideAmountEvenly } from "../../utils/currencyUtils";
 
 import UserShare from "./UserShare";
 
@@ -31,7 +32,7 @@ const SplitExpense = ({
     ? parseFloat(currentAmount)
     : expense.amount;
   const amountPerPerson = expense.shares?.length
-    ? totalAmount / expense.shares?.length
+    ? divideAmountEvenly(totalAmount, expense.shares.length)
     : totalAmount;
 
   // Local state for shares to handle optimistic updates
@@ -91,7 +92,7 @@ const SplitExpense = ({
   // Check if current state is equal split
   const isEqualSplit = useMemo(() => {
     if (!localShares.length) return true;
-    const expectedAmount = totalAmount / localShares.length;
+    const expectedAmount = divideAmountEvenly(totalAmount, localShares.length);
     return localShares.every(
       (share) => Math.abs(share.share_amount - expectedAmount) < 0.01
     );

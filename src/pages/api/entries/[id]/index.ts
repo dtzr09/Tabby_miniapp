@@ -4,6 +4,7 @@ import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
 import { postgresClient } from "../../../../../lib/postgresClient";
 import { BOT_TOKEN, isLocal } from "../../../../../utils/utils";
 import { ExpenseShareWithUser } from "../../../../../utils/types";
+import { roundToCents } from "../../../../../lib/currencyUtils";
 
 export default async function handler(
   req: NextApiRequest,
@@ -217,7 +218,7 @@ export default async function handler(
           }
           if (amount !== undefined) {
             updateParts.push(`amount = $${valueIndex++}`);
-            updateValues.push(amount);
+            updateValues.push(roundToCents(parseFloat(amount)));
           }
           if (category_id !== undefined) {
             updateParts.push(`category_id = $${valueIndex++}`);
@@ -277,7 +278,7 @@ export default async function handler(
           };
 
           if (description !== undefined) updateData.description = description;
-          if (amount !== undefined) updateData.amount = amount;
+          if (amount !== undefined) updateData.amount = roundToCents(parseFloat(amount));
           if (category_id !== undefined) updateData.category_id = category_id;
           if (date !== undefined) updateData.date = date;
           if (!isIncomeBoolean) updateData.is_income = isIncomeBoolean;

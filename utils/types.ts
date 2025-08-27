@@ -57,7 +57,7 @@ export interface ExpenseShare {
 export interface UnifiedEntry {
   id: number;
   description: string;
-  category: string;
+  category: Category;
   emoji?: string;
   date: string;
   amount: number;

@@ -127,14 +127,14 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     queryKey: ["preferences", user?.id, chat_id],
     queryFn: () => fetchPreferences(user!.id.toString(), initData!, chat_id),
     enabled: !!(user?.id && initData && isReady),
-    staleTime: 600000, // 10 minutes
+    staleTime: 120000, // 2minutes
   });
 
   const { data: groupsData, isLoading: groupsLoading } = useQuery({
     queryKey: ["groupsWithExpenses", user?.id],
     queryFn: () => fetchGroups(user!.id.toString(), initData!),
     enabled: !!(user?.id && initData && isReady),
-    staleTime: 300000, // 5 minutes
+    staleTime: 120000, // 2 minutes
   });
 
   // Use grouped data directly from React Query with useMemo to prevent re-renders

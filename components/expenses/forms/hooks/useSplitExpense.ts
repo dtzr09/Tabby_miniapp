@@ -9,6 +9,7 @@ import {
   updateExpenseAmount,
   updateExpenseShares,
 } from "../../../../services/expenses";
+import { sumCurrencyValues, divideAmountEvenly } from "../../../../utils/currencyUtils";
 import { UseFormSetValue } from "react-hook-form";
 import { useTelegramWebApp } from "../../../../hooks/useTelegramWebApp";
 import { FormValues } from "../EntryForm";
@@ -104,11 +105,9 @@ export const useSplitExpense = ({
           };
         });
 
-        // Calculate new total amount
-        const newTotal = updatedShares.reduce(
-          (sum: number, share: ExpenseShare) => sum + share.share_amount,
-          0
-        );
+        // Calculate new total amount with proper currency precision
+        const shareAmounts = updatedShares.map((share: ExpenseShare) => share.share_amount);
+        const newTotal = sumCurrencyValues(shareAmounts);
 
         // Format the amount consistently with the original defaultValues format
         const formattedAmount = newTotal.toString();
@@ -155,18 +154,20 @@ export const useSplitExpense = ({
       
       if (shouldUseInputValues) {
         // Calculate from input values when user is actively editing
-        const total = shares.reduce((sum, share) => {
+        const amounts = shares.map(share => {
           const inputValue = splitInputValues[share.user_id];
           if (inputValue) {
             const numericValue = parseFloat(inputValue);
-            return sum + (!isNaN(numericValue) ? numericValue : share.share_amount);
+            return !isNaN(numericValue) ? numericValue : share.share_amount;
           }
-          return sum + share.share_amount;
-        }, 0);
+          return share.share_amount;
+        });
+        const total = sumCurrencyValues(amounts);
         return total.toFixed(2);
       } else {
         // Use actual expense share amounts as the source of truth
-        const total = shares.reduce((sum, share) => sum + share.share_amount, 0);
+        const shareAmounts = shares.map(share => share.share_amount);
+        const total = sumCurrencyValues(shareAmounts);
         return total.toFixed(2);
       }
     }
@@ -217,7 +218,7 @@ export const useSplitExpense = ({
     } else {
       // For even split, calculate evenly distributed amounts
       const totalAmount = parseFloat(currentAmount) || expense.amount;
-      const evenShareAmount = totalAmount / expense.shares.length;
+      const evenShareAmount = divideAmountEvenly(totalAmount, expense.shares.length);
       
       updatedShares = expense.shares.map((share: ExpenseShare) => ({
         ...share,
@@ -337,7 +338,7 @@ export const useSplitExpense = ({
       // Use the current amount from the form, or fall back to expense amount
       const totalAmount = parseFloat(currentAmount) || (expense?.amount || 0);
       const shares = expense.shares;
-      const evenShareAmount = totalAmount / shares.length;
+      const evenShareAmount = divideAmountEvenly(totalAmount, shares.length);
       
       // Create new input values with even split amounts
       const newInputValues: Record<string | number, string> = {};

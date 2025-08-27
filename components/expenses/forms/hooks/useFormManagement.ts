@@ -16,6 +16,7 @@ import {
   updateExpenseAmount,
   updateExpenseShares,
 } from "../../../../services/expenses";
+import { divideAmountEvenly } from "../../../../utils/currencyUtils";
 
 interface UseFormManagementProps {
   entryId?: string;
@@ -38,7 +39,7 @@ export const useFormManagement = ({
   selectedDateTime,
   handleSubmit,
 }: UseFormManagementProps) => {
-  // Get Telegram data
+  // Get Telegram data and query client
   const { user: tgUser, initData } = useTelegramWebApp();
 
   // Get expense management functions
@@ -98,7 +99,7 @@ export const useFormManagement = ({
         let updatedShares: ExpenseShare[] | undefined;
         if (isGroupExpense) {
           const shares = (expense as Expense).shares!;
-          const shareAmount = newAmount / shares.length;
+          const shareAmount = divideAmountEvenly(newAmount, shares.length);
 
           updatedShares = shares.map((share: ExpenseShare) => ({
             ...share, // Preserve all user details (name, username, etc.)
@@ -106,13 +107,14 @@ export const useFormManagement = ({
           }));
         }
 
-        // Create properly typed updated expense
+        // Create properly typed updated expense - match the expected UnifiedEntry structure
         const updatedExpense: UnifiedEntry = isGroupExpense
           ? {
               ...(expense as Expense),
               description: data.description,
               amount: newAmount,
-              category: selectedCategory.name,
+              category: selectedCategory, // Use Category object per updated UnifiedEntry type
+              emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
               date: data.date,
               shares: updatedShares,
               isIncome: isIncome,
@@ -121,21 +123,27 @@ export const useFormManagement = ({
               ...expense,
               description: data.description,
               amount: newAmount,
-              category: selectedCategory.name,
+              category: selectedCategory, // Use Category object per updated UnifiedEntry type
+              emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
               date: data.date,
               isIncome: isIncome,
             };
 
-        // Optimistically update the cache
-        updateExpenseInCache(updatedExpense);
-
         // Convert selectedDateTime to UTC for backend
-        if (!(selectedDateTime instanceof Date) || isNaN(selectedDateTime.getTime())) {
-          console.warn("Invalid selectedDateTime:", selectedDateTime, "using current date instead");
+        if (
+          !(selectedDateTime instanceof Date) ||
+          isNaN(selectedDateTime.getTime())
+        ) {
+          console.warn(
+            "Invalid selectedDateTime:",
+            selectedDateTime,
+            "using current date instead"
+          );
         }
-        const utcDateTime = selectedDateTime instanceof Date && !isNaN(selectedDateTime.getTime()) 
-          ? selectedDateTime.toISOString() 
-          : new Date().toISOString();
+        const utcDateTime =
+          selectedDateTime instanceof Date && !isNaN(selectedDateTime.getTime())
+            ? selectedDateTime.toISOString()
+            : new Date().toISOString();
 
         try {
           // Update expense amount first
@@ -161,7 +169,6 @@ export const useFormManagement = ({
               chat_id
             );
           }
-
           // Make the API call for other fields in the background
           const response = await fetch(`/api/entries/${entryId}`, {
             method: "PUT",
@@ -170,7 +177,7 @@ export const useFormManagement = ({
               chat_id: chat_id,
               initData: initData,
               ...data,
-              category_id: selectedCategoryId, // Use the current selected category ID
+              category_id: selectedCategoryId || expense.category?.id || 0, // Fallback to original category ID
               amount: newAmount,
               isIncome: isIncome,
               date: utcDateTime,
@@ -187,15 +194,20 @@ export const useFormManagement = ({
             return;
           }
 
-          // Invalidate expense cache after successful update
+          // Invalidate simple cache
           invalidateExpenseCache(tgUser.id.toString(), chat_id);
-          console.log("🗑️ Cache invalidated after expense update");
 
-          showPopup({
-            title: "Success",
-            message: `${isIncome ? "Income" : "Expense"} updated successfully`,
-            buttons: [{ type: "ok" }],
-          });
+          console.log(
+            "🐛 useFormManagement - Updated Expense:",
+            updatedExpense
+          );
+          updateExpenseInCache(updatedExpense);
+
+          // showPopup({
+          //   title: "Success",
+          //   message: `${isIncome ? "Income" : "Expense"} updated successfully`,
+          //   buttons: [{ type: "ok" }],
+          // });
         } catch (err) {
           console.error("Error updating entry:", err);
           showPopup({

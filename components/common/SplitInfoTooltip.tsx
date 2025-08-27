@@ -3,6 +3,7 @@ import { InfoOutlined } from "@mui/icons-material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Expense } from "../../utils/types";
 import { useState } from "react";
+import { divideAmountEvenly } from "../../utils/currencyUtils";
 
 interface SplitInfoTooltipProps {
   expense?: Expense;
@@ -21,7 +22,7 @@ const SplitInfoTooltip = ({
   // Calculate if this is an equal split
   const currentAmountValue = parseFloat(currentAmount || "0");
   const amountPerPerson = expense?.shares?.length
-    ? currentAmountValue / expense.shares.length
+    ? divideAmountEvenly(currentAmountValue, expense.shares.length)
     : currentAmountValue;
   const isEqualSplit =
     expense?.shares?.every(

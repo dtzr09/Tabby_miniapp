@@ -58,8 +58,6 @@ export default function EntryForm({
   const isExpense = typeof expense === "object" && "shares" in expense;
   const keyboardHeight = useKeyboardHeight();
 
-
-
   // React Hook Form setup
   const defaultValues: ExpenseFormData = {
     description: expense?.description || "",
@@ -87,6 +85,13 @@ export default function EntryForm({
   const currentAmount = watch("amount");
   const description = watch("description");
   const selectedCategoryId = watch("category_id");
+
+  // Debug what the form is watching
+  console.log("🐛 EntryForm - Form State:", {
+    selectedCategoryId: selectedCategoryId,
+    selectedCategoryIdType: typeof selectedCategoryId,
+    watchedFormData: watch(),
+  });
   const selectedDateTime = watch("date");
 
   // Debug form state changes - now visible in debug panel
@@ -175,8 +180,6 @@ export default function EntryForm({
     setValue,
     refreshCache,
   });
-
-
 
   // UI state
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
@@ -330,7 +333,6 @@ export default function EntryForm({
           isDirty={isDirty}
         />
       )}
-
     </>
   );
 }

@@ -32,7 +32,7 @@ export const useEntryFiltering = (
       combined.push({
         id: expense.id,
         description: expense.description,
-        category: categoryName,
+        category: expense.category, // Use Category object instead of string
         emoji: expense.category?.emoji || emoji,
         date: expense.date,
         amount: personalData.amount,
@@ -52,7 +52,7 @@ export const useEntryFiltering = (
       combined.push({
         id: income.id,
         description: income.description,
-        category: categoryName,
+        category: income.category, // Use Category object instead of string
         emoji: income.category?.emoji || emoji || "💰",
         date: income.date,
         amount: income.amount,
@@ -139,7 +139,7 @@ export const useEntryFiltering = (
       // Apply category filter
       if (filterOptions.categoryId) {
         entries = entries.filter(
-          (entry) => entry.category === filterOptions.categoryId
+          (entry) => entry.category?.id?.toString() === filterOptions.categoryId
         );
       }
 

@@ -15,7 +15,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // Keep data fresh for 5 seconds before considering it stale
-      staleTime: 5000,
+      staleTime: 2000,
       // Keep unused data in cache for 5 minutes
       gcTime: 300000,
       // Only refetch on mount if data is stale

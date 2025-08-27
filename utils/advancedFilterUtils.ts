@@ -75,7 +75,7 @@ export const applyFilter = (
   }
 
   if (filterType === "category" && options?.categoryId) {
-    filteredEntries = filteredEntries.filter(entry => entry.category === options.categoryId);
+    filteredEntries = filteredEntries.filter(entry => entry.category?.id?.toString() === options.categoryId);
   }
 
   // Always sort by date (newest first)

@@ -54,7 +54,7 @@ export const useAllEntries = (
     },
     enabled: !!userId && !!initData,
     staleTime: 60000, // Consider data fresh for 1 minute
-    gcTime: 600000, // Cache for 10 minutes
+    gcTime: 120000, // Cache for 10 minutes
     refetchOnWindowFocus: false, // Disable refetch on focus for better performance
   });
 
