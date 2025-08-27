@@ -231,34 +231,65 @@ export const useSplitExpense = ({
       setSplitInputValues(evenSplitInputValues);
     }
 
-    // Immediately update UI state for better UX
+    // Immediately update cache for instant UI feedback
+    queryClient.setQueryData(
+      ["expense", expense.id],
+      (oldData: Expense | undefined) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          amount: newTotalFromShares,
+          shares: updatedShares,
+        };
+      }
+    );
+
+    // Update allEntries cache immediately
+    queryClient.setQueryData(
+      ["allEntries", tgUser.id.toString(), chat_id],
+      (oldData: { expenses: Expense[] } | undefined) => {
+        if (!oldData || !oldData.expenses) return oldData;
+
+        return {
+          ...oldData,
+          expenses: oldData.expenses.map((exp: Expense) =>
+            exp.id === expense.id
+              ? { ...exp, amount: newTotalFromShares, shares: updatedShares }
+              : exp
+          ),
+        };
+      }
+    );
+
+    // Immediately update UI state
     setValue(FormValues.AMOUNT, newTotalFromShares.toString(), {
       shouldDirty: false,
     });
+    setValue(FormValues.SHARES, updatedShares, { shouldDirty: false });
     setSplitHasChanges(false);
     
     // Update split input values to match the new amounts
-    if (expense?.shares) {
-      const updatedInputValues: Record<string | number, string> = {};
-      updatedShares.forEach((share: ExpenseShare) => {
-        updatedInputValues[share.user_id] = share.share_amount.toString();
-      });
-      setSplitInputValues(updatedInputValues);
-      setValue(FormValues.SHARES, updatedShares, { shouldDirty: false });
+    const updatedInputValues: Record<string | number, string> = {};
+    updatedShares.forEach((share: ExpenseShare) => {
+      updatedInputValues[share.user_id] = share.share_amount.toString();
+    });
+    setSplitInputValues(updatedInputValues);
+
+    // Force the useExpense hook to re-render with updated cache data
+    if (refreshCache) {
+      refreshCache();
     }
 
-    try {
-      // Update expense amount first (in background)
-      await updateExpenseAmount(
+    // Handle API calls in background (don't await)
+    Promise.all([
+      updateExpenseAmount(
         expense.id,
         newTotalFromShares,
         initData,
         chat_id,
         false
-      );
-
-      // Then update expense shares (in background)
-      await updateExpenseShares(
+      ),
+      updateExpenseShares(
         expense.id,
         updatedShares.map((s: ExpenseShare) => ({
           user_id: s.user_id,
@@ -266,22 +297,23 @@ export const useSplitExpense = ({
         })),
         initData,
         chat_id
-      );
-
-      // Update cache after successful API calls
+      )
+    ]).catch((error) => {
+      console.error("Failed to update expense in background:", error);
+      
+      // Revert cache and UI state on failure
       queryClient.setQueryData(
         ["expense", expense.id],
         (oldData: Expense | undefined) => {
           if (!oldData) return oldData;
           return {
             ...oldData,
-            amount: newTotalFromShares,
-            shares: updatedShares,
+            amount: expense.amount,
+            shares: expense.shares,
           };
         }
       );
 
-      // Update allEntries cache
       queryClient.setQueryData(
         ["allEntries", tgUser.id.toString(), chat_id],
         (oldData: { expenses: Expense[] } | undefined) => {
@@ -291,35 +323,26 @@ export const useSplitExpense = ({
             ...oldData,
             expenses: oldData.expenses.map((exp: Expense) =>
               exp.id === expense.id
-                ? { ...exp, amount: newTotalFromShares, shares: updatedShares }
+                ? { ...exp, amount: expense.amount, shares: expense.shares }
                 : exp
             ),
           };
         }
       );
 
-      // Force the useExpense hook to re-render with updated cache data
+      // Revert UI state
+      setValue(FormValues.AMOUNT, expense.amount?.toString() || "0", {
+        shouldDirty: true,
+      });
+      setValue(FormValues.SHARES, expense.shares || [], { shouldDirty: true });
+      setSplitHasChanges(true);
+
       if (refreshCache) {
         refreshCache();
       }
+    });
 
-      return true;
-    } catch (error) {
-      console.error("Failed to update expense:", error);
-      
-      // Revert UI state on failure
-      if (expense?.amount) {
-        setValue(FormValues.AMOUNT, expense.amount.toString(), {
-          shouldDirty: true,
-        });
-      }
-      if (expense?.shares) {
-        setValue(FormValues.SHARES, expense.shares, { shouldDirty: true });
-      }
-      setSplitHasChanges(true);
-      
-      return false;
-    }
+    return true;
   }, [
     isExpense,
     expense,

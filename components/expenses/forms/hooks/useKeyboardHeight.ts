@@ -23,10 +23,8 @@ export const useKeyboardHeight = () => {
       if (heightDifference > 150) {
         setKeyboardHeight(heightDifference);
       } else {
-        // When keyboard is closing, debounce the height reset to avoid flickering
-        debounceTimeoutRef.current = setTimeout(() => {
-          setKeyboardHeight(0);
-        }, 100); // Small delay to smooth out the transition
+        // When keyboard is closing, reset height immediately
+        setKeyboardHeight(0);
       }
     };
 
