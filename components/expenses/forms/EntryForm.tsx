@@ -195,7 +195,6 @@ export default function EntryForm({
     return baseHeight;
   };
 
-  console.log("🐛 EntryForm - calculateHeight:", calculateHeight());
   // Custom backspace handler that works with the form
   const handleFormBackspace = () => {
     handleBackspace(
@@ -219,6 +218,7 @@ export default function EntryForm({
             height: `${calculateHeight()}px`,
             width: "100%",
             overflow: "hidden",
+            transition: "height 0.2s ease-out",
           }}
         >
           <EntryDetail

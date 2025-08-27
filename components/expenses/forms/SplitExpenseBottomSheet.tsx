@@ -28,7 +28,6 @@ interface SplitExpenseBottomSheetProps {
   setSplitInputValues: (values: Record<string | number, string>) => void;
   setSplitValidationErrors: (errors: Record<string, string>) => void;
   isDirty: boolean;
-  debugInfo?: string;
 }
 const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
   const { colors } = useTheme();
@@ -63,15 +62,19 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
       }
       description={`$${parseFloat(props.displayAmount).toFixed(2)}  •  ${
         props.isExpense && props.expenseShares && props.expenseShares.length
-      } people${props.debugInfo ? ` • ${props.debugInfo}` : ''}`}
+      } people`}
       buttons={[
         {
           text: "Save",
-          onClick: async () => {
-            const success = await props.handleSplitApplyChanges();
-            if (success) {
-              props.setShowSplitExpenseSheet(false);
-            }
+          onClick: () => {
+            // Close bottom sheet immediately for better UX
+            props.setShowSplitExpenseSheet(false);
+            
+            // Handle save in background
+            props.handleSplitApplyChanges().catch((error) => {
+              console.error("Failed to save split changes:", error);
+              // Could show a toast notification here if needed
+            });
           },
           disabled: !props.isDirty,
           variant: "primary",
