@@ -90,37 +90,6 @@ export default function EntryForm({
 
   // Debug form state changes - now visible in debug panel
 
-  useEffect(() => {
-    if (expense) {
-      let categoryId = 0;
-      if (
-        expense.category &&
-        typeof expense.category === "object" &&
-        "id" in expense.category
-      ) {
-        categoryId = expense.category.id as number;
-      } else if (typeof expense.category === "string") {
-        // Find category by name in the categories array
-        const foundCategory = categories.find(
-          (cat) => cat.name === (expense.category as unknown as string)
-        );
-        categoryId = foundCategory?.id as number;
-      }
-
-      const newDefaultValues: ExpenseFormData = {
-        description: expense.description || "",
-        amount: expense.amount?.toString() || "0",
-        category_id: categoryId || 0,
-        date: expense.date || "",
-        shares:
-          isExpense && (expense as Expense)?.shares
-            ? (expense as Expense).shares!
-            : [],
-      };
-      reset(newDefaultValues);
-    }
-  }, [expense, reset, isExpense, categories]);
-
   // Form management hook
   const {
     filteredCategories,
@@ -176,6 +145,42 @@ export default function EntryForm({
     refreshCache,
   });
 
+  useEffect(() => {
+    if (expense) {
+      let categoryId = 0;
+      if (
+        expense.category &&
+        typeof expense.category === "object" &&
+        "id" in expense.category
+      ) {
+        categoryId = expense.category.id as number;
+      } else if (typeof expense.category === "string") {
+        // Find category by name in the categories array
+        const foundCategory = categories.find(
+          (cat) => cat.name === (expense.category as unknown as string)
+        );
+        categoryId = foundCategory?.id as number;
+      }
+
+      const newDefaultValues: ExpenseFormData = {
+        description: expense.description || "",
+        amount: expense.amount?.toString() || "0",
+        category_id: categoryId || 0,
+        date: expense.date || "",
+        shares:
+          isExpense && (expense as Expense)?.shares
+            ? (expense as Expense).shares!
+            : [],
+      };
+
+      // Only reset form if we're not in the middle of split changes
+      // This prevents the form from reverting when split expense updates happen
+      if (!splitHasChanges) {
+        reset(newDefaultValues);
+      }
+    }
+  }, [expense, reset, isExpense, categories, splitHasChanges]);
+
   // UI state
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
   const [showFloatingPanel, setShowFloatingPanel] = useState(false);
@@ -184,15 +189,10 @@ export default function EntryForm({
   // Measure the fixed bottom section height
   const [bottomSectionRef, bottomSectionBounds] = useMeasure();
 
-  // Calculate dynamic height based on keyboard state
+  // Calculate static height - keyboard should not affect form height
   const calculateHeight = () => {
     const bottomNavigationHeight = 100;
-    const baseHeight = dimensions.height - bottomNavigationHeight;
-    // Only rely on keyboard height detection, not focus state
-    if (keyboardHeight > 0) {
-      return baseHeight + keyboardHeight;
-    }
-    return baseHeight;
+    return dimensions.height - bottomNavigationHeight;
   };
 
   // Custom backspace handler that works with the form
