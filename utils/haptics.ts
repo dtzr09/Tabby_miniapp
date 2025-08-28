@@ -17,6 +17,17 @@ export const lightHaptic = () => {
 };
 
 /**
+ * Triggers small haptic feedback for subtle interactions (scroll feedback)
+ */
+export const smallHaptic = () => {
+  try {
+    hapticFeedback.impactOccurred('light'); // Using light as the smallest available option
+  } catch (error) {
+    console.warn('Haptic feedback not available:', error);
+  }
+};
+
+/**
  * Triggers haptic feedback for medium interactions (selections, mode changes)
  */
 export const mediumHaptic = () => {

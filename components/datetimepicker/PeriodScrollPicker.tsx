@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { TIME_ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
-import { mediumHaptic } from "../../utils/haptics";
+import { smallHaptic } from "../../utils/haptics";
 
 const PeriodScrollPicker = ({
   value,
@@ -17,6 +17,7 @@ const PeriodScrollPicker = ({
   const [scrollTop, setScrollTop] = useState(0);
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCenterValueRef = useRef<string | null>(null);
   const { colors } = useTheme();
 
   const periods = ["AM", "PM"];
@@ -58,11 +59,7 @@ const PeriodScrollPicker = ({
       adjustedIndex = Math.max(0, Math.min(1, adjustedIndex));
       const newValue = periods[adjustedIndex];
       
-      // Only trigger haptic feedback if the value actually changed
-      if (newValue !== value) {
-        mediumHaptic();
-        onChange(newValue);
-      }
+      onChange(newValue);
 
       // Snap to centered position
       const targetScroll =
@@ -83,6 +80,27 @@ const PeriodScrollPicker = ({
 
   const handleScroll = () => {
     isScrollingRef.current = true;
+
+    // Check for haptic feedback on scroll
+    if (scrollRef.current) {
+      const scrollTop = scrollRef.current.scrollTop;
+      const containerHeight = scrollRef.current.clientHeight;
+      const centerOffset = containerHeight / 2;
+
+      // Calculate which value is currently in the center
+      const centerIndex = Math.round(
+        (scrollTop + centerOffset - TIME_ITEM_HEIGHT / 2) / TIME_ITEM_HEIGHT
+      ) - SPACER_ITEMS;
+
+      const adjustedIndex = Math.max(0, Math.min(1, centerIndex));
+      const centerValue = periods[adjustedIndex];
+
+      // Trigger haptic feedback when a new value enters the center
+      if (lastCenterValueRef.current !== centerValue) {
+        lastCenterValueRef.current = centerValue;
+        smallHaptic();
+      }
+    }
 
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
@@ -121,10 +139,7 @@ const PeriodScrollPicker = ({
       const newIndex = Math.max(0, Math.min(1, currentIndex + direction));
       const newValue = periods[newIndex];
       
-      if (newValue !== value) {
-        mediumHaptic();
-        onChange(newValue);
-      }
+      onChange(newValue);
     }
   };
 

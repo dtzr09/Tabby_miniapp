@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { mediumHaptic } from "../../utils/haptics";
+import { smallHaptic } from "../../utils/haptics";
 
 export const TIME_ITEM_HEIGHT = 38; // Balanced height for proper spacing
 export const MONTH_YEAR_ITEM_HEIGHT = 32; // Larger height for month/year pickers
@@ -25,6 +25,7 @@ const TimeScrollPicker = ({
   const [scrollTop, setScrollTop] = useState(0);
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCenterValueRef = useRef<number | null>(null);
   const { colors } = useTheme();
 
   useEffect(() => {
@@ -70,12 +71,7 @@ const TimeScrollPicker = ({
         newValue = adjustedIndex;
       }
 
-      // Only trigger haptic feedback if the value actually changed
-      const currentValue = value;
-      if (newValue !== currentValue) {
-        mediumHaptic();
-        onChange(newValue);
-      }
+      onChange(newValue);
 
       // Snap to centered position - account for padding
       const targetScroll =
@@ -95,6 +91,33 @@ const TimeScrollPicker = ({
 
   const handleScroll = () => {
     isScrollingRef.current = true;
+
+    // Check for haptic feedback on scroll
+    if (scrollRef.current) {
+      const scrollTop = scrollRef.current.scrollTop;
+      const containerHeight = scrollRef.current.clientHeight;
+      const centerOffset = containerHeight / 2;
+
+      // Calculate which value is currently in the center
+      const centerIndex = Math.round(
+        (scrollTop + centerOffset - TIME_ITEM_HEIGHT / 2) / TIME_ITEM_HEIGHT
+      ) - SPACER_ITEMS;
+
+      let centerValue;
+      if (type === "hour") {
+        const adjustedIndex = Math.max(0, Math.min(11, centerIndex));
+        centerValue = adjustedIndex + 1;
+      } else {
+        const adjustedIndex = Math.max(0, Math.min(max, centerIndex));
+        centerValue = adjustedIndex;
+      }
+
+      // Trigger haptic feedback when a new value enters the center
+      if (lastCenterValueRef.current !== centerValue) {
+        lastCenterValueRef.current = centerValue;
+        smallHaptic();
+      }
+    }
 
     // Clear existing timeout
     if (scrollTimeoutRef.current) {
@@ -133,16 +156,10 @@ const TimeScrollPicker = ({
 
       if (type === "hour") {
         const newValue = Math.max(1, Math.min(12, value + direction));
-        if (newValue !== value) {
-          mediumHaptic();
-          onChange(newValue);
-        }
+        onChange(newValue);
       } else {
         const newValue = Math.max(0, Math.min(max, value + direction));
-        if (newValue !== value) {
-          mediumHaptic();
-          onChange(newValue);
-        }
+        onChange(newValue);
       }
     }
   };

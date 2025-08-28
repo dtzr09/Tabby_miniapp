@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { MONTH_YEAR_ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
-import { mediumHaptic } from "../../utils/haptics";
+import { smallHaptic } from "../../utils/haptics";
 
 const MonthScrollPicker = ({
   value,
@@ -17,6 +17,7 @@ const MonthScrollPicker = ({
   const [scrollTop, setScrollTop] = useState(0);
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCenterValueRef = useRef<number | null>(null);
   const { colors } = useTheme();
 
   const months = [
@@ -70,11 +71,7 @@ const MonthScrollPicker = ({
 
       adjustedIndex = Math.max(0, Math.min(11, adjustedIndex));
       
-      // Only trigger haptic feedback if the value actually changed
-      if (adjustedIndex !== value) {
-        mediumHaptic();
-        onChange(adjustedIndex);
-      }
+      onChange(adjustedIndex);
 
       // Snap to centered position
       const targetScroll =
@@ -95,6 +92,27 @@ const MonthScrollPicker = ({
 
   const handleScroll = () => {
     isScrollingRef.current = true;
+
+    // Check for haptic feedback on scroll
+    if (scrollRef.current) {
+      const scrollTop = scrollRef.current.scrollTop;
+      const containerHeight = scrollRef.current.clientHeight;
+      const centerOffset = containerHeight / 2;
+
+      // Calculate which value is currently in the center
+      const centerIndex = Math.round(
+        (scrollTop + centerOffset - MONTH_YEAR_ITEM_HEIGHT / 2) / 
+        MONTH_YEAR_ITEM_HEIGHT
+      ) - SPACER_ITEMS;
+
+      const adjustedIndex = Math.max(0, Math.min(11, centerIndex));
+
+      // Trigger haptic feedback when a new value enters the center
+      if (lastCenterValueRef.current !== adjustedIndex) {
+        lastCenterValueRef.current = adjustedIndex;
+        smallHaptic();
+      }
+    }
 
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
@@ -140,13 +158,7 @@ const MonthScrollPicker = ({
         clearTimeout(scrollTimeoutRef.current);
       }
 
-      // Only trigger haptic feedback if the value actually changed
-      if (newValue !== value) {
-        mediumHaptic();
-        onChange(newValue);
-      } else {
-        onChange(newValue);
-      }
+      onChange(newValue);
 
       scrollTimeoutRef.current = setTimeout(() => {
         isScrollingRef.current = false;
