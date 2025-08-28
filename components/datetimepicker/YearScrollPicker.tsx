@@ -2,6 +2,7 @@ import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { MONTH_YEAR_ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
+import { selectionHaptic } from "../../utils/haptics";
 
 const ITEM_HEIGHT = MONTH_YEAR_ITEM_HEIGHT; // Use larger height for year picker
 
@@ -69,7 +70,14 @@ const YearScrollPicker = ({
         SPACER_ITEMS;
 
       adjustedIndex = Math.max(0, Math.min(years.length - 1, adjustedIndex));
-      onChange(years[adjustedIndex]);
+      
+      const newYear = years[adjustedIndex];
+      // Trigger haptic feedback if the value actually changed
+      if (newYear !== value) {
+        selectionHaptic();
+      }
+      
+      onChange(newYear);
 
       // Snap to centered position
       const targetScroll =
@@ -178,9 +186,7 @@ const YearScrollPicker = ({
     if (isDragging) {
       document.addEventListener("mousemove", handleGlobalMouseMove);
       document.addEventListener("mouseup", handleGlobalMouseUp);
-      document.addEventListener("touchmove", handleGlobalTouchMove, {
-        passive: false,
-      });
+      document.addEventListener("touchmove", handleGlobalTouchMove, { passive: false });
       document.addEventListener("touchend", handleGlobalTouchEnd);
     }
 
