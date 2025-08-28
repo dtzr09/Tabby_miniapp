@@ -1,7 +1,6 @@
 import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { selectionHaptic } from "../../utils/haptics";
 
 export const TIME_ITEM_HEIGHT = 38; // Balanced height for proper spacing
 export const MONTH_YEAR_ITEM_HEIGHT = 32; // Larger height for month/year pickers
@@ -61,22 +60,14 @@ const TimeScrollPicker = ({
           (scrollTop + centerOffset - TIME_ITEM_HEIGHT / 2) / TIME_ITEM_HEIGHT
         ) - SPACER_ITEMS;
 
-      let newValue;
       if (type === "hour") {
         adjustedIndex = Math.max(0, Math.min(11, adjustedIndex));
-        newValue = adjustedIndex + 1;
+        const newValue = adjustedIndex + 1;
+        onChange(newValue);
       } else {
         adjustedIndex = Math.max(0, Math.min(max, adjustedIndex));
-        newValue = adjustedIndex;
+        onChange(adjustedIndex);
       }
-
-      // Trigger haptic feedback if the value actually changed
-      const currentValue = type === "hour" ? value : value;
-      if (newValue !== currentValue) {
-        selectionHaptic();
-      }
-
-      onChange(newValue);
 
       // Snap to centered position - account for padding
       const targetScroll =
@@ -134,16 +125,10 @@ const TimeScrollPicker = ({
 
       if (type === "hour") {
         const newValue = Math.max(1, Math.min(12, value + direction));
-        if (newValue !== value) {
-          selectionHaptic();
-          onChange(newValue);
-        }
+        onChange(newValue);
       } else {
         const newValue = Math.max(0, Math.min(max, value + direction));
-        if (newValue !== value) {
-          selectionHaptic();
-          onChange(newValue);
-        }
+        onChange(newValue);
       }
     }
   };

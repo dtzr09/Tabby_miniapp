@@ -2,7 +2,6 @@ import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { TIME_ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
-import { selectionHaptic } from "../../utils/haptics";
 
 const PeriodScrollPicker = ({
   value,
@@ -57,12 +56,6 @@ const PeriodScrollPicker = ({
 
       adjustedIndex = Math.max(0, Math.min(1, adjustedIndex));
       const newValue = periods[adjustedIndex];
-      
-      // Trigger haptic feedback if the value actually changed
-      if (newValue !== value) {
-        selectionHaptic();
-      }
-      
       onChange(newValue);
 
       // Snap to centered position
@@ -120,12 +113,7 @@ const PeriodScrollPicker = ({
       const direction = e.deltaY > 0 ? 1 : -1;
       const currentIndex = value === "AM" ? 0 : 1;
       const newIndex = Math.max(0, Math.min(1, currentIndex + direction));
-      const newValue = periods[newIndex];
-      
-      if (newValue !== value) {
-        selectionHaptic();
-        onChange(newValue);
-      }
+      onChange(periods[newIndex]);
     }
   };
 
