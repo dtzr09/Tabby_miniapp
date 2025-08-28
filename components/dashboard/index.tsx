@@ -370,6 +370,34 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
         </Box>
       </Box>
 
+      {/* Debug Toggle Button */}
+      <Box
+        onClick={() => {
+          const current = localStorage.getItem('expense-debug') === 'true';
+          localStorage.setItem('expense-debug', (!current).toString());
+          window.location.reload();
+        }}
+        sx={{
+          position: 'fixed',
+          top: 20,
+          right: 20,
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          backgroundColor: '#ff4444',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          zIndex: 10000,
+          fontSize: '1.2rem'
+        }}
+      >
+        🐛
+      </Box>
+
       {/* Debug Panel - only in development or with debug flag */}
       {(process.env.NODE_ENV === 'development' || 
         typeof window !== 'undefined' && localStorage.getItem('expense-debug') === 'true') && (
