@@ -133,29 +133,7 @@ export const useFormManagement = ({
           }
         }
 
-        // Create properly typed updated expense - match the expected UnifiedEntry structure
-        const updatedExpense: UnifiedEntry = isGroupExpense
-          ? {
-              ...(expense as Expense),
-              description: data.description,
-              amount: newAmount,
-              category: selectedCategory, // Use Category object per updated UnifiedEntry type
-              emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
-              date: data.date,
-              shares: updatedShares,
-              isIncome: isIncome,
-            }
-          : {
-              ...expense,
-              description: data.description,
-              amount: newAmount,
-              category: selectedCategory, // Use Category object per updated UnifiedEntry type
-              emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
-              date: data.date,
-              isIncome: isIncome,
-            };
-
-        // Convert selectedDateTime to UTC for backend
+        // Convert selectedDateTime to UTC for backend first
         if (
           !(selectedDateTime instanceof Date) ||
           isNaN(selectedDateTime.getTime())
@@ -171,33 +149,30 @@ export const useFormManagement = ({
             ? selectedDateTime.toISOString()
             : new Date().toISOString();
 
+        // Create properly typed updated expense - match the expected UnifiedEntry structure
+        const updatedExpense: UnifiedEntry = isGroupExpense
+          ? {
+              ...(expense as Expense),
+              description: data.description,
+              amount: newAmount,
+              category: selectedCategory, // Use Category object per updated UnifiedEntry type
+              emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
+              date: utcDateTime, // Use converted UTC date
+              shares: updatedShares,
+              isIncome: isIncome,
+            }
+          : {
+              ...expense,
+              description: data.description,
+              amount: newAmount,
+              category: selectedCategory, // Use Category object per updated UnifiedEntry type
+              emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
+              date: utcDateTime, // Use converted UTC date
+              isIncome: isIncome,
+            };
+
         try {
-          // Update expense amount first
-          await updateExpenseAmount(
-            Number(entryId),
-            newAmount,
-            initData,
-            chat_id,
-            isIncome
-          );
-
-          // If it's a group expense, also update the shares
-          if (isGroupExpense && updatedShares) {
-            await updateExpenseShares(
-              Number(entryId),
-              updatedShares.map((s: ExpenseShare) => ({
-                user_id: s.user_id,
-                share_amount: s.share_amount,
-                // Preserve other user details if they exist
-                ...(s.name && { name: s.name }),
-                ...(s.username && { username: s.username }),
-              })),
-              initData,
-              chat_id
-            );
-          }
-
-          // Make the API call for other fields in the background
+          // Make the API call for all fields including amount
           const response = await fetch(`/api/entries/${entryId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -222,9 +197,38 @@ export const useFormManagement = ({
             return;
           }
 
+          // Update expense amount with separate API call if needed
+          if (expense.amount !== newAmount) {
+            await updateExpenseAmount(
+              Number(entryId),
+              newAmount,
+              initData,
+              chat_id,
+              isIncome
+            );
+          }
+
+          // If it's a group expense, also update the shares
+          if (isGroupExpense && updatedShares) {
+            await updateExpenseShares(
+              Number(entryId),
+              updatedShares.map((s: ExpenseShare) => ({
+                user_id: s.user_id,
+                share_amount: s.share_amount,
+                // Preserve other user details if they exist
+                ...(s.name && { name: s.name }),
+                ...(s.username && { username: s.username }),
+              })),
+              initData,
+              chat_id
+            );
+          }
+
+          // Only update cache after all API calls succeed
           // Invalidate simple cache
           invalidateExpenseCache(tgUser.id.toString(), chat_id);
 
+          // Update the cache with the successfully updated data
           updateExpenseInCache(updatedExpense);
 
           // showPopup({
