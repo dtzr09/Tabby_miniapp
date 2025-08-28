@@ -11,7 +11,6 @@ import {
   Income,
   ExpenseFormData,
   ExpenseShare,
-  UnifiedEntry,
 } from "../../../../utils/types";
 import { useTelegramWebApp } from "../../../../hooks/useTelegramWebApp";
 import { useExpense } from "../../../../hooks/useExpense";
