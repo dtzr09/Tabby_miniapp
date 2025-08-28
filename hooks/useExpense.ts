@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { AllEntriesResponse } from "../utils/types";
 import { UnifiedEntry } from "../utils/types";
+import { refetchExpensesQueries } from "../utils/refetchExpensesQueries";
 
 interface UseExpenseProps {
   id: string | number;
@@ -80,11 +81,10 @@ export const useExpense = ({
       }
     );
 
-    // Force invalidate queries to ensure fresh data on next fetch
-    queryClient.invalidateQueries({ 
-      queryKey: ["allEntries", userId, chat_id],
-      refetchType: 'active'
-    });
+    // Use the existing refetch utility for proper expense query management
+    if (userId) {
+      refetchExpensesQueries(queryClient, userId.toString(), chat_id?.toString());
+    }
   };
 
   // Function to delete expense from all caches

@@ -2,9 +2,14 @@ import { QueryClient } from "@tanstack/react-query";
 
 export const refetchExpensesQueries = async (
   queryClient: QueryClient,
-  userId: string
+  userId: string,
+  chatId?: string
 ) => {
-  const keys = [["allEntries", userId] as const];
+  const keys = [
+    ["allEntries", userId, chatId] as const,
+    ["groupsWithExpenses", userId] as const,
+    ["categories", userId] as const,
+  ];
 
   // First invalidate the queries to mark them as stale
   keys.forEach((key) => {

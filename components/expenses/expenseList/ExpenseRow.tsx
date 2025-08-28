@@ -78,7 +78,7 @@ const ExpenseRow = ({
       });
 
       // Then trigger a background refetch to ensure consistency
-      refetchExpensesQueries(queryClient, userId);
+      refetchExpensesQueries(queryClient, userId, tx.chat_id);
     }
   };
 
@@ -86,7 +86,7 @@ const ExpenseRow = ({
     // Invalidate queries to revert optimistic update
     if (tgUser) {
       const userId = tgUser.id.toString();
-      refetchExpensesQueries(queryClient, userId);
+      refetchExpensesQueries(queryClient, userId, tx.chat_id);
     }
   };
 

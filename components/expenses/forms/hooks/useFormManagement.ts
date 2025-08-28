@@ -17,6 +17,8 @@ import {
   updateExpenseShares,
 } from "../../../../services/expenses";
 import { divideAmountEvenly } from "../../../../utils/currencyUtils";
+import { refetchExpensesQueries } from "../../../../utils/refetchExpensesQueries";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface UseFormManagementProps {
   entryId?: string;
@@ -45,6 +47,7 @@ export const useFormManagement = ({
 }: UseFormManagementProps) => {
   // Get Telegram data and query client
   const { user: tgUser, initData } = useTelegramWebApp();
+  const queryClient = useQueryClient();
 
   // Get expense management functions
   const { updateExpenseInCache, deleteExpenseFromCache } = useExpense({
@@ -231,6 +234,9 @@ export const useFormManagement = ({
 
           // Update the cache with the successfully updated data
           updateExpenseInCache(updatedExpense);
+
+          // Force immediate refetch of all expense data for dashboard
+          refetchExpensesQueries(queryClient, tgUser.id.toString(), chat_id);
 
           // showPopup({
           //   title: "Success",
