@@ -50,7 +50,7 @@ export const ExpenseDebugPanel = ({ selectedGroupId }: { selectedGroupId?: strin
   const refreshCacheData = useCallback(() => {
     if (!tgUser) return;
 
-    const allEntriesKey = ['allEntries', tgUser.id.toString(), selectedGroupId];
+    const allEntriesKey = ['allEntries', tgUser.id.toString(), selectedGroupId].filter(Boolean) as string[];
     const groupsKey = ['groupsWithExpenses', tgUser.id.toString()];
     const categoriesKey = ['categories', tgUser.id.toString()];
 
