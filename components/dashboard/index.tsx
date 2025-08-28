@@ -28,7 +28,6 @@ import {
   loadNavigationState,
 } from "../../utils/navigationState";
 import { ExpenseDebugPanel } from "../debug/ExpenseDebugPanel";
-import { expenseUpdateBroadcaster } from "../../utils/expenseUpdateBroadcaster";
 
 export interface TelegramUser {
   id: string;
@@ -73,26 +72,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     selectedGroupId || undefined
   );
 
-  // Set up expense update broadcasting and polling for production reliability
-  useEffect(() => {
-    if (!tgUser?.id) return;
-
-    const userId = tgUser.id.toString();
-    const chatId = selectedGroupId || undefined;
-
-    // Add listener for cross-tab updates
-    const unsubscribe = expenseUpdateBroadcaster.addListener((event) => {
-      console.log('🔄 Received expense update broadcast:', event.type);
-    });
-
-    // Start polling as fallback for production (every 15 seconds)
-    expenseUpdateBroadcaster.startPolling(userId, chatId, 15000);
-
-    return () => {
-      unsubscribe();
-      expenseUpdateBroadcaster.stopPolling();
-    };
-  }, [tgUser?.id, selectedGroupId]);
+  // Removed excessive polling - relying on React Query's built-in cache management
 
   const { data: groups } = useQuery({
     queryKey: ["groupsWithExpenses", tgUser?.id],
@@ -379,8 +359,8 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
         }}
         sx={{
           position: 'fixed',
-          top: 20,
-          right: 20,
+          top: 100,
+          right: 40,
           width: 40,
           height: 40,
           borderRadius: '50%',

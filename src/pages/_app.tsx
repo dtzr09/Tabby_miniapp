@@ -10,31 +10,26 @@ import {
   viewport,
   backButton,
 } from "@telegram-apps/sdk";
-import { expenseUpdateBroadcaster } from "../../utils/expenseUpdateBroadcaster";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Consider data stale immediately for better real-time updates
+      // Immediate staleness for instant updates
       staleTime: 0,
-      // Keep unused data in cache for 2 minutes (shorter for mobile)
-      gcTime: 120000,
-      // Always refetch on mount for fresh data
-      refetchOnMount: "always",
-      // Always refetch on window focus (critical for mobile navigation)
-      refetchOnWindowFocus: "always",
-      // Refetch when network reconnects (mobile network issues)
-      refetchOnReconnect: "always",
-      // Retry failed queries once
+      // Short cache time for mobile
+      gcTime: 60000, // 1 minute
+      // Always refetch to ensure fresh data
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      // Quick retry for mobile networks
       retry: 1,
-      // Ensure network mode works offline and on poor connections
-      networkMode: 'offlineFirst',
+      retryDelay: 500,
+      // Online first for immediate updates
+      networkMode: 'online',
     },
   },
 });
-
-// Initialize expense update broadcaster with queryClient
-expenseUpdateBroadcaster.setQueryClient(queryClient);
 // Extend the Window interface to include Telegram
 declare global {
   interface Window {

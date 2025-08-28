@@ -1,5 +1,9 @@
 import { useCallback, useMemo } from "react";
-import { UseFormHandleSubmit, UseFormReset, FieldNamesMarkedBoolean } from "react-hook-form";
+import {
+  UseFormHandleSubmit,
+  UseFormReset,
+  FieldNamesMarkedBoolean,
+} from "react-hook-form";
 import { showPopup } from "@telegram-apps/sdk";
 import {
   Category,
@@ -11,15 +15,12 @@ import {
 } from "../../../../utils/types";
 import { useTelegramWebApp } from "../../../../hooks/useTelegramWebApp";
 import { useExpense } from "../../../../hooks/useExpense";
-import { invalidateExpenseCache } from "../../../../utils/cache";
 import {
   updateExpenseAmount,
   updateExpenseShares,
 } from "../../../../services/expenses";
 import { divideAmountEvenly } from "../../../../utils/currencyUtils";
-import { refetchExpensesQueries } from "../../../../utils/refetchExpensesQueries";
 import { useQueryClient } from "@tanstack/react-query";
-import { broadcastExpenseUpdate } from "../../../../utils/expenseUpdateBroadcaster";
 
 interface UseFormManagementProps {
   entryId?: string;
@@ -103,34 +104,44 @@ export const useFormManagement = ({
         let updatedShares: ExpenseShare[] | undefined;
         if (isGroupExpense) {
           const shares = (expense as Expense).shares!;
-          
+
           // First, determine if this expense is currently in even split mode
           const firstShareAmount = shares[0].share_amount;
           const isCurrentlyEvenSplit = shares.every(
-            share => Math.abs(share.share_amount - firstShareAmount) < 0.01
+            (share) => Math.abs(share.share_amount - firstShareAmount) < 0.01
           );
-          
+
           // Check what changed
-          const amountFieldChanged = formState?.dirtyFields?.amount || newAmount !== expense.amount;
+          const amountFieldChanged =
+            formState?.dirtyFields?.amount || newAmount !== expense.amount;
           const sharesChanged = data.shares && data.shares.length > 0;
-          
+
           if (isCurrentlyEvenSplit && amountFieldChanged) {
             // Even split mode + amount changed: recalculate shares from new amount
-            const evenShareAmount = divideAmountEvenly(newAmount, shares.length);
-            updatedShares = shares.map(share => ({
+            const evenShareAmount = divideAmountEvenly(
+              newAmount,
+              shares.length
+            );
+            updatedShares = shares.map((share) => ({
               ...share,
               share_amount: evenShareAmount,
             }));
           } else if (sharesChanged) {
             // Custom split: shares were updated, calculate total from shares
             updatedShares = data.shares;
-            const calculatedAmount = data.shares.reduce((sum: number, share: ExpenseShare) => sum + share.share_amount, 0);
+            const calculatedAmount = data.shares.reduce(
+              (sum: number, share: ExpenseShare) => sum + share.share_amount,
+              0
+            );
             newAmount = calculatedAmount;
           } else if (!isCurrentlyEvenSplit && amountFieldChanged) {
             // Custom split mode but amount was changed - preserve original shares
             updatedShares = shares;
             // Revert to original amount calculated from shares
-            newAmount = shares.reduce((sum: number, share: ExpenseShare) => sum + share.share_amount, 0);
+            newAmount = shares.reduce(
+              (sum: number, share: ExpenseShare) => sum + share.share_amount,
+              0
+            );
           } else {
             // No changes detected, preserve existing shares
             updatedShares = shares;
@@ -154,27 +165,26 @@ export const useFormManagement = ({
             : new Date().toISOString();
 
         // Create properly typed updated expense - match the expected UnifiedEntry structure
-        const updatedExpense: UnifiedEntry = isGroupExpense
-          ? {
-              ...(expense as Expense),
-              description: data.description,
-              amount: newAmount,
-              category: selectedCategory, // Use Category object per updated UnifiedEntry type
-              emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
-              date: utcDateTime, // Use converted UTC date
-              shares: updatedShares,
-              isIncome: isIncome,
-            }
-          : {
-              ...expense,
-              description: data.description,
-              amount: newAmount,
-              category: selectedCategory, // Use Category object per updated UnifiedEntry type
-              emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
-              date: utcDateTime, // Use converted UTC date
-              isIncome: isIncome,
-            };
-
+        // const updatedExpense: UnifiedEntry = isGroupExpense
+        //   ? {
+        //       ...(expense as Expense),
+        //       description: data.description,
+        //       amount: newAmount,
+        //       category: selectedCategory, // Use Category object per updated UnifiedEntry type
+        //       emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
+        //       date: utcDateTime, // Use converted UTC date
+        //       shares: updatedShares,
+        //       isIncome: isIncome,
+        //     }
+        //   : {
+        //       ...expense,
+        //       description: data.description,
+        //       amount: newAmount,
+        //       category: selectedCategory, // Use Category object per updated UnifiedEntry type
+        //       emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
+        //       date: utcDateTime, // Use converted UTC date
+        //       isIncome: isIncome,
+        //     };
 
         try {
           // Make the API call for all fields including amount
@@ -229,18 +239,20 @@ export const useFormManagement = ({
             );
           }
 
-          // Only update cache after all API calls succeed
-          // Invalidate simple cache
-          invalidateExpenseCache(tgUser.id.toString(), chat_id);
+          // Direct and simple cache invalidation - force fresh data
+          await queryClient.invalidateQueries({
+            queryKey: ["allEntries", tgUser.id.toString(), chat_id],
+          });
 
-          // Update the cache with the successfully updated data
-          updateExpenseInCache(updatedExpense);
+          // Also invalidate broader patterns to ensure dashboard updates
+          await queryClient.invalidateQueries({
+            predicate: (query) => {
+              const key = query.queryKey;
+              return key[0] === "allEntries" && key[1] === tgUser.id.toString();
+            },
+          });
 
-          // Force immediate refetch of all expense data for dashboard
-          refetchExpensesQueries(queryClient, tgUser.id.toString(), chat_id);
-
-          // Broadcast update using multiple channels for production reliability
-          broadcastExpenseUpdate(tgUser.id.toString(), chat_id, entryId);
+          console.log("🔄 Cache invalidated successfully after expense update");
 
           // showPopup({
           //   title: "Success",

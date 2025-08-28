@@ -11,9 +11,7 @@ import { TelegramUser } from "../../dashboard";
 import { alpha } from "@mui/material/styles";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { refetchExpensesQueries } from "../../../utils/refetchExpensesQueries";
 import { QueryData } from "../../../utils/types";
-import { broadcastExpenseDelete } from "../../../utils/expenseUpdateBroadcaster";
 import { getCategoryColor } from "../../../utils/categoryColors";
 import { cleanCategoryName } from "../../../utils/categoryUtils";
 
@@ -78,11 +76,11 @@ const ExpenseRow = ({
         });
       });
 
-      // Then trigger a background refetch to ensure consistency
-      refetchExpensesQueries(queryClient, userId, tx.chat_id);
-
-      // Broadcast deletion for production reliability
-      broadcastExpenseDelete(userId, tx.chat_id, tx.id.toString());
+      // Direct cache invalidation for immediate update
+      queryClient.invalidateQueries({
+        queryKey: ["allEntries", userId, tx.chat_id],
+      });
+      console.log("🗑️ Cache invalidated after expense deletion");
     }
   };
 
@@ -90,7 +88,10 @@ const ExpenseRow = ({
     // Invalidate queries to revert optimistic update
     if (tgUser) {
       const userId = tgUser.id.toString();
-      refetchExpensesQueries(queryClient, userId, tx.chat_id);
+      queryClient.invalidateQueries({
+        queryKey: ["allEntries", userId, tx.chat_id],
+      });
+      console.log("❌ Cache invalidated after delete error");
     }
   };
 
@@ -151,7 +152,7 @@ const ExpenseRow = ({
           onClick={() => {
             // Pre-populate React Query cache with expense data for instant access
             queryClient.setQueryData(["expense", tx.id.toString()], tx);
-            
+
             router.push(
               `/expenses/${tx.id}?isIncome=${tx.isIncome}&chat_id=${tx.chat_id}&isGroupView=${isGroupView}`
             );
