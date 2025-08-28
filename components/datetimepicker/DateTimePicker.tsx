@@ -217,10 +217,11 @@ const ExpenseDateTimePicker = ({ date, onDateChange }: DateTimePickerProps) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              px: 3,
             }}
           >
             {showMonthPicker ? (
-              <Box sx={{ position: "relative", width: "100%" }}>
+              <Box sx={{ position: "relative", width: "100%", px: 1 }}>
                 {/* Single spanning selection overlay - full parent width */}
                 <Box
                   sx={{
@@ -240,11 +241,11 @@ const ExpenseDateTimePicker = ({ date, onDateChange }: DateTimePickerProps) => {
                 {/* Month/Year Scroll Picker */}
                 <Box
                   sx={{
-                    maxWidth: "20rem",
                     display: "flex",
                     alignItems: "stretch",
                     justifyContent: "center",
                     margin: "0 auto",
+                    gap: -3,
                   }}
                 >
                   <MonthScrollPicker

@@ -228,12 +228,13 @@ const YearScrollPicker = ({
       sx={{
         position: "relative",
         height: "14rem", // Keep original height
-        width: "5rem", // Keep original width
+        width: "8rem", // Keep original width
         overflow: "hidden",
         zIndex: 99,
-        minWidth: "5rem", // Ensure minimum width
-        maxWidth: "5rem", // Ensure maximum width
+        minWidth: "8rem", // Ensure minimum width
+        maxWidth: "8rem", // Ensure maximum width
         py: 3, // Add vertical padding to reduce effective picker height
+        px: 2, // Add horizontal padding
       }}
     >
       {/* Selection overlay - shorter height for year picker */}
@@ -307,7 +308,7 @@ const YearScrollPicker = ({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "0.95rem",
+                  fontSize: "1.1rem",
                   color: year === value ? colors.text : colors.textSecondary,
                   fontWeight: year === value ? 600 : 400,
                   px: "0.5rem",

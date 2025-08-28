@@ -70,7 +70,7 @@ const MonthScrollPicker = ({
         ) - SPACER_ITEMS;
 
       adjustedIndex = Math.max(0, Math.min(11, adjustedIndex));
-      
+
       onChange(adjustedIndex);
 
       // Snap to centered position
@@ -100,10 +100,11 @@ const MonthScrollPicker = ({
       const centerOffset = containerHeight / 2;
 
       // Calculate which value is currently in the center
-      const centerIndex = Math.round(
-        (scrollTop + centerOffset - MONTH_YEAR_ITEM_HEIGHT / 2) / 
-        MONTH_YEAR_ITEM_HEIGHT
-      ) - SPACER_ITEMS;
+      const centerIndex =
+        Math.round(
+          (scrollTop + centerOffset - MONTH_YEAR_ITEM_HEIGHT / 2) /
+            MONTH_YEAR_ITEM_HEIGHT
+        ) - SPACER_ITEMS;
 
       const adjustedIndex = Math.max(0, Math.min(11, centerIndex));
 
@@ -197,7 +198,9 @@ const MonthScrollPicker = ({
     if (isDragging) {
       document.addEventListener("mousemove", handleGlobalMouseMove);
       document.addEventListener("mouseup", handleGlobalMouseUp);
-      document.addEventListener("touchmove", handleGlobalTouchMove, { passive: false });
+      document.addEventListener("touchmove", handleGlobalTouchMove, {
+        passive: false,
+      });
       document.addEventListener("touchend", handleGlobalTouchEnd);
     }
 
@@ -222,12 +225,13 @@ const MonthScrollPicker = ({
       sx={{
         position: "relative",
         height: "14rem", // Keep original height
-        width: "6rem", // Keep original width
+        width: "8rem", // Keep original width
         overflow: "hidden",
         zIndex: 99,
-        minWidth: "6rem", // Ensure minimum width
-        maxWidth: "6rem", // Ensure maximum width
+        minWidth: "8rem", // Ensure minimum width
+        maxWidth: "8rem", // Ensure maximum width
         py: 3, // Add vertical padding to reduce effective picker height
+        px: 2, // Add horizontal padding
       }}
     >
       {/* Selection overlay - shorter height for month picker */}
@@ -298,10 +302,11 @@ const MonthScrollPicker = ({
                   height: MONTH_YEAR_ITEM_HEIGHT,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "0.95rem",
+                  justifyContent: "flex-start",
+                  fontSize: "1.1rem",
                   color: index === value ? colors.text : colors.textSecondary,
                   fontWeight: index === value ? 600 : 400,
+                  pl: 1.5,
                   px: "0.5rem",
                   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                   transform: `
