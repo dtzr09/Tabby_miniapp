@@ -58,7 +58,10 @@ const DatetimeBar = (props: DatetimeBarProps) => {
     >
       {/* Date and Time */}
       <Button
-        onClick={() => props.setShowDateTimePicker(true)}
+        onClick={() => {
+          props.setShowDateTimePicker(true);
+          props.setShowFloatingPanel(false);
+        }}
         sx={{
           display: "flex",
           alignItems: "center",
@@ -97,6 +100,7 @@ const DatetimeBar = (props: DatetimeBarProps) => {
       {/* Floating Panel for Group Actions */}
       {props.isGroupExpense && props.showFloatingPanel && !props.isIncome && (
         <Box
+          onClick={(e) => e.stopPropagation()}
           sx={{
             position: "fixed",
             right: "1rem",
