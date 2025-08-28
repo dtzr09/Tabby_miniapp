@@ -217,11 +217,12 @@ const ExpenseDateTimePicker = ({ date, onDateChange }: DateTimePickerProps) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              px: 3,
+              px: showMonthPicker ? 3 : 0,
+              minHeight: "14rem",
             }}
           >
             {showMonthPicker ? (
-              <Box sx={{ position: "relative", width: "100%", px: 1 }}>
+              <Box sx={{ position: "relative", width: "100%" }}>
                 {/* Single spanning selection overlay - full parent width */}
                 <Box
                   sx={{
@@ -230,11 +231,10 @@ const ExpenseDateTimePicker = ({ date, onDateChange }: DateTimePickerProps) => {
                     left: 0,
                     right: 0,
                     transform: "translateY(-50%)",
-                    height: "2.6rem",
+                    height: "2.2rem",
                     backgroundColor: "rgba(75, 85, 99, 0.4)",
-                    borderRadius: 1.5,
+                    borderRadius: 2.5,
                     zIndex: 10,
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
                   }}
                 />
 
@@ -242,30 +242,40 @@ const ExpenseDateTimePicker = ({ date, onDateChange }: DateTimePickerProps) => {
                 <Box
                   sx={{
                     display: "flex",
-                    alignItems: "stretch",
                     justifyContent: "center",
                     margin: "0 auto",
-                    gap: -3,
+                    alignContent: "center",
                   }}
                 >
-                  <MonthScrollPicker
-                    value={selectedDate.getMonth()}
-                    onChange={(monthIndex) => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setMonth(monthIndex);
-                      setSelectedDate(newDate);
-                      onDateChange(newDate);
+                  <Box>
+                    <MonthScrollPicker
+                      value={selectedDate.getMonth()}
+                      onChange={(monthIndex) => {
+                        const newDate = new Date(selectedDate);
+                        newDate.setMonth(monthIndex);
+                        setSelectedDate(newDate);
+                        onDateChange(newDate);
+                      }}
+                    />
+                  </Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      ml: -4,
                     }}
-                  />
-                  <YearScrollPicker
-                    value={selectedDate.getFullYear()}
-                    onChange={(year) => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setFullYear(year);
-                      setSelectedDate(newDate);
-                      onDateChange(newDate);
-                    }}
-                  />
+                  >
+                    <YearScrollPicker
+                      value={selectedDate.getFullYear()}
+                      onChange={(year) => {
+                        const newDate = new Date(selectedDate);
+                        newDate.setFullYear(year);
+                        setSelectedDate(newDate);
+                        onDateChange(newDate);
+                      }}
+                    />
+                  </Box>
                 </Box>
               </Box>
             ) : (

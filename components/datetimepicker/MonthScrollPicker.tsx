@@ -224,7 +224,7 @@ const MonthScrollPicker = ({
     <Box
       sx={{
         position: "relative",
-        height: "14rem", // Keep original height
+        height: "12rem", // Content height - smaller but scrollable
         width: "8rem", // Keep original width
         overflow: "hidden",
         zIndex: 99,
@@ -303,7 +303,7 @@ const MonthScrollPicker = ({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "flex-start",
-                  fontSize: "1.1rem",
+                  fontSize: "1.3rem",
                   color: index === value ? colors.text : colors.textSecondary,
                   fontWeight: index === value ? 600 : 400,
                   pl: 1.5,

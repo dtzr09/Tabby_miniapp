@@ -205,15 +205,8 @@ export default function EntryForm({
 
   // Use initial device height minus bottom nav, ignoring keyboard changes
   const calculateHeight = () => {
-    let initialHeight = 0;
-    if (window.screen.height < 1920) {
-      // Use the initial screen dimensions, not current viewport which changes with keyboard
-      initialHeight = window.screen.height || dimensions.height;
-    } else {
-      initialHeight = dimensions.height;
-    }
     const bottomNavigationHeight = 100;
-    return initialHeight - bottomNavigationHeight;
+    return dimensions.height - bottomNavigationHeight;
   };
 
   // Custom backspace handler that works with the form

@@ -103,13 +103,14 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
         onClick={(e) => e.stopPropagation()}
         sx={{
           position: "fixed",
-          bottom: 0,
+          bottom: 1,
           left: "50%",
           transform: "translateX(-50%)",
           backgroundColor: colors.background,
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
           padding: 2,
+          pb: 4,
           boxShadow: "0 -8px 32px rgba(0,0,0,0.12)",
           zIndex: 1300,
           width: "calc(100% - 1rem)",

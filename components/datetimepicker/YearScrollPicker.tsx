@@ -71,7 +71,7 @@ const YearScrollPicker = ({
         SPACER_ITEMS;
 
       adjustedIndex = Math.max(0, Math.min(years.length - 1, adjustedIndex));
-      
+
       const newValue = years[adjustedIndex];
       onChange(newValue);
 
@@ -102,11 +102,14 @@ const YearScrollPicker = ({
       const centerOffset = containerHeight / 2;
 
       // Calculate which value is currently in the center
-      const centerIndex = Math.round(
-        (scrollTop + centerOffset - ITEM_HEIGHT / 2) / ITEM_HEIGHT
-      ) - SPACER_ITEMS;
+      const centerIndex =
+        Math.round((scrollTop + centerOffset - ITEM_HEIGHT / 2) / ITEM_HEIGHT) -
+        SPACER_ITEMS;
 
-      const adjustedIndex = Math.max(0, Math.min(years.length - 1, centerIndex));
+      const adjustedIndex = Math.max(
+        0,
+        Math.min(years.length - 1, centerIndex)
+      );
       const centerValue = years[adjustedIndex];
 
       // Trigger haptic feedback when a new value enters the center
@@ -203,7 +206,9 @@ const YearScrollPicker = ({
     if (isDragging) {
       document.addEventListener("mousemove", handleGlobalMouseMove);
       document.addEventListener("mouseup", handleGlobalMouseUp);
-      document.addEventListener("touchmove", handleGlobalTouchMove, { passive: false });
+      document.addEventListener("touchmove", handleGlobalTouchMove, {
+        passive: false,
+      });
       document.addEventListener("touchend", handleGlobalTouchEnd);
     }
 
@@ -227,14 +232,12 @@ const YearScrollPicker = ({
     <Box
       sx={{
         position: "relative",
-        height: "14rem", // Keep original height
+        height: "12rem", // Content height - smaller but scrollable
         width: "8rem", // Keep original width
         overflow: "hidden",
         zIndex: 99,
         minWidth: "8rem", // Ensure minimum width
         maxWidth: "8rem", // Ensure maximum width
-        py: 3, // Add vertical padding to reduce effective picker height
-        px: 2, // Add horizontal padding
       }}
     >
       {/* Selection overlay - shorter height for year picker */}
@@ -268,6 +271,7 @@ const YearScrollPicker = ({
           touchAction: "pan-y", // Only allow vertical scrolling
           perspective: "600px", // Add perspective for 3D effect
           perspectiveOrigin: "center center", // Center the perspective
+          textAlign: "center", // Center text alignment
           "&::-webkit-scrollbar": {
             display: "none",
           },
@@ -308,10 +312,11 @@ const YearScrollPicker = ({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "1.1rem",
+                  fontSize: "1.3rem",
                   color: year === value ? colors.text : colors.textSecondary,
                   fontWeight: year === value ? 600 : 400,
                   px: "0.5rem",
+                  textAlign: "center",
                   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                   transform: `
                     perspective(600px) 
