@@ -391,7 +391,7 @@ const ExpenseDateTimePicker = ({ date, onDateChange }: DateTimePickerProps) => {
                           transform: "translateY(-50%)",
                           height: "2rem",
                           backgroundColor: "rgba(75, 85, 99,0.4)",
-                          borderRadius: 3,
+                          borderRadius: 2.5,
                           zIndex: 1,
                         }}
                       />
@@ -449,7 +449,12 @@ const ExpenseDateTimePicker = ({ date, onDateChange }: DateTimePickerProps) => {
               <span style={{ color: colors.text, fontSize: "1rem" }}>Time</span>
               <Button
                 variant="text"
-                onClick={() => setShowTimePicker(!showTimePicker)}
+                onClick={() => {
+                  setShowTimePicker(!showTimePicker);
+                  if (!showTimePicker) {
+                    setShowMonthPicker(false);
+                  }
+                }}
                 sx={{
                   color: colors.text,
                   fontSize: "1rem",

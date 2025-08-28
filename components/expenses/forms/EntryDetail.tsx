@@ -62,7 +62,8 @@ const EntryDetail = (props: EntryDetailProps) => {
   }, [props.currentAmount]);
 
   const categoryColor = getCategoryColor(
-    cleanCategoryName(props.selectedCategory.name).name
+    cleanCategoryName(props.selectedCategory.name).name,
+    isDark
   );
 
   return (

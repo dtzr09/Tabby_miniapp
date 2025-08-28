@@ -99,9 +99,10 @@ const TimeScrollPicker = ({
       const centerOffset = containerHeight / 2;
 
       // Calculate which value is currently in the center
-      const centerIndex = Math.round(
-        (scrollTop + centerOffset - TIME_ITEM_HEIGHT / 2) / TIME_ITEM_HEIGHT
-      ) - SPACER_ITEMS;
+      const centerIndex =
+        Math.round(
+          (scrollTop + centerOffset - TIME_ITEM_HEIGHT / 2) / TIME_ITEM_HEIGHT
+        ) - SPACER_ITEMS;
 
       let centerValue;
       if (type === "hour") {
@@ -227,12 +228,12 @@ const TimeScrollPicker = ({
     <Box
       sx={{
         position: "relative",
-        height: "12rem", // Further increased overall height
-        width: "4rem", // Much wider for better touch area
+        height: "10rem", // Further increased overall height
+        width: "4.2rem", // Much wider for better touch area
         overflow: "hidden",
         zIndex: 99,
-        minWidth: "4rem", // Ensure minimum width
-        maxWidth: "4rem", // Ensure maximum width
+        minWidth: "4.2rem", // Ensure minimum width
+        maxWidth: "4.2rem", // Ensure maximum width
       }}
     >
       {/* Selection overlay - positioned at item level */}

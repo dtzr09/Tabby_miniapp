@@ -58,7 +58,7 @@ const PeriodScrollPicker = ({
 
       adjustedIndex = Math.max(0, Math.min(1, adjustedIndex));
       const newValue = periods[adjustedIndex];
-      
+
       onChange(newValue);
 
       // Snap to centered position
@@ -88,9 +88,10 @@ const PeriodScrollPicker = ({
       const centerOffset = containerHeight / 2;
 
       // Calculate which value is currently in the center
-      const centerIndex = Math.round(
-        (scrollTop + centerOffset - TIME_ITEM_HEIGHT / 2) / TIME_ITEM_HEIGHT
-      ) - SPACER_ITEMS;
+      const centerIndex =
+        Math.round(
+          (scrollTop + centerOffset - TIME_ITEM_HEIGHT / 2) / TIME_ITEM_HEIGHT
+        ) - SPACER_ITEMS;
 
       const adjustedIndex = Math.max(0, Math.min(1, centerIndex));
       const centerValue = periods[adjustedIndex];
@@ -138,7 +139,7 @@ const PeriodScrollPicker = ({
       const currentIndex = value === "AM" ? 0 : 1;
       const newIndex = Math.max(0, Math.min(1, currentIndex + direction));
       const newValue = periods[newIndex];
-      
+
       onChange(newValue);
     }
   };
@@ -174,7 +175,9 @@ const PeriodScrollPicker = ({
     if (isDragging) {
       document.addEventListener("mousemove", handleGlobalMouseMove);
       document.addEventListener("mouseup", handleGlobalMouseUp);
-      document.addEventListener("touchmove", handleGlobalTouchMove, { passive: false });
+      document.addEventListener("touchmove", handleGlobalTouchMove, {
+        passive: false,
+      });
       document.addEventListener("touchend", handleGlobalTouchEnd);
     }
 

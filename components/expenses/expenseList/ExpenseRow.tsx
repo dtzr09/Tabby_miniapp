@@ -9,9 +9,12 @@ import { displayDateTime } from "../../../utils/displayDateTime";
 import { UnifiedEntry } from "../../../utils/types";
 import { TelegramUser } from "../../dashboard";
 import { alpha } from "@mui/material/styles";
+
 import { useQueryClient } from "@tanstack/react-query";
 import { refetchExpensesQueries } from "../../../utils/refetchExpensesQueries";
 import { QueryData } from "../../../utils/types";
+import { getCategoryColor } from "../../../utils/categoryColors";
+import { cleanCategoryName } from "../../../utils/categoryUtils";
 
 const ExpenseRow = ({
   tx,
@@ -22,7 +25,7 @@ const ExpenseRow = ({
   tgUser: TelegramUser | null;
   isGroupView?: boolean;
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const router = useRouter();
   const [showDelete, setShowDelete] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -53,7 +56,11 @@ const ExpenseRow = ({
           }
 
           // Handle the allEntries structure
-          if (oldData && typeof oldData === 'object' && ('expenses' in oldData || 'income' in oldData)) {
+          if (
+            oldData &&
+            typeof oldData === "object" &&
+            ("expenses" in oldData || "income" in oldData)
+          ) {
             const typedData = oldData as QueryData;
             return {
               ...typedData,
@@ -150,7 +157,12 @@ const ExpenseRow = ({
                 width: 36,
                 height: 36,
                 borderRadius: 1.5,
-                bgcolor: alpha(colors.text, 0.04),
+                bgcolor: tx.category?.id
+                  ? getCategoryColor(
+                      cleanCategoryName(tx.category.name).name,
+                      isDark
+                    )
+                  : alpha(colors.text, 0.04),
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

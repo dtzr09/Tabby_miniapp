@@ -55,7 +55,7 @@ export const useAllEntries = (
     enabled: !!userId && !!initData,
     staleTime: 0, // Always consider stale so invalidation works immediately
     gcTime: 120000, // Cache for 10 minutes
-    refetchOnWindowFocus: false, // Disable refetch on focus for better performance
+    refetchOnWindowFocus: true, // Enable refetch on focus to sync changes after navigation
   });
 
   return {
