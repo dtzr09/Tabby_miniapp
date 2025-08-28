@@ -19,6 +19,7 @@ import {
 import { divideAmountEvenly } from "../../../../utils/currencyUtils";
 import { refetchExpensesQueries } from "../../../../utils/refetchExpensesQueries";
 import { useQueryClient } from "@tanstack/react-query";
+import { broadcastExpenseUpdate } from "../../../../utils/expenseUpdateBroadcaster";
 
 interface UseFormManagementProps {
   entryId?: string;
@@ -237,6 +238,9 @@ export const useFormManagement = ({
 
           // Force immediate refetch of all expense data for dashboard
           refetchExpensesQueries(queryClient, tgUser.id.toString(), chat_id);
+
+          // Broadcast update using multiple channels for production reliability
+          broadcastExpenseUpdate(tgUser.id.toString(), chat_id, entryId);
 
           // showPopup({
           //   title: "Success",

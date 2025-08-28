@@ -27,6 +27,8 @@ import {
   saveNavigationState,
   loadNavigationState,
 } from "../../utils/navigationState";
+import { ExpenseDebugPanel } from "../debug/ExpenseDebugPanel";
+import { expenseUpdateBroadcaster } from "../../utils/expenseUpdateBroadcaster";
 
 export interface TelegramUser {
   id: string;
@@ -70,6 +72,27 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     initData,
     selectedGroupId || undefined
   );
+
+  // Set up expense update broadcasting and polling for production reliability
+  useEffect(() => {
+    if (!tgUser?.id) return;
+
+    const userId = tgUser.id.toString();
+    const chatId = selectedGroupId || undefined;
+
+    // Add listener for cross-tab updates
+    const unsubscribe = expenseUpdateBroadcaster.addListener((event) => {
+      console.log('🔄 Received expense update broadcast:', event.type);
+    });
+
+    // Start polling as fallback for production (every 15 seconds)
+    expenseUpdateBroadcaster.startPolling(userId, chatId, 15000);
+
+    return () => {
+      unsubscribe();
+      expenseUpdateBroadcaster.stopPolling();
+    };
+  }, [tgUser?.id, selectedGroupId]);
 
   const { data: groups } = useQuery({
     queryKey: ["groupsWithExpenses", tgUser?.id],
@@ -346,6 +369,12 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
           </Box>
         </Box>
       </Box>
+
+      {/* Debug Panel - only in development or with debug flag */}
+      {(process.env.NODE_ENV === 'development' || 
+        typeof window !== 'undefined' && localStorage.getItem('expense-debug') === 'true') && (
+        <ExpenseDebugPanel selectedGroupId={selectedGroupId || undefined} />
+      )}
     </AppLayout>
   );
 };

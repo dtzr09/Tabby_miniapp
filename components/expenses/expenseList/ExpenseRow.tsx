@@ -13,6 +13,7 @@ import { alpha } from "@mui/material/styles";
 import { useQueryClient } from "@tanstack/react-query";
 import { refetchExpensesQueries } from "../../../utils/refetchExpensesQueries";
 import { QueryData } from "../../../utils/types";
+import { broadcastExpenseDelete } from "../../../utils/expenseUpdateBroadcaster";
 import { getCategoryColor } from "../../../utils/categoryColors";
 import { cleanCategoryName } from "../../../utils/categoryUtils";
 
@@ -79,6 +80,9 @@ const ExpenseRow = ({
 
       // Then trigger a background refetch to ensure consistency
       refetchExpensesQueries(queryClient, userId, tx.chat_id);
+
+      // Broadcast deletion for production reliability
+      broadcastExpenseDelete(userId, tx.chat_id, tx.id.toString());
     }
   };
 

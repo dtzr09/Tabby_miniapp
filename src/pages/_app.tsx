@@ -10,6 +10,7 @@ import {
   viewport,
   backButton,
 } from "@telegram-apps/sdk";
+import { expenseUpdateBroadcaster } from "../../utils/expenseUpdateBroadcaster";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,6 +32,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Initialize expense update broadcaster with queryClient
+expenseUpdateBroadcaster.setQueryClient(queryClient);
 // Extend the Window interface to include Telegram
 declare global {
   interface Window {
