@@ -14,41 +14,17 @@ import { useExpense } from "../../../../hooks/useExpense";
 import { useAllEntries } from "../../../../hooks/useAllEntries";
 import { AppLayout } from "../../../../components/AppLayout";
 import { useTelegramWebApp } from "../../../../hooks/useTelegramWebApp";
-import { UnifiedEntry } from "../../../../utils/types";
 
 const ExpenseDetail = () => {
   const router = useRouter();
   const { id: entryId, isIncome, chat_id } = router.query;
   const { user: tgUser, initData } = useTelegramWebApp();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [cachedExpense, setCachedExpense] = useState<UnifiedEntry | null>(null);
 
   // Get categories from useAllEntries
   const { categories } = useAllEntries(tgUser?.id, initData, chat_id as string);
 
-  // Try to get expense data from sessionStorage first (instant loading)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && entryId) {
-      const cached = sessionStorage.getItem(`expense_${entryId}`);
-      if (cached) {
-        try {
-          const parsedExpense = JSON.parse(cached);
-          setCachedExpense(parsedExpense);
-        } catch (error) {
-          console.warn('Failed to parse cached expense data:', error);
-        }
-      }
-    }
-
-    // Cleanup function to remove sessionStorage data when leaving the page
-    return () => {
-      if (typeof window !== 'undefined' && entryId) {
-        sessionStorage.removeItem(`expense_${entryId}`);
-      }
-    };
-  }, [entryId]);
-
-  // Get expense data with cache-first strategy (fallback only)
+  // Get expense data with cache-first strategy
   const {
     data: expense,
     isLoading,
@@ -64,9 +40,6 @@ const ExpenseDetail = () => {
     initData: initData,
     chat_id: chat_id as string,
   });
-
-  // Use cached expense if available, otherwise fall back to fetched data
-  const finalExpense = cachedExpense || expense;
 
   // Initialize Telegram WebApp
   useEffect(() => {
@@ -102,8 +75,8 @@ const ExpenseDetail = () => {
     };
   }, [entryId, router]);
 
-  // Handle loading and error states - only show loading if no cached data available
-  if ((!cachedExpense && isLoading) || !finalExpense || categories.length === 0) {
+  // Handle loading and error states
+  if (isLoading || !expense || categories.length === 0) {
     return <LoadingSkeleton />;
   }
 
@@ -131,7 +104,7 @@ const ExpenseDetail = () => {
       <EntryForm
         entryId={entryId as string}
         isIncome={isIncome === "true"}
-        expense={finalExpense}
+        expense={expense}
         categories={categories}
         chat_id={chat_id as string}
         isGroupExpense={chat_id !== tgUser?.id?.toString()}
