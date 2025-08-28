@@ -171,6 +171,7 @@ export const useFormManagement = ({
               isIncome: isIncome,
             };
 
+
         try {
           // Make the API call for all fields including amount
           const response = await fetch(`/api/entries/${entryId}`, {

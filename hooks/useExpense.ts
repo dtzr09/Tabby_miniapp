@@ -79,6 +79,12 @@ export const useExpense = ({
         return updatedData;
       }
     );
+
+    // Force invalidate queries to ensure fresh data on next fetch
+    queryClient.invalidateQueries({ 
+      queryKey: ["allEntries", userId, chat_id],
+      refetchType: 'active'
+    });
   };
 
   // Function to delete expense from all caches

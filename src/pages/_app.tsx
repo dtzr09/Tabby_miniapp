@@ -14,16 +14,20 @@ import {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Keep data fresh for 5 seconds before considering it stale
-      staleTime: 2000,
-      // Keep unused data in cache for 5 minutes
-      gcTime: 300000,
-      // Only refetch on mount if data is stale
+      // Consider data stale immediately for better real-time updates
+      staleTime: 0,
+      // Keep unused data in cache for 2 minutes (shorter for mobile)
+      gcTime: 120000,
+      // Always refetch on mount for fresh data
       refetchOnMount: "always",
-      // Only refetch on window focus if data is stale
-      refetchOnWindowFocus: true,
+      // Always refetch on window focus (critical for mobile navigation)
+      refetchOnWindowFocus: "always",
+      // Refetch when network reconnects (mobile network issues)
+      refetchOnReconnect: "always",
       // Retry failed queries once
       retry: 1,
+      // Ensure network mode works offline and on poor connections
+      networkMode: 'offlineFirst',
     },
   },
 });

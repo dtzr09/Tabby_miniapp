@@ -145,6 +145,11 @@ const ExpenseRow = ({
             cursor: "pointer",
           }}
           onClick={() => {
+            // Store expense data in sessionStorage for instant access
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem(`expense_${tx.id}`, JSON.stringify(tx));
+            }
+            
             router.push(
               `/expenses/${tx.id}?isIncome=${tx.isIncome}&chat_id=${tx.chat_id}&isGroupView=${isGroupView}`
             );
