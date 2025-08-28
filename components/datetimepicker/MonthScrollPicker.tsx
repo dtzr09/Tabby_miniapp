@@ -2,6 +2,7 @@ import { Box } from "@mui/material";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { MONTH_YEAR_ITEM_HEIGHT, SPACER_ITEMS } from "./TimeScrollPicker";
+import { mediumHaptic } from "../../utils/haptics";
 
 const MonthScrollPicker = ({
   value,
@@ -68,7 +69,12 @@ const MonthScrollPicker = ({
         ) - SPACER_ITEMS;
 
       adjustedIndex = Math.max(0, Math.min(11, adjustedIndex));
-      onChange(adjustedIndex);
+      
+      // Only trigger haptic feedback if the value actually changed
+      if (adjustedIndex !== value) {
+        mediumHaptic();
+        onChange(adjustedIndex);
+      }
 
       // Snap to centered position
       const targetScroll =
@@ -134,8 +140,13 @@ const MonthScrollPicker = ({
         clearTimeout(scrollTimeoutRef.current);
       }
 
-      // Update value and reset scrolling flag after delay
-      onChange(newValue);
+      // Only trigger haptic feedback if the value actually changed
+      if (newValue !== value) {
+        mediumHaptic();
+        onChange(newValue);
+      } else {
+        onChange(newValue);
+      }
 
       scrollTimeoutRef.current = setTimeout(() => {
         isScrollingRef.current = false;
