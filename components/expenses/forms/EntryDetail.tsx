@@ -38,6 +38,27 @@ const EntryDetail = (props: EntryDetailProps) => {
   const amountScrollRef = useRef<HTMLDivElement>(null);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
+  // Helper function to format amount string to always show 2 decimal places
+  const formatAmountToTwoDecimals = (amount: string): string => {
+    if (!amount || amount === "0") return "0.00";
+
+    // Remove any non-numeric characters except decimal point
+    const cleanAmount = amount.replace(/[^\d.]/g, "");
+
+    // Split by decimal point
+    const [wholePart, decimalPart = ""] = cleanAmount.split(".");
+
+    // If no decimal part or empty decimal part
+    if (!decimalPart || decimalPart.length === 0) {
+      return wholePart;
+    } else if (decimalPart.length === 1) {
+      return `${wholePart}.${decimalPart}0`;
+    } else {
+      // If more than 2 digits, truncate to 2
+      return `${wholePart}.${decimalPart.substring(0, 2)}`;
+    }
+  };
+
   const handleCategorySelect = (categoryName: string) => {
     // Find the category object from filtered categories array
     const category = props.filteredCategories.find(
@@ -156,7 +177,7 @@ const EntryDetail = (props: EntryDetailProps) => {
                 whiteSpace: "nowrap",
               }}
             >
-              {Number(props.currentAmount).toFixed(2)}
+              {formatAmountToTwoDecimals(props.currentAmount)}
             </Typography>
           </Box>
 
@@ -184,7 +205,7 @@ const EntryDetail = (props: EntryDetailProps) => {
             props.handleFormValues(e.target.value, FormValues.DESCRIPTION)
           }
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
+            if (e.key === "Enter") {
               e.preventDefault();
               (e.target as HTMLInputElement).blur();
             }

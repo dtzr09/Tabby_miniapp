@@ -82,14 +82,14 @@ export const useExpense = ({
       return updatedData;
     });
 
-    // Use the existing refetch utility for proper expense query management
-    if (userId) {
-      refetchExpensesQueries(
-        queryClient,
-        userId.toString(),
-        chat_id?.toString() || ""
-      );
-    }
+    // // Use the existing refetch utility for proper expense query management
+    // if (userId) {
+    //   refetchExpensesQueries(
+    //     queryClient,
+    //     userId.toString(),
+    //     chat_id?.toString() || ""
+    //   );
+    // }
   };
 
   // Function to delete expense from all caches
