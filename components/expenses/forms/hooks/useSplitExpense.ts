@@ -98,16 +98,24 @@ export const useSplitExpense = ({
 
   // Update splitInputValues when currentAmount changes and we're in even split mode
   useEffect(() => {
-    if (!isCustomSplit && expense?.shares && currentAmount && parseFloat(currentAmount) > 0) {
+    if (
+      !isCustomSplit &&
+      expense?.shares &&
+      currentAmount &&
+      parseFloat(currentAmount) > 0
+    ) {
       const totalAmount = parseFloat(currentAmount);
-      const evenShareAmount = divideAmountEvenly(totalAmount, expense.shares.length);
-      
+      const evenShareAmount = divideAmountEvenly(
+        totalAmount,
+        expense.shares.length
+      );
+
       // Create new input values with even split amounts
       const newInputValues: Record<string | number, string> = {};
       expense.shares.forEach((share: ExpenseShare) => {
         newInputValues[share.user_id] = evenShareAmount.toFixed(2);
       });
-      
+
       // Only update if values actually changed to avoid infinite loops
       const currentValues = JSON.stringify(splitInputValues);
       const newValues = JSON.stringify(newInputValues);
@@ -145,10 +153,10 @@ export const useSplitExpense = ({
         const formattedAmount = newTotal.toString();
 
         // Use setValue with shouldDirty to mark form as dirty when split amounts change
-        setValue(FormValues.AMOUNT, formattedAmount, { 
+        setValue(FormValues.AMOUNT, formattedAmount, {
           shouldDirty: true,
           shouldValidate: true,
-          shouldTouch: true
+          shouldTouch: true,
         });
       }
     },
@@ -187,7 +195,8 @@ export const useSplitExpense = ({
 
       // Always use splitInputValues if they exist and we're in custom split mode or have changes
       const hasInputChanges = Object.keys(splitInputValues).length > 0;
-      const shouldUseInputValues = hasInputChanges && (splitHasChanges || isCustomSplit);
+      const shouldUseInputValues =
+        hasInputChanges && (splitHasChanges || isCustomSplit);
 
       if (shouldUseInputValues) {
         // Calculate from input values when user is actively editing or in custom split mode
@@ -210,9 +219,16 @@ export const useSplitExpense = ({
     }
     // Fallback to currentAmount if no shares available
     return currentAmount || "0";
-  }, [splitInputValues, splitHasChanges, currentAmount, isExpense, expense, isCustomSplit]);
+  }, [
+    splitInputValues,
+    splitHasChanges,
+    currentAmount,
+    isExpense,
+    expense,
+    isCustomSplit,
+  ]);
 
-  // Handle split expense changes
+  // Handle split expense changes with cache-first strategy
   const handleSplitApplyChanges = useCallback(async () => {
     if (!isExpense || !expense?.shares || !tgUser?.id || !initData || !chat_id)
       return;
@@ -263,16 +279,7 @@ export const useSplitExpense = ({
       setSplitInputValues(evenSplitInputValues);
     }
 
-    const updatedFormData: ExpenseFormData = {
-      description: expense.description,
-      amount: newTotalFromShares.toString(),
-      category_id: expense.category?.id || 0,
-      date: expense.date,
-      shares: updatedShares || [],
-    };
-    reset(updatedFormData, { keepDirty: false });
-
-    // Update cache using the proper function
+    // CACHE-FIRST STRATEGY: Immediately update cache with optimistic data
     const updatedExpense: UnifiedEntry = {
       ...expense,
       amount: newTotalFromShares,
@@ -280,11 +287,22 @@ export const useSplitExpense = ({
       isIncome: false, // Split expenses are always expenses, not income
     };
 
+    // Update cache immediately for instant UI feedback
     if (updateExpenseInCache) {
       updateExpenseInCache(updatedExpense);
     } else {
       queryClient.setQueryData(["expense", expense.id], updatedExpense);
     }
+
+    // Update form immediately with proper date handling
+    const updatedFormData: ExpenseFormData = {
+      description: expense.description,
+      amount: newTotalFromShares.toString(),
+      category_id: expense.category?.id || 0,
+      date: expense.date || new Date().toISOString(),
+      shares: updatedShares || [],
+    };
+    reset(updatedFormData, { keepDirty: false });
 
     // Immediately update UI state
     setValue(FormValues.AMOUNT, newTotalFromShares.toString(), {
@@ -302,8 +320,9 @@ export const useSplitExpense = ({
 
     // Preserve the current split mode by setting override
     setSplitModeOverride(isCustomSplit);
+    setSavedExpense(true);
 
-    // Handle API calls in background (don't await)
+    // Background sync with backend (don't await)
     Promise.all([
       updateExpenseAmount(
         expense.id,
@@ -321,42 +340,55 @@ export const useSplitExpense = ({
         initData,
         chat_id
       ),
-    ]).catch((error) => {
-      console.error("Failed to update expense in background:", error);
+    ])
+      .then(() => {
+        // Sync successful - cache is already updated with optimistic data
+        console.log("Split expense sync successful");
+      })
+      .catch((error) => {
+        console.error("Failed to sync split expense with backend:", error);
 
-      // Revert cache and UI state on failure
-      queryClient.setQueryData(
-        ["expense", expense.id],
-        (oldData: Expense | undefined) => {
-          if (!oldData) return oldData;
-          return {
-            ...oldData,
-            amount: expense.amount,
-            shares: expense.shares,
-          };
+        // Revert cache to original data on failure
+        const originalExpense: UnifiedEntry = {
+          ...expense,
+          amount: expense.amount,
+          shares: expense.shares,
+          isIncome: false,
+        };
+
+        if (updateExpenseInCache) {
+          updateExpenseInCache(originalExpense);
+        } else {
+          queryClient.setQueryData(["expense", expense.id], originalExpense);
         }
-      );
 
-      queryClient.setQueryData(
-        ["allEntries", tgUser.id.toString(), chat_id],
-        (oldData: { expenses: Expense[] } | undefined) => {
-          if (!oldData || !oldData.expenses) return oldData;
+        // Revert form data with proper date handling
+        const originalFormData: ExpenseFormData = {
+          description: expense.description,
+          amount: expense.amount.toString(),
+          category_id: expense.category?.id || 0,
+          date: expense.date || new Date().toISOString(),
+          shares: expense.shares || [],
+        };
+        reset(originalFormData, { keepDirty: false });
 
-          return {
-            ...oldData,
-            expenses: oldData.expenses.map((exp: Expense) =>
-              exp.id === expense.id
-                ? { ...exp, amount: expense.amount, shares: expense.shares }
-                : exp
-            ),
-          };
-        }
-      );
+        // Revert UI state
+        setValue(FormValues.AMOUNT, expense.amount.toString(), {
+          shouldDirty: false,
+        });
+        setValue(FormValues.SHARES, expense.shares || [], {
+          shouldDirty: false,
+        });
 
-      setSplitHasChanges(true);
-    });
+        // Revert split input values
+        const originalInputValues: Record<string | number, string> = {};
+        expense.shares?.forEach((share: ExpenseShare) => {
+          originalInputValues[share.user_id] = share.share_amount.toString();
+        });
+        setSplitInputValues(originalInputValues);
 
-    setSavedExpense(true);
+        setSplitHasChanges(true);
+      });
 
     return true;
   }, [

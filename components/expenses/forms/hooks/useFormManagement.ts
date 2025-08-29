@@ -74,7 +74,7 @@ export const useFormManagement = ({
     is_income: isIncome,
   };
 
-  // Complete onSubmit logic moved from index.tsx
+  // Complete onSubmit logic with cache-first strategy
   const onSubmit = useCallback(
     async (data: ExpenseFormData) => {
       try {
@@ -144,114 +144,147 @@ export const useFormManagement = ({
           }
         }
 
-        // Convert selectedDateTime to UTC for backend first
-        if (
-          !(selectedDateTime instanceof Date) ||
-          isNaN(selectedDateTime.getTime())
-        ) {
-          console.warn(
-            "Invalid selectedDateTime:",
-            selectedDateTime,
-            "using current date instead"
-          );
-        }
-        const utcDateTime =
-          selectedDateTime instanceof Date && !isNaN(selectedDateTime.getTime())
-            ? selectedDateTime.toISOString()
-            : new Date().toISOString();
-
+        // Convert selectedDateTime to UTC with proper validation
+        let utcDateTime: string;
         try {
-          // Make the API call for all fields including amount
-          const response = await fetch(`/api/entries/${entryId}`, {
+          if (selectedDateTime instanceof Date && !isNaN(selectedDateTime.getTime())) {
+            utcDateTime = selectedDateTime.toISOString();
+          } else if (typeof selectedDateTime === 'string' && selectedDateTime !== '') {
+            const parsedDate = new Date(selectedDateTime);
+            if (!isNaN(parsedDate.getTime())) {
+              utcDateTime = parsedDate.toISOString();
+            } else {
+              utcDateTime = expense.date || new Date().toISOString();
+            }
+          } else {
+            utcDateTime = expense.date || new Date().toISOString();
+          }
+        } catch (error) {
+          console.warn("Date parsing error:", error, "using fallback date");
+          utcDateTime = expense.date || new Date().toISOString();
+        }
+
+        // CACHE-FIRST STRATEGY: Immediately update cache with optimistic data
+        const optimisticExpense = {
+          ...expense,
+          description: data.description,
+          amount: newAmount,
+          category: selectedCategory,
+          date: utcDateTime,
+          isIncome: isIncome,
+          ...(isGroupExpense && updatedShares && { shares: updatedShares }),
+        };
+
+        // Update cache immediately for instant UI feedback
+        updateExpenseInCache(optimisticExpense);
+
+        // Reset form with updated data immediately
+        const updatedFormData: ExpenseFormData = {
+          description: data.description,
+          amount: newAmount.toString(),
+          category_id: selectedCategoryId || expense.category?.id || 0,
+          date: utcDateTime,
+          shares:
+            updatedShares ||
+            (isGroupExpense ? (expense as Expense).shares || [] : []),
+        };
+
+        reset(updatedFormData, { keepDirty: false });
+
+        // Background sync with backend (don't await)
+        Promise.all([
+          // Main expense update
+          fetch(`/api/entries/${entryId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chat_id,
               initData: initData,
               ...data,
-              category_id: selectedCategoryId || expense.category?.id || 0, // Fallback to original category ID
+              category_id: selectedCategoryId || expense.category?.id || 0,
               amount: newAmount,
               isIncome: isIncome,
               date: utcDateTime,
             }),
-          });
+          }),
+          // Amount update if needed
+          expense.amount !== newAmount
+            ? updateExpenseAmount(
+                Number(entryId),
+                newAmount,
+                initData,
+                chat_id,
+                isIncome
+              )
+            : Promise.resolve(),
+          // Shares update if needed
+          isGroupExpense && updatedShares
+            ? updateExpenseShares(
+                Number(entryId),
+                updatedShares.map((s: ExpenseShare) => ({
+                  user_id: s.user_id,
+                  share_amount: s.share_amount,
+                  ...(s.name && { name: s.name }),
+                  ...(s.username && { username: s.username }),
+                })),
+                initData,
+                chat_id
+              )
+            : Promise.resolve(),
+        ])
+          .then(async ([mainResponse]) => {
+            // Verify main response is ok
+            if (mainResponse && !mainResponse.ok) {
+              throw new Error("Main update failed");
+            }
 
-          if (!response.ok) {
-            // If update fails, show error but don't block navigation
+            // If main response is ok, get the latest data from backend
+            if (mainResponse && mainResponse.ok) {
+              const backendExpense = await mainResponse.json();
+              
+              // Update cache with backend data to ensure consistency
+              const finalExpense = {
+                ...backendExpense,
+                ...(isGroupExpense && updatedShares && { shares: updatedShares }),
+              };
+              
+              updateExpenseInCache(finalExpense);
+            }
+
+            // Refetch queries for proper cache invalidation
+            refetchExpensesQueries(queryClient, tgUser.id.toString(), chat_id);
+          })
+          .catch((error) => {
+            console.error("Background sync failed:", error);
+            
+            // Revert cache to original data on failure
+            updateExpenseInCache({
+              ...expense,
+              isIncome: isIncome,
+            });
+            
+            // Reset form to original data
+            const originalFormData: ExpenseFormData = {
+              description: expense.description || "",
+              amount: expense.amount?.toString() || "0",
+              category_id: expense.category?.id || 0,
+              date: expense.date || "",
+              shares: isGroupExpense ? (expense as Expense).shares || [] : [],
+            };
+            
+            reset(originalFormData, { keepDirty: false });
+
             showPopup({
-              title: "Error",
-              message: "Failed to update. Please refresh the page.",
+              title: "Sync Failed",
+              message: "Changes couldn't be saved. Please try again.",
               buttons: [{ type: "ok" }],
             });
-            return;
-          }
-
-          // Get the updated expense data from the response
-          const updatedExpense = await response.json();
-
-          // Update expense amount with separate API call if needed
-          if (expense.amount !== newAmount) {
-            await updateExpenseAmount(
-              Number(entryId),
-              newAmount,
-              initData,
-              chat_id,
-              isIncome
-            );
-          }
-
-          // If it's a group expense, also update the shares
-          if (isGroupExpense && updatedShares) {
-            await updateExpenseShares(
-              Number(entryId),
-              updatedShares.map((s: ExpenseShare) => ({
-                user_id: s.user_id,
-                share_amount: s.share_amount,
-                // Preserve other user details if they exist
-                ...(s.name && { name: s.name }),
-                ...(s.username && { username: s.username }),
-              })),
-              initData,
-              chat_id
-            );
-            
-            // Update the expense object with new shares for cache
-            if (updatedExpense && 'shares' in updatedExpense) {
-              updatedExpense.shares = updatedShares;
-            }
-          }
-
-          // Reset form with updated data to reflect the changes
-          // This ensures currentAmount and all form fields show the updated expense details
-          const updatedFormData: ExpenseFormData = {
-            description: updatedExpense.description || data.description,
-            amount: newAmount.toString(),
-            category_id: selectedCategoryId || expense.category?.id || 0,
-            date: utcDateTime,
-            shares:
-              updatedShares ||
-              (isGroupExpense ? (updatedExpense as Expense).shares || (expense as Expense).shares || [] : []),
-          };
-
-          reset(updatedFormData, { keepDirty: false });
-
-          // Immediately update the cache with the new data to prevent stale data display
-          // This happens after all API calls to ensure we have the most up-to-date data
-          updateExpenseInCache(updatedExpense);
-
-          // Refetch expense queries for proper cache invalidation (but cache is already updated)
-          refetchExpensesQueries(queryClient, tgUser.id.toString(), chat_id);
-        } catch {
-          showPopup({
-            title: "Error",
-            message: "Failed to update. Please refresh the page.",
-            buttons: [{ type: "ok" }],
           });
-        }
-      } catch {
+      } catch (error) {
+        console.error("Form submission error:", error);
         showPopup({
           title: "Error",
-          message: "Failed to update. Please refresh the page.",
+          message: "Failed to update expense. Please try again.",
           buttons: [{ type: "ok" }],
         });
       }
