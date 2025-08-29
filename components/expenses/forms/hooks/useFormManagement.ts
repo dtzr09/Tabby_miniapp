@@ -19,8 +19,6 @@ import {
   updateExpenseShares,
 } from "../../../../services/expenses";
 import { divideAmountEvenly } from "../../../../utils/currencyUtils";
-import { refetchExpensesQueries } from "../../../../utils/refetchExpensesQueries";
-import { useQueryClient } from "@tanstack/react-query";
 
 interface UseFormManagementProps {
   entryId?: string;
@@ -49,8 +47,7 @@ export const useFormManagement = ({
 }: UseFormManagementProps) => {
   // Get Telegram data and query client
   const { user: tgUser, initData } = useTelegramWebApp();
-  const queryClient = useQueryClient();
-  // Get expense management functions
+
   const { updateExpenseInCache, deleteExpenseFromCache } = useExpense({
     id: entryId as string,
     isIncome,
@@ -147,9 +144,15 @@ export const useFormManagement = ({
         // Convert selectedDateTime to UTC with proper validation
         let utcDateTime: string;
         try {
-          if (selectedDateTime instanceof Date && !isNaN(selectedDateTime.getTime())) {
+          if (
+            selectedDateTime instanceof Date &&
+            !isNaN(selectedDateTime.getTime())
+          ) {
             utcDateTime = selectedDateTime.toISOString();
-          } else if (typeof selectedDateTime === 'string' && selectedDateTime !== '') {
+          } else if (
+            typeof selectedDateTime === "string" &&
+            selectedDateTime !== ""
+          ) {
             const parsedDate = new Date(selectedDateTime);
             if (!isNaN(parsedDate.getTime())) {
               utcDateTime = parsedDate.toISOString();
@@ -238,31 +241,23 @@ export const useFormManagement = ({
               throw new Error("Main update failed");
             }
 
-            // If main response is ok, get the latest data from backend
+            // Backend sync successful - cache already has optimistic data
+            // Only update if there are significant differences from backend
             if (mainResponse && mainResponse.ok) {
-              const backendExpense = await mainResponse.json();
-              
-              // Update cache with backend data to ensure consistency
-              const finalExpense = {
-                ...backendExpense,
-                ...(isGroupExpense && updatedShares && { shares: updatedShares }),
-              };
-              
-              updateExpenseInCache(finalExpense);
+              console.log("Backend sync successful - keeping optimistic data");
             }
 
-            // Refetch queries for proper cache invalidation
-            refetchExpensesQueries(queryClient, tgUser.id.toString(), chat_id);
+            // Cache is already updated optimistically and with backend data - no refetch needed
           })
           .catch((error) => {
             console.error("Background sync failed:", error);
-            
+
             // Revert cache to original data on failure
             updateExpenseInCache({
               ...expense,
               isIncome: isIncome,
             });
-            
+
             // Reset form to original data
             const originalFormData: ExpenseFormData = {
               description: expense.description || "",
@@ -271,7 +266,7 @@ export const useFormManagement = ({
               date: expense.date || "",
               shares: isGroupExpense ? (expense as Expense).shares || [] : [],
             };
-            
+
             reset(originalFormData, { keepDirty: false });
 
             showPopup({
