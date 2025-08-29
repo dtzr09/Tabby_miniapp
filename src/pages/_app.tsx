@@ -14,19 +14,31 @@ import {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Immediate staleness for instant updates
-      staleTime: 0,
-      // Short cache time for mobile
-      gcTime: 60000, // 1 minute
-      // Always refetch to ensure fresh data
-      refetchOnMount: true,
-      refetchOnWindowFocus: true,
-      refetchOnReconnect: true,
-      // Quick retry for mobile networks
+      // Cache-first strategy: keep data fresh for 5 minutes
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      // Longer cache time to prevent unnecessary garbage collection
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      // Reduce refetching for better performance
+      refetchOnMount: false, // Use cache-first
+      refetchOnWindowFocus: false, // Prevent unnecessary refetches
+      refetchOnReconnect: true, // Only refetch on reconnect
+      // Optimized retry strategy
+      retry: (failureCount, error) => {
+        // Don't retry on client errors (4xx)
+        if (error instanceof Error && 'status' in error) {
+          const status = (error as any).status;
+          if (status >= 400 && status < 500) return false;
+        }
+        return failureCount < 2; // Max 2 retries
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
+      // Use offline-first behavior for better UX
+      networkMode: 'offlineFirst',
+    },
+    mutations: {
+      // Optimistic updates for mutations
       retry: 1,
-      retryDelay: 500,
-      // Online first for immediate updates
-      networkMode: 'online',
+      retryDelay: 1000,
     },
   },
 });
