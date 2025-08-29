@@ -63,23 +63,24 @@ export const useExpense = ({
     // Update in individual expense cache first
     queryClient.setQueryData(["expense", id], updatedExpense);
 
-    // Update in allEntries cache
-    queryClient.setQueryData<AllEntriesResponse>(
-      ["allEntries", userId, chat_id],
-      (oldData) => {
-        if (!oldData) return oldData;
+    // Update in allEntries cache - match the exact key format from useAllEntries
+    const allEntriesKey = ["allEntries", userId?.toString(), chat_id];
 
-        const targetArray = isIncome ? "income" : "expenses";
-        const updatedData = {
-          ...oldData,
-          [targetArray]: oldData[targetArray].map((entry) =>
-            entry.id.toString() === id.toString() ? updatedExpense : entry
-          ),
-        };
-
-        return updatedData;
+    queryClient.setQueryData<AllEntriesResponse>(allEntriesKey, (oldData) => {
+      if (!oldData) {
+        return oldData;
       }
-    );
+
+      const targetArray = isIncome ? "income" : "expenses";
+      const updatedData = {
+        ...oldData,
+        [targetArray]: oldData[targetArray].map((entry) =>
+          entry.id.toString() === id.toString() ? updatedExpense : entry
+        ),
+      };
+
+      return updatedData;
+    });
 
     // Use the existing refetch utility for proper expense query management
     if (userId) {
@@ -93,9 +94,9 @@ export const useExpense = ({
 
   // Function to delete expense from all caches
   const deleteExpenseFromCache = () => {
-    // Remove from allEntries cache
+    // Remove from allEntries cache - match the exact key format from useAllEntries
     queryClient.setQueryData<AllEntriesResponse>(
-      ["allEntries", userId, chat_id],
+      ["allEntries", userId?.toString(), chat_id],
       (oldData) => {
         if (!oldData) return oldData;
 
