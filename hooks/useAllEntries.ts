@@ -53,11 +53,13 @@ export const useAllEntries = (
       return Promise.resolve({ expenses: [], income: [], budgets: [] });
     },
     enabled: !!userId && !!initData,
-    staleTime: 0, // Always consider stale so invalidation works immediately
-    gcTime: 120000, // Cache for 10 minutes
-    refetchOnWindowFocus: true, // Enable refetch on focus to sync changes after navigation
-    refetchOnMount: true, // Always refetch when component mounts
-    refetchInterval: false, // Don't poll, rely on manual refetch for updates
+    // Use cache-first strategy - data stays fresh for 5 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    // Rely on optimistic updates, don't refetch unnecessarily
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchInterval: false,
   });
 
   return {
