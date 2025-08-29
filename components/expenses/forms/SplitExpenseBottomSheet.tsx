@@ -154,7 +154,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
         <SplitExpense
           expense={{ ...props.expense, shares: props.expenseShares }}
           isCustomSplit={props.isCustomSplit}
-          currentAmount={props.currentAmount}
+          currentAmount={props.isCustomSplit ? props.displayAmount : props.currentAmount}
           onValidationChange={props.setSplitValidationErrors}
           onHasChangesChange={props.setSplitHasChanges}
           onInputValuesChange={props.setSplitInputValues}

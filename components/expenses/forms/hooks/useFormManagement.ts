@@ -224,13 +224,13 @@ export const useFormManagement = ({
           // Reset form with updated data to reflect the changes
           // This ensures currentAmount and all form fields show the updated expense details
           const updatedFormData: ExpenseFormData = {
-            description: data.description,
+            description: updatedExpense.description || data.description,
             amount: newAmount.toString(),
             category_id: selectedCategoryId || expense.category?.id || 0,
             date: utcDateTime,
             shares:
               updatedShares ||
-              (isGroupExpense ? (expense as Expense).shares || [] : []),
+              (isGroupExpense ? (updatedExpense as Expense).shares || (expense as Expense).shares || [] : []),
           };
 
           reset(updatedFormData, { keepDirty: false });

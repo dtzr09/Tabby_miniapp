@@ -96,6 +96,27 @@ export const useSplitExpense = ({
     }
   }, [splitHasChanges]);
 
+  // Update splitInputValues when currentAmount changes and we're in even split mode
+  useEffect(() => {
+    if (!isCustomSplit && expense?.shares && currentAmount && parseFloat(currentAmount) > 0) {
+      const totalAmount = parseFloat(currentAmount);
+      const evenShareAmount = divideAmountEvenly(totalAmount, expense.shares.length);
+      
+      // Create new input values with even split amounts
+      const newInputValues: Record<string | number, string> = {};
+      expense.shares.forEach((share: ExpenseShare) => {
+        newInputValues[share.user_id] = evenShareAmount.toFixed(2);
+      });
+      
+      // Only update if values actually changed to avoid infinite loops
+      const currentValues = JSON.stringify(splitInputValues);
+      const newValues = JSON.stringify(newInputValues);
+      if (currentValues !== newValues) {
+        setSplitInputValues(newInputValues);
+      }
+    }
+  }, [currentAmount, isCustomSplit, expense?.shares, splitInputValues]);
+
   // Custom setSplitInputValues that also updates form state
   const handleSplitInputValuesChange = useCallback(
     (values: Record<string | number, string>) => {
@@ -124,7 +145,11 @@ export const useSplitExpense = ({
         const formattedAmount = newTotal.toString();
 
         // Use setValue with shouldDirty to mark form as dirty when split amounts change
-        setValue(FormValues.AMOUNT, formattedAmount, { shouldDirty: true });
+        setValue(FormValues.AMOUNT, formattedAmount, { 
+          shouldDirty: true,
+          shouldValidate: true,
+          shouldTouch: true
+        });
       }
     },
     [expense?.shares, expense?.amount, setValue]
@@ -155,20 +180,20 @@ export const useSplitExpense = ({
     setIsCustomSplit(originalIsCustomSplit);
   }, [expense?.amount, expense?.shares, setValue, originalIsCustomSplit]);
 
-  // Calculate display amount - prioritize actual expense data over temporary input values
+  // Calculate display amount - prioritize splitInputValues when actively editing, otherwise use expense shares
   const displayAmount = useMemo(() => {
     if (isExpense && expense?.shares) {
       const shares = expense.shares;
 
-      // Only use splitInputValues if we have changes and are actively editing
+      // Always use splitInputValues if they exist and we're in custom split mode or have changes
       const hasInputChanges = Object.keys(splitInputValues).length > 0;
-      const shouldUseInputValues = hasInputChanges && splitHasChanges;
+      const shouldUseInputValues = hasInputChanges && (splitHasChanges || isCustomSplit);
 
       if (shouldUseInputValues) {
-        // Calculate from input values when user is actively editing
+        // Calculate from input values when user is actively editing or in custom split mode
         const amounts = shares.map((share) => {
           const inputValue = splitInputValues[share.user_id];
-          if (inputValue) {
+          if (inputValue !== undefined && inputValue !== "") {
             const numericValue = parseFloat(inputValue);
             return !isNaN(numericValue) ? numericValue : share.share_amount;
           }
@@ -185,7 +210,7 @@ export const useSplitExpense = ({
     }
     // Fallback to currentAmount if no shares available
     return currentAmount || "0";
-  }, [splitInputValues, splitHasChanges, currentAmount, isExpense, expense]);
+  }, [splitInputValues, splitHasChanges, currentAmount, isExpense, expense, isCustomSplit]);
 
   // Handle split expense changes
   const handleSplitApplyChanges = useCallback(async () => {
@@ -240,7 +265,7 @@ export const useSplitExpense = ({
 
     const updatedFormData: ExpenseFormData = {
       description: expense.description,
-      amount: currentAmount,
+      amount: newTotalFromShares.toString(),
       category_id: expense.category?.id || 0,
       date: expense.date,
       shares: updatedShares || [],

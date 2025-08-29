@@ -31,6 +31,7 @@ const KeypadButtons = (props: KeypadButtonsProps) => {
       newAmount = props.currentAmount + value;
     }
 
+    // Immediately call onAmountChange to trigger form dirty state
     props.onAmountChange(newAmount);
   };
 

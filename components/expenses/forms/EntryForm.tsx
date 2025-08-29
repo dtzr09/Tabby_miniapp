@@ -121,6 +121,7 @@ export default function EntryForm({
     setValue(name, value, {
       shouldDirty: true,
       shouldValidate: true,
+      shouldTouch: true,
     });
   };
 
