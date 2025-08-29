@@ -23,10 +23,10 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false, // Prevent unnecessary refetches
       refetchOnReconnect: true, // Only refetch on reconnect
       // Optimized retry strategy
-      retry: (failureCount, error) => {
+      retry: (failureCount, error: unknown) => {
         // Don't retry on client errors (4xx)
-        if (error instanceof Error && 'status' in error) {
-          const status = (error as any).status;
+        if (error && typeof error === 'object' && 'status' in error) {
+          const status = (error as { status: number }).status;
           if (status >= 400 && status < 500) return false;
         }
         return failureCount < 2; // Max 2 retries
