@@ -2,7 +2,6 @@ import { TelegramUser } from "../../dashboard";
 import { TelegramWebApp } from "../../../utils/types";
 import { showPopup } from "@telegram-apps/sdk";
 import BottomSheet, { BottomSheetButton } from "../../common/BottomSheet";
-import { invalidateExpenseCache } from "../../../utils/cache";
 
 interface DeleteExpenseDialogProps {
   id: number;
@@ -61,9 +60,7 @@ export default function DeleteExpenseDialog({
         throw new Error("Failed to delete expense");
       }
 
-      // Invalidate expense cache after successful delete
-      invalidateExpenseCache(user.id.toString());
-      console.log("🗑️ Cache invalidated after expense delete");
+      console.log("🗑️ Expense deleted successfully");
     } catch (err) {
       console.error("Delete failed:", err);
 

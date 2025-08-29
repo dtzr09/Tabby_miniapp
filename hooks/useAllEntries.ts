@@ -54,10 +54,10 @@ export const useAllEntries = (
     },
     enabled: !!userId && !!initData,
     staleTime: 0, // Always consider stale so invalidation works immediately
-    gcTime: 120000, // Cache for 10 minutes  
+    gcTime: 120000, // Cache for 10 minutes
     refetchOnWindowFocus: true, // Enable refetch on focus to sync changes after navigation
     refetchOnMount: true, // Always refetch when component mounts
-    refetchInterval: false, // Don't poll, rely on broadcaster for updates
+    refetchInterval: false, // Don't poll, rely on manual refetch for updates
   });
 
   return {

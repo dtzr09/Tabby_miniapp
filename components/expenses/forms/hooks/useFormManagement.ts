@@ -19,7 +19,8 @@ import {
   updateExpenseShares,
 } from "../../../../services/expenses";
 import { divideAmountEvenly } from "../../../../utils/currencyUtils";
-import { broadcastExpenseUpdate } from "../../../../utils/expenseUpdateBroadcaster";
+import { refetchExpensesQueries } from "../../../../utils/refetchExpensesQueries";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface UseFormManagementProps {
   entryId?: string;
@@ -48,7 +49,7 @@ export const useFormManagement = ({
 }: UseFormManagementProps) => {
   // Get Telegram data and query client
   const { user: tgUser, initData } = useTelegramWebApp();
-
+  const queryClient = useQueryClient();
   // Get expense management functions
   const { updateExpenseInCache, deleteExpenseFromCache } = useExpense({
     id: entryId as string,
@@ -80,9 +81,6 @@ export const useFormManagement = ({
         if (!tgUser?.id || !initData || !entryId || !expense) {
           return;
         }
-
-        // Immediately reset form's dirty state to show user their changes are being saved
-        reset(data, { keepDirty: false });
 
         // Validate entryId is a valid number
         if (entryId === "undefined" || isNaN(Number(entryId))) {
@@ -162,28 +160,6 @@ export const useFormManagement = ({
             ? selectedDateTime.toISOString()
             : new Date().toISOString();
 
-        // Create properly typed updated expense - match the expected UnifiedEntry structure
-        // const updatedExpense: UnifiedEntry = isGroupExpense
-        //   ? {
-        //       ...(expense as Expense),
-        //       description: data.description,
-        //       amount: newAmount,
-        //       category: selectedCategory, // Use Category object per updated UnifiedEntry type
-        //       emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
-        //       date: utcDateTime, // Use converted UTC date
-        //       shares: updatedShares,
-        //       isIncome: isIncome,
-        //     }
-        //   : {
-        //       ...expense,
-        //       description: data.description,
-        //       amount: newAmount,
-        //       category: selectedCategory, // Use Category object per updated UnifiedEntry type
-        //       emoji: selectedCategory.name.charAt(0), // Extract first character (emoji)
-        //       date: utcDateTime, // Use converted UTC date
-        //       isIncome: isIncome,
-        //     };
-
         try {
           // Make the API call for all fields including amount
           const response = await fetch(`/api/entries/${entryId}`, {
@@ -237,16 +213,22 @@ export const useFormManagement = ({
             );
           }
 
-          // Use the expense update broadcaster for proper cache invalidation
-          console.log("🔄 Broadcasting expense update");
-          broadcastExpenseUpdate(tgUser.id.toString(), chat_id, entryId);
-          console.log("✅ Expense update broadcasted successfully");
+          // Reset form with updated data to reflect the changes
+          // This ensures currentAmount and all form fields show the updated expense details
+          const updatedFormData: ExpenseFormData = {
+            description: data.description,
+            amount: newAmount.toString(),
+            category_id: selectedCategoryId || expense.category?.id || 0,
+            date: utcDateTime,
+            shares:
+              updatedShares ||
+              (isGroupExpense ? (expense as Expense).shares || [] : []),
+          };
 
-          // showPopup({
-          //   title: "Success",
-          //   message: `${isIncome ? "Income" : "Expense"} updated successfully`,
-          //   buttons: [{ type: "ok" }],
-          // });
+          reset(updatedFormData, { keepDirty: false });
+
+          // Refetch expense queries for proper cache invalidation
+          refetchExpensesQueries(queryClient, tgUser.id.toString(), chat_id);
         } catch {
           showPopup({
             title: "Error",

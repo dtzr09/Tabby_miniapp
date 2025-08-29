@@ -1,7 +1,6 @@
 import { QueryObserverResult } from "@tanstack/react-query";
 import { Expense, TelegramWebApp, BudgetWithCategory } from "../utils/types";
 import { fetchUser } from "./users";
-import { invalidateExpenseCache } from "../utils/cache";
 
 export const deleteExpense = async (id: number) => {
   try {
@@ -28,9 +27,7 @@ export const deleteExpense = async (id: number) => {
       throw new Error("Failed to delete expense");
     }
 
-    // Invalidate expense cache after successful delete
-    invalidateExpenseCache(user.id.toString());
-    console.log("🗑️ Cache invalidated after expense delete");
+    console.log("🗑️ Expense deleted successfully");
   } catch (err) {
     console.error("Delete failed:", err);
     throw err; // Re-throw to maintain error handling

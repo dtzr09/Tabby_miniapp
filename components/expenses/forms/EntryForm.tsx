@@ -145,8 +145,8 @@ export default function EntryForm({
     currentAmount,
     setValue,
     refreshCache,
-    recentSplitSave,
     updateExpenseInCache,
+    reset,
   });
 
   useEffect(() => {
@@ -185,16 +185,6 @@ export default function EntryForm({
     }
   }, [expense, reset, isExpense, categories, splitHasChanges, recentSplitSave]);
 
-  // Clear recentSplitSave flag after a longer delay to account for cache updates
-  useEffect(() => {
-    if (recentSplitSave) {
-      const timer = setTimeout(() => {
-        setRecentSplitSave(false);
-      }, 500); // Longer delay to prevent form reset after split saves
-      return () => clearTimeout(timer);
-    }
-  }, [recentSplitSave]);
-
   // UI state
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
   const [showFloatingPanel, setShowFloatingPanel] = useState(false);
@@ -215,7 +205,7 @@ export default function EntryForm({
     const bottomNavigationHeight = 100;
     return initialHeight - bottomNavigationHeight;
   };
-  
+
   // Custom backspace handler that works with the form
   const handleFormBackspace = () => {
     handleBackspace(

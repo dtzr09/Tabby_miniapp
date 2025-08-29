@@ -3,7 +3,7 @@ import { QueryClient } from "@tanstack/react-query";
 export const refetchExpensesQueries = async (
   queryClient: QueryClient,
   userId: string,
-  chatId?: string
+  chatId: string
 ) => {
   const keys = [
     ["allEntries", userId, chatId] as const,

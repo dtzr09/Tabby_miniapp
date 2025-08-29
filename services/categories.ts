@@ -1,18 +1,8 @@
-import { appCache, invalidateUserCache } from "../utils/cache";
-
 export const fetchCategories = async (
   telegram_id: string,
   initData: string,
   chat_id?: string | null
 ) => {
-  // Check cache first - include chat_id in cache key for group-specific caching
-  const cacheKey = `categories_${telegram_id}${chat_id ? `_${chat_id}` : ''}`;
-  const cachedData = appCache.get(cacheKey);
-  
-  if (cachedData) {
-    return cachedData;
-  }
-
   const params = new URLSearchParams({ telegram_id, initData });
   if (chat_id) {
     params.append('chat_id', chat_id);
@@ -26,9 +16,6 @@ export const fetchCategories = async (
   }
 
   const data = await response.json();
-  
-  // Cache for 10 minutes
-  appCache.set(cacheKey, data, 10 * 60 * 1000);
   
   return data;
 };
@@ -58,9 +45,7 @@ export const updateCategory = async (
     throw new Error(`Update category error ${response.status}: ${text}`);
   }
 
-  // Invalidate all related caches after successful update
-  invalidateUserCache(telegram_id);
-  console.log("🗑️ Cache invalidated after category update");
+  console.log("✅ Category updated successfully");
 
   return response.json();
 };
@@ -97,9 +82,7 @@ export const deleteCategory = async (
     throw new Error(`Delete category error ${response.status}: ${text}`);
   }
 
-  // Invalidate all related caches after successful delete
-  invalidateUserCache(telegram_id);
-  console.log("🗑️ Cache invalidated after category delete");
+  console.log("✅ Category deleted successfully");
 
   return response.json();
 };

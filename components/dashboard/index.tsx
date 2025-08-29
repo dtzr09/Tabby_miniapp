@@ -27,7 +27,6 @@ import {
   saveNavigationState,
   loadNavigationState,
 } from "../../utils/navigationState";
-import { ExpenseDebugPanel } from "../debug/ExpenseDebugPanel";
 
 export interface TelegramUser {
   id: string;
@@ -71,8 +70,6 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     initData,
     selectedGroupId || undefined
   );
-
-  // Removed excessive polling - relying on React Query's built-in cache management
 
   const { data: groups } = useQuery({
     queryKey: ["groupsWithExpenses", tgUser?.id],
@@ -349,40 +346,6 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
           </Box>
         </Box>
       </Box>
-
-      {/* Debug Toggle Button */}
-      <Box
-        onClick={() => {
-          const current = localStorage.getItem('expense-debug') === 'true';
-          localStorage.setItem('expense-debug', (!current).toString());
-          window.location.reload();
-        }}
-        sx={{
-          position: 'fixed',
-          top: 100,
-          right: 40,
-          width: 40,
-          height: 40,
-          borderRadius: '50%',
-          backgroundColor: '#ff4444',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          zIndex: 10000,
-          fontSize: '1.2rem'
-        }}
-      >
-        🐛
-      </Box>
-
-      {/* Debug Panel - only in development or with debug flag */}
-      {(process.env.NODE_ENV === 'development' || 
-        typeof window !== 'undefined' && localStorage.getItem('expense-debug') === 'true') && (
-        <ExpenseDebugPanel selectedGroupId={selectedGroupId || undefined} />
-      )}
     </AppLayout>
   );
 };

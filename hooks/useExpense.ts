@@ -20,7 +20,6 @@ export const useExpense = ({
   chat_id,
 }: UseExpenseProps) => {
   const queryClient = useQueryClient();
-  
 
   // Memoized function to get data from cache
   const getExpenseFromCache = useMemo(() => {
@@ -35,7 +34,9 @@ export const useExpense = ({
       // Look in either expenses or income array based on isIncome flag
       const entry = isIncome
         ? allEntriesData.income.find((e) => e.id.toString() === id.toString())
-        : allEntriesData.expenses.find((e) => e.id.toString() === id.toString());
+        : allEntriesData.expenses.find(
+            (e) => e.id.toString() === id.toString()
+          );
 
       if (entry) {
         return entry;
@@ -56,7 +57,6 @@ export const useExpense = ({
 
     return undefined;
   }, [queryClient, userId, chat_id, id, isIncome]);
-
 
   // Function to update expense in all relevant caches
   const updateExpenseInCache = (updatedExpense: UnifiedEntry) => {
@@ -83,7 +83,11 @@ export const useExpense = ({
 
     // Use the existing refetch utility for proper expense query management
     if (userId) {
-      refetchExpensesQueries(queryClient, userId.toString(), chat_id?.toString());
+      refetchExpensesQueries(
+        queryClient,
+        userId.toString(),
+        chat_id?.toString() || ""
+      );
     }
   };
 
@@ -135,15 +139,15 @@ export const useExpense = ({
       }
 
       const data = await response.json();
-      
+
       // Update cache with fresh data from API
       queryClient.setQueryData(["expense", id], data);
-      
+
       return data;
     },
     initialData: getExpenseFromCache,
     enabled: !!userId && !!initData,
-    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+    staleTime: 0, // Consider data fresh for 5 minutes
     gcTime: 1000 * 60 * 10, // Keep unused data in cache for 10 minutes
     refetchOnMount: false,
     refetchOnWindowFocus: false,

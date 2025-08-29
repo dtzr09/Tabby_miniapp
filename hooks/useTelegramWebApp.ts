@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { init } from "@telegram-apps/sdk";
 import { TelegramWebApp } from "../utils/types";
-import { appCache } from "../utils/cache";
 import { TelegramUser } from "../components/dashboard";
 
 interface TelegramWebAppData {
@@ -11,9 +10,7 @@ interface TelegramWebAppData {
   isReady: boolean;
 }
 
-// Cache keys for Telegram data
-const TELEGRAM_CACHE_KEY = "telegram_webapp_data";
-const TELEGRAM_INIT_FLAG = "telegram_initialized";
+let telegramInitialized = false;
 
 export const useTelegramWebApp = (): TelegramWebAppData => {
   const [state, setState] = useState<TelegramWebAppData>({
@@ -28,19 +25,10 @@ export const useTelegramWebApp = (): TelegramWebAppData => {
 
     const initializeTelegram = () => {
       try {
-        // Check cache first
-        const cachedData = appCache.get<TelegramWebAppData>(TELEGRAM_CACHE_KEY);
-        const isInitialized = appCache.has(TELEGRAM_INIT_FLAG);
-
-        if (cachedData && isInitialized) {
-          setState(cachedData);
-          return;
-        }
-
         // Initialize once
-        if (!isInitialized) {
+        if (!telegramInitialized) {
           init();
-          appCache.set(TELEGRAM_INIT_FLAG, true, 30 * 60 * 1000); // Cache for 30 minutes
+          telegramInitialized = true;
         }
 
         const webApp = window.Telegram?.WebApp as TelegramWebApp;
@@ -53,8 +41,6 @@ export const useTelegramWebApp = (): TelegramWebAppData => {
             isReady: true,
           };
 
-          // Cache the data for 15 minutes
-          appCache.set(TELEGRAM_CACHE_KEY, telegramData, 15 * 60 * 1000);
           setState(telegramData);
         } else {
           // Retry without delay for better performance
@@ -68,8 +54,6 @@ export const useTelegramWebApp = (): TelegramWebAppData => {
                 isReady: true,
               };
 
-              // Cache the data for 15 minutes
-              appCache.set(TELEGRAM_CACHE_KEY, telegramData, 15 * 60 * 1000);
               setState(telegramData);
             } else {
               // Only retry a few times to avoid infinite loops
