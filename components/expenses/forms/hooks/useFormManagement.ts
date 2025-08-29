@@ -19,7 +19,7 @@ import {
   updateExpenseShares,
 } from "../../../../services/expenses";
 import { divideAmountEvenly } from "../../../../utils/currencyUtils";
-import { useQueryClient } from "@tanstack/react-query";
+import { broadcastExpenseUpdate } from "../../../../utils/expenseUpdateBroadcaster";
 
 interface UseFormManagementProps {
   entryId?: string;
@@ -48,7 +48,6 @@ export const useFormManagement = ({
 }: UseFormManagementProps) => {
   // Get Telegram data and query client
   const { user: tgUser, initData } = useTelegramWebApp();
-  const queryClient = useQueryClient();
 
   // Get expense management functions
   const { updateExpenseInCache, deleteExpenseFromCache } = useExpense({
@@ -238,20 +237,10 @@ export const useFormManagement = ({
             );
           }
 
-          // Direct and simple cache invalidation - force fresh data
-          await queryClient.invalidateQueries({
-            queryKey: ["allEntries", tgUser.id.toString(), chat_id],
-          });
-
-          // Also invalidate broader patterns to ensure dashboard updates
-          await queryClient.invalidateQueries({
-            predicate: (query) => {
-              const key = query.queryKey;
-              return key[0] === "allEntries" && key[1] === tgUser.id.toString();
-            },
-          });
-
-          console.log("🔄 Cache invalidated successfully after expense update");
+          // Use the expense update broadcaster for proper cache invalidation
+          console.log("🔄 Broadcasting expense update");
+          broadcastExpenseUpdate(tgUser.id.toString(), chat_id, entryId);
+          console.log("✅ Expense update broadcasted successfully");
 
           // showPopup({
           //   title: "Success",

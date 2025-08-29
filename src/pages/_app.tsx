@@ -10,6 +10,7 @@ import {
   viewport,
   backButton,
 } from "@telegram-apps/sdk";
+import { expenseUpdateBroadcaster } from "../../utils/expenseUpdateBroadcaster";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +31,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Initialize the expense update broadcaster with the query client
+expenseUpdateBroadcaster.setQueryClient(queryClient);
 // Extend the Window interface to include Telegram
 declare global {
   interface Window {
@@ -71,6 +75,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         eruda.default.init();
       });
     }
+
     function applyViewportHeight() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tg = (window as any).Telegram?.WebApp;
@@ -136,6 +141,11 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
 
     initTg();
+
+    // Cleanup function to clean up the broadcaster
+    return () => {
+      expenseUpdateBroadcaster.cleanup();
+    };
   }, []);
 
   return (
