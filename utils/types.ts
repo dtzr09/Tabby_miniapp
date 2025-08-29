@@ -122,8 +122,7 @@ export interface User {
   telegram_id: string;
   chat_id: string;
   username?: string;
-  first_name?: string;
-  last_name?: string;
+  name: string;
   created_at: string;
   updated_at: string;
 }

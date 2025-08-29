@@ -183,6 +183,12 @@ const EntryDetail = (props: EntryDetailProps) => {
           onChange={(e) =>
             props.handleFormValues(e.target.value, FormValues.DESCRIPTION)
           }
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
           placeholder="Enter description"
           variant="standard"
           sx={{

@@ -7,6 +7,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Box, Typography } from "@mui/material";
 import { Button } from "@mui/material";
 import SplitExpense from "../../expenseShare/SplitExpense";
+import { useUserById } from "../../../hooks/useUserById";
+import { useTelegramWebApp } from "../../../hooks/useTelegramWebApp";
 
 interface SplitExpenseBottomSheetProps {
   showSplitExpenseSheet: boolean;
@@ -31,6 +33,15 @@ interface SplitExpenseBottomSheetProps {
 }
 const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
   const { colors } = useTheme();
+  const { initData } = useTelegramWebApp();
+
+  // Get payer user information if payer_id exists
+  const { data: payerUser } = useUserById(
+    props.expense?.payer_id,
+    initData,
+    props.expense?.chat_id
+  );
+
   const disableSplitModeToggle =
     props.expenseShares.length < 2 &&
     Boolean(
@@ -38,6 +49,9 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
         (share) => share.user_id === props.expense?.payer_id
       )
     );
+  const isPersonalExpensePaidByOthers =
+    props.expense?.payer_id !== props.expense?.shares?.[0]?.user_id &&
+    props.expense?.shares?.length === 1;
 
   return (
     <BottomSheet
@@ -69,7 +83,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
           onClick: () => {
             // Close bottom sheet immediately for better UX
             props.setShowSplitExpenseSheet(false);
-            
+
             // Handle save in background
             props.handleSplitApplyChanges().catch((error) => {
               console.error("Failed to save split changes:", error);
@@ -85,7 +99,7 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
           {/* Edit/Equal Split Toggle Button */}
           <Button
             onClick={props.handleSplitModeToggle}
-            disabled={disableSplitModeToggle}
+            disabled={disableSplitModeToggle || isPersonalExpensePaidByOthers}
             sx={{
               color: colors.text,
               textTransform: "none",
@@ -101,7 +115,10 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
                   mr: 0.5,
                   fontSize: "0.9rem",
                   color: colors.text,
-                  opacity: disableSplitModeToggle ? 0.3 : 1,
+                  opacity:
+                    disableSplitModeToggle || isPersonalExpensePaidByOthers
+                      ? 0.1
+                      : 1,
                 }}
               />
             ) : (
@@ -111,7 +128,10 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
                   mr: 0.5,
                   fontSize: "0.9rem",
                   color: colors.text,
-                  opacity: disableSplitModeToggle ? 0.3 : 1,
+                  opacity:
+                    disableSplitModeToggle || isPersonalExpensePaidByOthers
+                      ? 0.1
+                      : 1,
                 }}
               />
             )}
@@ -138,6 +158,8 @@ const SplitExpenseBottomSheet = (props: SplitExpenseBottomSheetProps) => {
           onValidationChange={props.setSplitValidationErrors}
           onHasChangesChange={props.setSplitHasChanges}
           onInputValuesChange={props.setSplitInputValues}
+          isPersonalExpensePaidByOthers={isPersonalExpensePaidByOthers}
+          payerUser={payerUser || null}
         />
       )}
     </BottomSheet>

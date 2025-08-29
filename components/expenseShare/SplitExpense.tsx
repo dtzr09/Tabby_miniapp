@@ -1,5 +1,5 @@
 import { Box, Divider, Typography } from "@mui/material";
-import { Expense, ExpenseShare } from "../../utils/types";
+import { Expense, ExpenseShare, User } from "../../utils/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { divideAmountEvenly } from "../../utils/currencyUtils";
@@ -14,6 +14,8 @@ interface SplitExpenseProps {
   onHasChangesChange?: (hasChanges: boolean) => void;
   onInputValuesChange?: (inputValues: Record<string | number, string>) => void;
   isCustomSplit: boolean;
+  isPersonalExpensePaidByOthers: boolean;
+  payerUser: User | null;
 }
 
 const SplitExpense = ({
@@ -24,6 +26,8 @@ const SplitExpense = ({
   onValidationChange,
   onHasChangesChange,
   onInputValuesChange,
+  isPersonalExpensePaidByOthers,
+  payerUser,
 }: SplitExpenseProps) => {
   const { colors } = useTheme();
 
@@ -69,14 +73,14 @@ const SplitExpense = ({
       const sortedShares = [...expense.shares].sort((a, b) => {
         // If no payer_id is set, maintain original order
         if (!expense.payer_id) return 0;
-        
+
         const aIsPayer = a.user_id === expense.payer_id;
         const bIsPayer = b.user_id === expense.payer_id;
         if (aIsPayer && !bIsPayer) return -1;
         if (!aIsPayer && bIsPayer) return 1;
         return 0;
       });
-      
+
       setLocalShares(sortedShares);
       const newInputValues: Record<string | number, string> = {};
       sortedShares.forEach((share) => {
@@ -85,7 +89,6 @@ const SplitExpense = ({
       setInputValues(newInputValues);
       setValidationErrors({});
       setHasChanges(false);
-      
     }
   }, [expense.shares, expense.payer_id]);
 
@@ -182,6 +185,17 @@ const SplitExpense = ({
         </Box>
       )}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
+        {payerUser && isPersonalExpensePaidByOthers && (
+          <Typography
+            variant="body2"
+            color={colors.textSecondary}
+            sx={{
+              textAlign: "center",
+            }}
+          >
+            This expense is paid by {payerUser.name} (@{payerUser.username})
+          </Typography>
+        )}
         {localShares.map((share) => (
           <UserShare
             key={share.user_id}

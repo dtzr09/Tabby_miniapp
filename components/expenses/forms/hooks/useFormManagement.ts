@@ -186,6 +186,9 @@ export const useFormManagement = ({
             return;
           }
 
+          // Get the updated expense data from the response
+          const updatedExpense = await response.json();
+
           // Update expense amount with separate API call if needed
           if (expense.amount !== newAmount) {
             await updateExpenseAmount(
@@ -211,6 +214,11 @@ export const useFormManagement = ({
               initData,
               chat_id
             );
+            
+            // Update the expense object with new shares for cache
+            if (updatedExpense && 'shares' in updatedExpense) {
+              updatedExpense.shares = updatedShares;
+            }
           }
 
           // Reset form with updated data to reflect the changes
@@ -227,7 +235,11 @@ export const useFormManagement = ({
 
           reset(updatedFormData, { keepDirty: false });
 
-          // Refetch expense queries for proper cache invalidation
+          // Immediately update the cache with the new data to prevent stale data display
+          // This happens after all API calls to ensure we have the most up-to-date data
+          updateExpenseInCache(updatedExpense);
+
+          // Refetch expense queries for proper cache invalidation (but cache is already updated)
           refetchExpensesQueries(queryClient, tgUser.id.toString(), chat_id);
         } catch {
           showPopup({

@@ -63,7 +63,8 @@ export default function ExpenseList({
   const { combineEntries, getFilteredEntries } = useEntryFiltering(
     allEntries,
     isPersonalView,
-    userId
+    userId,
+    isGroupView
   );
 
   const handlers = useExpenseListHandlers({

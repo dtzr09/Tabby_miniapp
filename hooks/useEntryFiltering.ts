@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { AllEntriesResponse, UnifiedEntry } from "../utils/types";
+import { AllEntriesResponse, Expense, UnifiedEntry } from "../utils/types";
 import { cleanCategoryName } from "../utils/categoryUtils";
 import { getPersonalAmount } from "../utils/personalShareUtils";
 import { FilterType } from "../utils/advancedFilterUtils";
@@ -17,14 +17,46 @@ interface DateRange {
 export const useEntryFiltering = (
   allEntries: AllEntriesResponse | undefined,
   isPersonalView?: boolean,
-  userId?: string | number
+  userId?: string | number,
+  isGroupView?: boolean
 ) => {
+  // Helper function to check if an expense is personal (user is payer and only participant)
+  const isPersonalExpense = (expense: Expense): boolean => {
+    if (!expense.shares || !Array.isArray(expense.shares)) {
+      return false;
+    }
+
+    // Check if there's only one share and that share's user_id matches the payer_id
+    if (expense.shares.length === 1) {
+      const singleShare = expense.shares[0];
+      const shareUserId =
+        typeof singleShare.user_id === "string"
+          ? parseInt(singleShare.user_id)
+          : singleShare.user_id;
+      const payerId =
+        typeof expense.payer_id === "string"
+          ? parseInt(expense.payer_id)
+          : expense.payer_id;
+
+      return shareUserId === payerId;
+    }
+
+    return false;
+  };
+
   // Combine income and expenses into unified entries
   const combineEntries = useCallback((): UnifiedEntry[] => {
     const combined: UnifiedEntry[] = [];
 
     // Add expenses
     allEntries?.expenses?.forEach((expense) => {
+      // For group view, exclude income and personal expenses
+      if (isGroupView) {
+        if (expense.is_income || isPersonalExpense(expense)) {
+          return; // Skip this expense
+        }
+      }
+
       const categoryName = expense.category?.name || "Other";
       const { emoji } = cleanCategoryName(categoryName);
       const personalData = getPersonalAmount(expense, !!isPersonalView, userId);
@@ -46,6 +78,11 @@ export const useEntryFiltering = (
 
     // Add income entries
     allEntries?.income?.forEach((income) => {
+      // For group view, exclude income entries
+      if (isGroupView) {
+        return; // Skip income entries for group view
+      }
+
       const categoryName = income.category?.name || "Income";
       const { emoji } = cleanCategoryName(categoryName);
 
@@ -62,7 +99,7 @@ export const useEntryFiltering = (
     });
 
     return combined;
-  }, [allEntries, isPersonalView, userId]);
+  }, [allEntries, isPersonalView, userId, isGroupView, isPersonalExpense]);
 
   // Search function
   const searchExpenses = useCallback(
