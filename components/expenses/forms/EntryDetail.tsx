@@ -156,7 +156,7 @@ const EntryDetail = (props: EntryDetailProps) => {
                 whiteSpace: "nowrap",
               }}
             >
-              {props.currentAmount}
+              {Number(props.currentAmount).toFixed(2)}
             </Typography>
           </Box>
 
