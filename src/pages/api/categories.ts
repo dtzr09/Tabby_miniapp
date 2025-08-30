@@ -139,7 +139,7 @@ async function handleUpdateCategory(
       // Update category name
       const { error: updateError } = await supabaseAdmin
         .from("all_categories")
-        .update({ name, updated_at: new Date().toISOString() })
+        .update({ name })
         .eq("id", id)
         .eq("chat_id", effectiveChatId);
 
