@@ -87,45 +87,65 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   });
 
   // Prefetch preferences, categories, and user data when dashboard loads
-  useQuery({
+  const { data: dashboardConfig } = useQuery({
     queryKey: ["dashboardConfig", tgUser?.id, selectedGroupId],
     queryFn: async () => {
       if (tgUser && initData) {
-        const [preferences, categories, user] = await Promise.all([
-          fetchPreferences(tgUser.id, initData, selectedGroupId),
-          fetchCategories(tgUser.id, initData, selectedGroupId),
-          fetchUser(tgUser.id, initData, selectedGroupId || undefined),
-        ]);
-        
-        return {
-          preferences,
-          categories,
-          user,
-        };
+        try {
+          const [preferences, categories, user] = await Promise.all([
+            fetchPreferences(tgUser.id, initData, selectedGroupId).catch(err => {
+              console.warn("Failed to fetch preferences:", err);
+              return null;
+            }),
+            fetchCategories(tgUser.id, initData, selectedGroupId).catch(err => {
+              console.warn("Failed to fetch categories:", err);
+              return null;
+            }),
+            fetchUser(tgUser.id, initData, selectedGroupId || undefined).catch(err => {
+              console.warn("Failed to fetch user:", err);
+              return null;
+            }),
+          ]);
+          
+          return {
+            preferences,
+            categories,
+            user,
+          };
+        } catch (error) {
+          console.error("Dashboard config prefetch failed:", error);
+          return null;
+        }
       }
       return Promise.resolve(null);
     },
     enabled: !!tgUser && !!initData,
     staleTime: 10 * 60 * 1000, // 10 minutes for preferences, categories are fairly static
     gcTime: 30 * 60 * 1000, // 30 minutes
-    select: (data) => {
-      // Also cache individual items for components that query them directly
-      if (data) {
-        // Cache preferences separately
-        const preferencesQueryKey = ["preferences", tgUser?.id, selectedGroupId];
-        queryClient.setQueryData(preferencesQueryKey, data.preferences);
-        
-        // Cache categories separately  
-        const categoriesQueryKey = ["categories", tgUser?.id, selectedGroupId];
-        queryClient.setQueryData(categoriesQueryKey, data.categories);
-        
-        // Cache user data separately
-        const userQueryKey = ["user", tgUser?.id, selectedGroupId];
-        queryClient.setQueryData(userQueryKey, data.user);
-      }
-      return data;
-    },
   });
+
+  // Cache individual items when dashboardConfig is available (outside of query to avoid loops)
+  useEffect(() => {
+    if (dashboardConfig && tgUser?.id) {
+      // Cache preferences separately
+      if (dashboardConfig.preferences) {
+        const preferencesQueryKey = ["preferences", tgUser.id, selectedGroupId];
+        queryClient.setQueryData(preferencesQueryKey, dashboardConfig.preferences);
+      }
+      
+      // Cache categories separately  
+      if (dashboardConfig.categories) {
+        const categoriesQueryKey = ["categories", tgUser.id, selectedGroupId];
+        queryClient.setQueryData(categoriesQueryKey, dashboardConfig.categories);
+      }
+      
+      // Cache user data separately
+      if (dashboardConfig.user) {
+        const userQueryKey = ["user", tgUser.id, selectedGroupId];
+        queryClient.setQueryData(userQueryKey, dashboardConfig.user);
+      }
+    }
+  }, [dashboardConfig, tgUser?.id, selectedGroupId, queryClient]);
 
   // Filter entries based on group and personal view settings
   const getPersonalFilteredExpenses = useCallback(
