@@ -124,7 +124,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
 
   // Use React Query for data fetching to leverage prefetched data from dashboard
   const { data: preferencesData, isLoading: preferencesLoading } = useQuery({
-    queryKey: ["preferences", user?.id, chat_id],
+    queryKey: ["preferences", user?.id?.toString(), chat_id],
     queryFn: () => fetchPreferences(user!.id.toString(), initData!, chat_id),
     enabled: !!(user?.id && initData && isReady),
     staleTime: 10 * 60 * 1000, // 10 minutes - matches dashboard prefetch
