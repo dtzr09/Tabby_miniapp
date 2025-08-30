@@ -32,7 +32,7 @@ export default function GroupPersonalToggle({
         gap: 0.5,
       }}
     >
-      {isGroup ? (
+      {!isGroup ? (
         <>
           <WorkspacesOutlined sx={{ fontSize: "1rem" }} />
           Group
