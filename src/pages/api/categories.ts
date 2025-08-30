@@ -119,6 +119,7 @@ async function handleUpdateCategory(
           .status(500)
           .json({ error: "Supabase client not configured" });
       }
+      console.log("Updating category:", id, name, effectiveChatId);
 
       // Check if category belongs to user/group
       const { data: existingCategory } = await supabaseAdmin
@@ -127,6 +128,7 @@ async function handleUpdateCategory(
         .eq("id", id)
         .eq("chat_id", effectiveChatId)
         .single();
+      console.log("Existing category:", existingCategory);
 
       if (!existingCategory) {
         return res
@@ -142,6 +144,7 @@ async function handleUpdateCategory(
         .eq("chat_id", effectiveChatId)
         .select()
         .single();
+      console.log("Updated category:", updatedCategory);
 
       if (error) {
         return res.status(500).json({ error: error.message });
