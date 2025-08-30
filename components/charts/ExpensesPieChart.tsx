@@ -28,6 +28,7 @@ const ExpensesPieChart = (props: ExpensesPieChartProps) => {
         display: "flex",
         justifyContent: "center",
         position: "relative",
+        pointerEvents: "auto",
       }}
     >
       <Box
@@ -35,17 +36,22 @@ const ExpensesPieChart = (props: ExpensesPieChartProps) => {
           width: 170,
           height: 170,
           position: "relative",
+          pointerEvents: "auto",
           "& .recharts-wrapper": {
             outline: "none",
+            pointerEvents: "auto",
           },
           "& .recharts-surface": {
             outline: "none",
+            pointerEvents: "auto",
           },
           "& .recharts-chart-container": {
             outline: "none",
+            pointerEvents: "auto",
           },
           "& *": {
             outline: "none !important",
+            pointerEvents: "auto !important",
           },
         }}
       >
@@ -60,6 +66,10 @@ const ExpensesPieChart = (props: ExpensesPieChartProps) => {
               paddingAngle={1}
               dataKey="value"
               stroke="none"
+              isAnimationActive={true}
+              animationBegin={0}
+              animationDuration={800}
+              animationEasing="ease-out"
             >
               {props.chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -81,7 +91,7 @@ const ExpensesPieChart = (props: ExpensesPieChartProps) => {
             justifyContent: "center",
             alignItems: "center",
             borderRadius: "50%",
-            backgroundColor: colors.card,
+            backgroundColor: colors.background,
             boxShadow: `inset 0 0 0 1px ${colors.border}`,
           }}
         >

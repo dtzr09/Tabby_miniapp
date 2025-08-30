@@ -1,12 +1,6 @@
 import { Typography } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
-
-interface ChartDataPoint {
-  name: string;
-  amount: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
-}
+import { ChartDataPoint } from "../../utils/types";
 
 interface ChartToolTipProps {
   active?: boolean;

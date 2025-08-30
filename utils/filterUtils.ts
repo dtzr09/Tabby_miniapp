@@ -20,7 +20,7 @@ const matchesSearch = (entry: UnifiedEntry, searchQuery: string): boolean => {
   if (!searchQuery.trim()) return true;
 
   const query = searchQuery.toLowerCase();
-  const categoryName = entry.category || "Other";
+  const categoryName = entry.category?.name || "Other";
   const cleanCategoryNameValue = cleanCategoryName(categoryName).name;
 
   return (
@@ -35,7 +35,7 @@ const matchesSearch = (entry: UnifiedEntry, searchQuery: string): boolean => {
 const matchesCategory = (entry: UnifiedEntry, categoryFilter: CategoryFilterOption): boolean => {
   if (categoryFilter === "All Categories") return true;
 
-  const categoryName = entry.category || "Other";
+  const categoryName = entry.category?.name || "Other";
   const cleanCategoryNameValue = cleanCategoryName(categoryName).name;
   return cleanCategoryNameValue === categoryFilter;
 };

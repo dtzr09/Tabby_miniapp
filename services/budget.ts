@@ -16,10 +16,7 @@ export const fetchBudgets = async (telegram_id: string, initData: string) => {
     }
   );
 
-  if (!response.ok) {
-    throw new Error(`Budgets error ${response.status}: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return Array.isArray(data) ? data : [];
+  const data = Array.isArray(response) ? response : [];
+  
+  return data;
 };

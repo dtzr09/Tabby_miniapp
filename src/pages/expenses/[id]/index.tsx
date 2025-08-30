@@ -1,33 +1,28 @@
-import { backButton, init, showPopup } from "@telegram-apps/sdk";
+import {
+  backButton,
+  init,
+  settingsButton,
+  showPopup,
+} from "@telegram-apps/sdk";
 import { useRouter } from "next/router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Button, Alert } from "@mui/material";
-import { TelegramWebApp } from "../../../../utils/types";
-import { useForm } from "react-hook-form";
 import DeleteExpenseDialog from "../../../../components/expenses/utils/DeleteExpenseDialog";
-import { TelegramUser } from "../../../../components/dashboard";
 import EntryForm from "../../../../components/expenses/forms/EntryForm";
 import LoadingSkeleton from "../../../../components/dashboard/LoadingSkeleton";
 import { useExpense } from "../../../../hooks/useExpense";
 import { useAllEntries } from "../../../../hooks/useAllEntries";
-import { useTheme } from "@/contexts/ThemeContext";
-
-interface ExpenseFormData {
-  description: string;
-  amount: string;
-  category_id: number;
-}
+import { AppLayout } from "../../../../components/AppLayout";
+import { useTelegramWebApp } from "../../../../hooks/useTelegramWebApp";
 
 const ExpenseDetail = () => {
   const router = useRouter();
-  const { id: entryId, isIncome } = router.query;
-  const { colors } = useTheme();
+  const { id: entryId, isIncome, chat_id } = router.query;
+  const { user: tgUser, initData } = useTelegramWebApp();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
-  const [initData, setInitData] = useState<string | undefined>(undefined);
 
   // Get categories from useAllEntries
-  const { categories } = useAllEntries(tgUser?.id, initData);
+  const { categories } = useAllEntries(tgUser?.id, initData, chat_id as string);
 
   // Get expense data with cache-first strategy
   const {
@@ -35,44 +30,16 @@ const ExpenseDetail = () => {
     isLoading,
     isError,
     error,
-    updateExpenseInCache,
     deleteExpenseFromCache,
+    refreshCache,
+    updateExpenseInCache,
   } = useExpense({
     id: entryId as string,
     isIncome: isIncome === "true",
     userId: tgUser?.id,
-    initData,
+    initData: initData,
+    chat_id: chat_id as string,
   });
-
-  const defaultValues: ExpenseFormData = {
-    description: "",
-    amount: "",
-    category_id: 0,
-  };
-
-  const {
-    control,
-    handleSubmit,
-    formState: { isDirty, isSubmitting },
-    reset,
-  } = useForm<ExpenseFormData>({
-    defaultValues,
-    mode: "onChange",
-  });
-
-  // Reset form when expense data changes
-  useEffect(() => {
-    if (expense) {
-      reset(
-        {
-          description: expense.description || "",
-          amount: Math.abs(expense.amount).toString(),
-          category_id: expense.category?.id || 0,
-        },
-        { keepDirty: false }
-      );
-    }
-  }, [expense, reset]);
 
   // Initialize Telegram WebApp
   useEffect(() => {
@@ -83,100 +50,33 @@ const ExpenseDetail = () => {
         init(); // Initialize Telegram WebApp
         backButton.mount(); // Mount back button
         backButton.show(); // Show back button
-        backButton.onClick(() => router.back()); // Set back button click handler
+        backButton.onClick(() => router.back());
 
-        const webApp = window.Telegram?.WebApp as TelegramWebApp;
-        if (!webApp?.initData) {
-          console.log("⏳ Waiting for Telegram WebApp to initialize...");
-          setTimeout(initializeApp, 100);
-          return;
+        // Hide settings button on entries page
+        if (settingsButton.isMounted()) {
+          settingsButton.hide();
         }
-
-        const user = webApp.initDataUnsafe?.user;
-        const webAppInitData = webApp.initData;
-
-        if (!user?.id || !webAppInitData || !entryId) {
-          console.error("Missing required data");
-          return;
-        }
-
-        setTgUser(user as TelegramUser);
-        setInitData(webAppInitData);
       } catch (err) {
         console.error("Error initializing expense detail:", err);
       }
     };
 
     initializeApp();
-  }, [entryId]);
 
-  const onSubmit = useCallback(
-    async (data: ExpenseFormData) => {
+    // Cleanup function to restore settings button when leaving entries page
+    return () => {
       try {
-        const webApp = window.Telegram?.WebApp as TelegramWebApp;
-        const user = webApp.initDataUnsafe?.user;
-        const webAppInitData = webApp.initData;
-
-        if (!user?.id || !webAppInitData || !entryId || !expense) {
-          console.error("Missing required data");
-          return;
+        if (settingsButton.isMounted()) {
+          settingsButton.show();
         }
-
-        // Create the updated expense object
-        const updatedExpense = {
-          ...expense,
-          description: data.description,
-          amount: parseFloat(data.amount) * (isIncome === "true" ? 1 : -1),
-          category: categories.find((c) => c.id === data.category_id),
-        };
-
-        // Optimistically update the cache
-        updateExpenseInCache(updatedExpense);
-
-        // Make the API call in the background
-        const response = await fetch(`/api/entries/${entryId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            telegram_id: user.id.toString(),
-            initData: webAppInitData,
-            ...data,
-            amount: parseFloat(data.amount),
-            isIncome: isIncome === "true",
-          }),
-        });
-
-        if (!response.ok) {
-          // If update fails, show error but don't block navigation
-          showPopup({
-            title: "Error",
-            message: "Failed to update. Please refresh the page.",
-            buttons: [{ type: "ok" }],
-          });
-          return;
-        }
-
-        showPopup({
-          title: "Success",
-          message: `${
-            isIncome === "true" ? "Income" : "Expense"
-          } updated successfully`,
-          buttons: [{ type: "ok" }],
-        });
-      } catch (err) {
-        console.error("Error updating entry:", err);
-        showPopup({
-          title: "Error",
-          message: "Failed to update. Please refresh the page.",
-          buttons: [{ type: "ok" }],
-        });
+      } catch {
+        // Ignore cleanup errors
       }
-    },
-    [entryId, isIncome, expense, categories, updateExpenseInCache, router]
-  );
+    };
+  }, [entryId, router]);
 
   // Handle loading and error states
-  if (isLoading) {
+  if (isLoading || !expense || categories.length === 0) {
     return <LoadingSkeleton />;
   }
 
@@ -199,98 +99,45 @@ const ExpenseDetail = () => {
     );
   }
 
-  if (!expense) {
-    return (
-      <Box sx={{ p: 2 }}>
-        <Alert severity="warning">
-          Expense not found. It may have been deleted.
-        </Alert>
-        <Button
-          variant="contained"
-          onClick={() => router.back()}
-          sx={{ mt: 2 }}
-        >
-          Go Back
-        </Button>
-      </Box>
-    );
-  }
-
   return (
-    <Box
-      sx={{
-        height: "100%",
-        background: colors.background,
-        px: 2,
-        display: "flex",
-        flexDirection: "column",
-        pt: "16px",
-      }}
-    >
+    <AppLayout>
       <EntryForm
-        control={control}
-        categories={categories}
+        entryId={entryId as string}
         isIncome={isIncome === "true"}
-        isLoading={isLoading}
-        date={expense.date}
+        expense={expense}
+        categories={categories}
+        chat_id={chat_id as string}
+        isGroupExpense={chat_id !== tgUser?.id?.toString()}
+        setShowDeleteDialog={setShowDeleteDialog}
+        refreshCache={refreshCache}
+        updateExpenseInCache={updateExpenseInCache}
+        onToggleRecurring={() => {
+          try {
+            showPopup({
+              title: "Coming Soon",
+              message: "Recurring expenses will be available soon!",
+              buttons: [{ type: "ok" }],
+            });
+          } catch {
+            console.log("Recurring expenses will be available soon!");
+          }
+        }}
+        // onShowSplit={() => console.log("Show split not implemented")}
       />
 
-      <Box
-        sx={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: "flex",
-          flexDirection: "row",
-          gap: 1,
-          p: 2,
-          pb: "48px",
-          background: colors.background,
-        }}
-      >
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{
-            width: "100%",
-            color: colors.text,
-            background: colors.expense,
-            textTransform: "none",
-          }}
-          onClick={() => setShowDeleteDialog(true)}
-        >
-          Delete {isIncome === "true" ? "income" : "expense"}
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{
-            width: "100%",
-            color: colors.text,
-            background: "#2662ec",
-            textTransform: "none",
-            "&:disabled": {
-              background: colors.disabled,
-              color: colors.textSecondary,
-            },
-          }}
-          disabled={!isDirty}
-          onClick={handleSubmit(onSubmit)}
-        >
-          {isSubmitting ? "Saving..." : "Save Changes"}
-        </Button>
-      </Box>
       <DeleteExpenseDialog
         id={Number(entryId)}
         isIncome={isIncome === "true"}
-        onSuccess={() => router.back()}
+        onSuccess={() => {
+          setShowDeleteDialog(false);
+          router.back();
+        }}
         showConfirm={showDeleteDialog}
         setShowConfirm={setShowDeleteDialog}
         tgUser={tgUser}
         deleteFromCache={deleteExpenseFromCache}
       />
-    </Box>
+    </AppLayout>
   );
 };
 

@@ -9,7 +9,8 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === "GET") {
-    const { telegram_id, initData } = req.query;
+    const { telegram_id, initData, chat_id } = req.query;
+    const effectiveChatId = chat_id || telegram_id; // Use group chat_id if provided, otherwise use telegram_id for personal
 
     // Validate Telegram WebApp data
     const isValid = validateTelegramWebApp(initData as string, BOT_TOKEN);
@@ -18,19 +19,38 @@ export default async function handler(
       return res.status(401).json({ error: "Invalid Telegram WebApp data" });
     }
 
+    console.log("🔍 Preferences API called with:", { telegram_id, chat_id, effectiveChatId });
+
     if (isLocal) {
       // Use local PostgreSQL for development
       console.log("🔧 Using local PostgreSQL connection for preferences");
 
       try {
-        // Get the user preferences by telegram_id
-        const result = await postgresClient.query(
-          "SELECT currency, timezone, country FROM users WHERE telegram_id = $1 LIMIT 1",
-          [telegram_id]
-        );
+        let result;
+        if (chat_id && chat_id !== telegram_id) {
+          // Get group preferences - first try groups table
+          result = await postgresClient.query(
+            "SELECT currency, timezone, country FROM groups WHERE chat_id = $1 LIMIT 1",
+            [effectiveChatId]
+          );
+          
+          // If no group found, fall back to users table
+          if (result.rows.length === 0) {
+            result = await postgresClient.query(
+              "SELECT currency, timezone, country FROM users WHERE telegram_id = $1 LIMIT 1",
+              [effectiveChatId]
+            );
+          }
+        } else {
+          // Get user preferences by telegram_id
+          result = await postgresClient.query(
+            "SELECT currency, timezone, country FROM users WHERE telegram_id = $1 LIMIT 1",
+            [effectiveChatId]
+          );
+        }
 
         if (result.rows.length === 0) {
-          return res.status(404).json({ error: "User not found" });
+          return res.status(404).json({ error: "Preferences not found" });
         }
 
         console.log("✅ Preferences fetched locally:", result.rows[0]);
@@ -50,16 +70,43 @@ export default async function handler(
       }
 
       try {
-        // Get the user preferences by telegram_id
-        const { data, error } = await supabaseAdmin
-          .from("users")
-          .select("currency, timezone, country")
-          .eq("telegram_id", telegram_id as string)
-          .limit(1)
-          .single();
+        let data, error;
+        if (chat_id && chat_id !== telegram_id) {
+          // Get group preferences - first try groups table
+          const groupResult = await supabaseAdmin
+            .from("groups")
+            .select("currency, timezone, country")
+            .eq("chat_id", effectiveChatId as string)
+            .limit(1)
+            .single();
+          
+          if (groupResult.data) {
+            data = groupResult.data;
+          } else {
+            // If no group found, fall back to users table
+            const userResult = await supabaseAdmin
+              .from("users")
+              .select("currency, timezone, country")
+              .eq("telegram_id", effectiveChatId as string)
+              .limit(1)
+              .single();
+            data = userResult.data;
+            error = userResult.error;
+          }
+        } else {
+          // Get user preferences by telegram_id
+          const result = await supabaseAdmin
+            .from("users")
+            .select("currency, timezone, country")
+            .eq("telegram_id", effectiveChatId as string)
+            .limit(1)
+            .single();
+          data = result.data;
+          error = result.error;
+        }
 
         if (error || !data) {
-          return res.status(404).json({ error: "User not found" });
+          return res.status(404).json({ error: "Preferences not found" });
         }
 
         console.log("✅ Preferences fetched from Supabase:", data);
@@ -72,7 +119,7 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const { telegram_id, initData, currency, timezone, country } = req.body;
+    const { telegram_id, initData, currency, timezone, country, chat_id } = req.body;
 
     // Validate Telegram WebApp data
     const isValid = validateTelegramWebApp(initData as string, BOT_TOKEN);
@@ -96,17 +143,36 @@ export default async function handler(
       console.log("🔧 Using local PostgreSQL connection for preferences");
 
       try {
-        // Get the user row by telegram_id
-        const userResult = await postgresClient.query(
-          "SELECT id FROM users WHERE telegram_id = $1 LIMIT 1",
-          [telegram_id]
-        );
+        let targetId, tableName, idField;
+        if (chat_id) {
+          // Handle group preferences
+          const groupResult = await postgresClient.query(
+            "SELECT chat_id FROM groups WHERE chat_id = $1 LIMIT 1",
+            [chat_id]
+          );
 
-        if (userResult.rows.length === 0) {
-          return res.status(404).json({ error: "User not found" });
+          if (groupResult.rows.length === 0) {
+            return res.status(404).json({ error: "Group not found" });
+          }
+
+          targetId = groupResult.rows[0].chat_id;
+          tableName = "groups";
+          idField = "chat_id";
+        } else {
+          // Handle user preferences
+          const userResult = await postgresClient.query(
+            "SELECT id FROM users WHERE telegram_id = $1 LIMIT 1",
+            [telegram_id]
+          );
+
+          if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+          }
+
+          targetId = userResult.rows[0].id;
+          tableName = "users";
+          idField = "id";
         }
-
-        const userId = userResult.rows[0].id;
 
         // Update user preferences
         const updateFields = [];
@@ -135,12 +201,12 @@ export default async function handler(
           return res.status(400).json({ error: "No valid fields to update" });
         }
 
-        updateValues.push(userId);
+        updateValues.push(targetId);
         const updateQuery = `
-          UPDATE users 
+          UPDATE ${tableName} 
           SET ${updateFields.join(", ")}, updated_at = NOW()
-          WHERE id = $${paramIndex}
-          RETURNING id, currency, timezone, country
+          WHERE ${idField} = $${paramIndex}
+          RETURNING ${idField}, currency, timezone, country
         `;
 
         const result = await postgresClient.query(updateQuery, updateValues);
@@ -162,18 +228,38 @@ export default async function handler(
       }
 
       try {
-        // Get the user row by telegram_id
-        const { data: users, error: userError } = await supabaseAdmin
-          .from("users")
-          .select("id")
-          .eq("telegram_id", telegram_id as string)
-          .limit(1);
+        let targetId, tableName, idField;
+        if (chat_id) {
+          // Handle group preferences
+          const { data: groups, error: groupError } = await supabaseAdmin
+            .from("groups")
+            .select("chat_id")
+            .eq("chat_id", chat_id as string)
+            .limit(1);
 
-        if (userError || !users || users.length === 0) {
-          return res.status(404).json({ error: "User not found" });
+          if (groupError || !groups || groups.length === 0) {
+            return res.status(404).json({ error: "Group not found" });
+          }
+
+          targetId = groups[0].chat_id;
+          tableName = "groups";
+          idField = "chat_id";
+        } else {
+          // Handle user preferences
+          const { data: users, error: userError } = await supabaseAdmin
+            .from("users")
+            .select("id")
+            .eq("telegram_id", telegram_id as string)
+            .limit(1);
+
+          if (userError || !users || users.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+          }
+
+          targetId = users[0].id;
+          tableName = "users";
+          idField = "id";
         }
-
-        const userId = users[0].id;
 
         // Prepare update data
         const updateData: Record<string, string | Date> = {};
@@ -186,12 +272,12 @@ export default async function handler(
           return res.status(400).json({ error: "No valid fields to update" });
         }
 
-        // Update user preferences
+        // Update preferences
         const { data, error } = await supabaseAdmin
-          .from("users")
+          .from(tableName)
           .update(updateData)
-          .eq("id", userId)
-          .select("id, currency, timezone, country")
+          .eq(idField, targetId)
+          .select(`${idField}, currency, timezone, country`)
           .single();
 
         if (error) {

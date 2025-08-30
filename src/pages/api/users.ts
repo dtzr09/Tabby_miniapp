@@ -9,7 +9,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === "GET") {
-    const { telegram_id, initData } = req.query;
+    const { telegram_id, initData, chat_id } = req.query;
 
     // Validate required parameters
     if (!telegram_id || !initData) {
@@ -29,19 +29,22 @@ export default async function handler(
       return res.status(401).json({ error: "Invalid Telegram WebApp data" });
     }
 
+    let chat_id_to_use = telegram_id;
+    if (chat_id) chat_id_to_use = chat_id as string;
+
     if (isLocal) {
       try {
         // Get user by telegram_id
         const userResult = await postgresClient.query(
-          "SELECT id FROM users WHERE telegram_id = $1 AND chat_id = $1 LIMIT 1",
-          [telegram_id]
+          "SELECT * FROM users WHERE telegram_id = $1 AND chat_id = $2 LIMIT 1",
+          [telegram_id, chat_id_to_use]
         );
 
         if (userResult.rows.length === 0) {
           return res.status(404).json({ error: "User not found" });
         }
 
-        return res.status(200).json(userResult.rows);
+        return res.status(200).json(userResult.rows[0]);
       } catch (error) {
         console.error("Database error:", error);
         return res.status(500).json({ error: "Database error occurred" });
@@ -58,9 +61,9 @@ export default async function handler(
         // Get the user row by telegram_id
         const { data: users, error: userError } = await supabaseAdmin
           .from("users")
-          .select("id")
+          .select("*")
           .eq("telegram_id", telegram_id)
-          .eq("chat_id", telegram_id)
+          .eq("chat_id", chat_id)
           .limit(1);
 
         if (userError) {
@@ -72,7 +75,7 @@ export default async function handler(
           return res.status(404).json({ error: "User not found" });
         }
 
-        return res.status(200).json(users[0].id);
+        return res.status(200).json(users[0]);
       } catch (error) {
         console.error("Unexpected error:", error);
         return res.status(500).json({ error: "An unexpected error occurred" });

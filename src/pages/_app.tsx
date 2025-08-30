@@ -8,24 +8,41 @@ import {
   isTMA,
   disableVerticalSwipes,
   viewport,
+  backButton,
 } from "@telegram-apps/sdk";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Keep data fresh for 5 seconds before considering it stale
-      staleTime: 5000,
-      // Keep unused data in cache for 5 minutes
-      gcTime: 300000,
-      // Only refetch on mount if data is stale
-      refetchOnMount: 'always',
-      // Only refetch on window focus if data is stale
-      refetchOnWindowFocus: true,
-      // Retry failed queries once
+      // Cache-first strategy: keep data fresh for 5 minutes
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      // Longer cache time to prevent unnecessary garbage collection
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      // Reduce refetching for better performance
+      refetchOnMount: false, // Use cache-first
+      refetchOnWindowFocus: false, // Prevent unnecessary refetches
+      refetchOnReconnect: true, // Only refetch on reconnect
+      // Optimized retry strategy
+      retry: (failureCount, error: unknown) => {
+        // Don't retry on client errors (4xx)
+        if (error && typeof error === 'object' && 'status' in error) {
+          const status = (error as { status: number }).status;
+          if (status >= 400 && status < 500) return false;
+        }
+        return failureCount < 2; // Max 2 retries
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
+      // Use offline-first behavior for better UX
+      networkMode: 'offlineFirst',
+    },
+    mutations: {
+      // Optimistic updates for mutations
       retry: 1,
+      retryDelay: 1000,
     },
   },
 });
+
 // Extend the Window interface to include Telegram
 declare global {
   interface Window {
@@ -50,7 +67,10 @@ declare global {
         };
         onEvent?: (eventType: string, eventHandler: () => void) => void;
         lockOrientation?: (orientation: string) => void;
-        setViewportSettings?: (settings: { viewport_height?: boolean; expand_media_previews?: boolean }) => void;
+        setViewportSettings?: (settings: {
+          viewport_height?: boolean;
+          expand_media_previews?: boolean;
+        }) => void;
       };
     };
   }
@@ -58,6 +78,13 @@ declare global {
 
 function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
+    // Initialize Eruda for mobile debugging - only on client side
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      import('eruda').then((eruda) => {
+        eruda.default.init();
+      });
+    }
+
     function applyViewportHeight() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tg = (window as any).Telegram?.WebApp;
@@ -72,12 +99,20 @@ function MyApp({ Component, pageProps }: AppProps) {
       if (await isTMA()) {
         init();
 
+        // Unmount back button immediately after init to prevent auto-mounting
+        try {
+          if (backButton.isMounted()) {
+            backButton.unmount();
+          }
+        } catch (err) {
+          console.warn("Failed to unmount back button on init:", err);
+        }
+
         // Enable viewport height adjustments and safe areas
         window.Telegram?.WebApp?.setViewportSettings?.({
           viewport_height: true,
           expand_media_previews: true,
         });
-
         if (viewport.mount.isAvailable()) {
           await viewport.mount();
           viewport.expand();
@@ -101,12 +136,13 @@ function MyApp({ Component, pageProps }: AppProps) {
         );
         window.visualViewport?.addEventListener("resize", applyViewportHeight);
       } else {
-        // Browser fallback
-        const setFromVV = () =>
+        // Browser fallback - skip on desktop
+        const setFromVV = () => {
           document.documentElement.style.setProperty(
             "--app-height",
             `${window.visualViewport?.height || window.innerHeight}px`
           );
+        };
         setFromVV();
         window.addEventListener("resize", setFromVV);
         window.visualViewport?.addEventListener("resize", setFromVV);
@@ -114,6 +150,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
 
     initTg();
+
   }, []);
 
   return (

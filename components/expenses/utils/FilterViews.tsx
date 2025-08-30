@@ -34,9 +34,9 @@ export default function FilterViews({
     // Get unique categories with their income/expense status
     const categoriesMap = new Map<string, CategoryInfo>();
     entries.forEach((entry) => {
-      if (entry.category) {
-        categoriesMap.set(entry.category, {
-          name: entry.category,
+      if (entry.category && entry.category.name) {
+        categoriesMap.set(entry.category.name, {
+          name: entry.category.name,
           isIncome: entry.isIncome,
         });
       }
@@ -120,12 +120,6 @@ export default function FilterViews({
                       : colors.incomeExpenseCard,
                   cursor: "pointer",
                   whiteSpace: "nowrap",
-                  "&:hover": {
-                    bgcolor:
-                      selectedCategory === name
-                        ? alpha(colors.primary, 0.15)
-                        : alpha(colors.primary, 0.1),
-                  },
                   transition: "all 0.2s ease-in-out",
                 }}
               >
@@ -162,9 +156,6 @@ export default function FilterViews({
               bgcolor: selectedType === "expense" ? colors.card : "transparent",
               cursor: "pointer",
               transition: "all 0.2s ease-in-out",
-              "&:hover": {
-                color: colors.text,
-              },
             }}
           >
             Expense
@@ -182,9 +173,6 @@ export default function FilterViews({
               bgcolor: selectedType === "income" ? colors.card : "transparent",
               cursor: "pointer",
               transition: "all 0.2s ease-in-out",
-              "&:hover": {
-                color: colors.text,
-              },
             }}
           >
             Income

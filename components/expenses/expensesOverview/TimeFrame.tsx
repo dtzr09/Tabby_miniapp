@@ -22,7 +22,11 @@ const TimeFrame = ({
         cursor: "pointer",
         py: 0.5,
       }}
-      onClick={() => onViewModeChange?.(currentTimeFrame)}
+      onClick={() => {
+        if (viewMode !== currentTimeFrame) {
+          onViewModeChange?.(currentTimeFrame);
+        }
+      }}
     >
       <Typography
         sx={{

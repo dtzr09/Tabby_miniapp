@@ -2,7 +2,8 @@ import { AllEntriesResponse } from "../utils/types";
 
 export const fetchAllEntries = async (
   telegram_id: string,
-  initData: string
+  initData: string,
+  chat_id?: string | null
 ): Promise<AllEntriesResponse> => {
   try {
     const params = new URLSearchParams({
@@ -10,27 +11,25 @@ export const fetchAllEntries = async (
       initData,
     });
 
-    // Fetch all entries with isIncome parameter
-    const [expensesResponse, incomesResponse] = await Promise.all([
-      fetch(`/api/entries?${params.toString()}&isIncome=false`),
-      fetch(`/api/entries?${params.toString()}&isIncome=true`),
-    ]);
-
-    if (!expensesResponse.ok) {
-      throw new Error(`Failed to fetch expenses: ${expensesResponse.statusText}`);
+    if (chat_id) {
+      params.set("chat_id", chat_id);
     }
 
-    if (!incomesResponse.ok) {
-      throw new Error(`Failed to fetch income: ${incomesResponse.statusText}`);
-    }
-
-    const [expenses, income] = await Promise.all([
-      expensesResponse.json(),
-      incomesResponse.json(),
+    // Fetch entries and budgets in parallel
+    const [entriesResponse, budgetsResponse] = await Promise.all([
+      // Use the new efficient all-entries endpoint (single query with UNION ALL)
+      fetch(`/api/all-entries?${params.toString()}`),
+      // Fetch budgets separately
+      fetch(`/api/budgets?${params.toString()}`),
     ]);
 
-    // Fetch budgets
-    const budgetsResponse = await fetch(`/api/budgets?${params.toString()}`);
+    if (!entriesResponse.ok) {
+      throw new Error(`Failed to fetch entries: ${entriesResponse.statusText}`);
+    }
+
+    const entriesData = await entriesResponse.json();
+    
+    // Handle budgets (may not exist)
     let budgets = [];
     if (budgetsResponse.ok) {
       budgets = await budgetsResponse.json();
@@ -40,8 +39,8 @@ export const fetchAllEntries = async (
     }
 
     return {
-      expenses,
-      income,
+      expenses: entriesData.expenses,
+      income: entriesData.income,
       budgets,
     };
   } catch (error) {

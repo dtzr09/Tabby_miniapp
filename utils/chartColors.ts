@@ -5,7 +5,7 @@ export const chartColors = [
   "#00bcd4", // cyan
   "#2ca02c", // green
   "#d62728", // red
-  "#9467bd", // purple
+  "#7c3aed", // purple
   "#8c564b", // brown
   "#e377c2", // pink
   "#7f7f7f", // gray
@@ -15,7 +15,7 @@ export const chartColors = [
   "#ffbb78", // light orange
   "#98df8a", // light green
   "#ff9896", // light red
-  "#c5b0d5", // light purple
+  "#a78bfa", // light purple
   "#c49c94", // light brown
   "#f7b6d2", // light pink
   "#c7c7c7", // light gray

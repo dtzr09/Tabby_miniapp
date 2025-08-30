@@ -9,17 +9,22 @@ import { displayDateTime } from "../../../utils/displayDateTime";
 import { UnifiedEntry } from "../../../utils/types";
 import { TelegramUser } from "../../dashboard";
 import { alpha } from "@mui/material/styles";
+
 import { useQueryClient } from "@tanstack/react-query";
-import { refetchExpensesQueries } from "../../../utils/refetchExpensesQueries";
+import { QueryData } from "../../../utils/types";
+import { getCategoryColor } from "../../../utils/categoryColors";
+import { cleanCategoryName } from "../../../utils/categoryUtils";
 
 const ExpenseRow = ({
   tx,
   tgUser,
+  isGroupView,
 }: {
   tx: UnifiedEntry;
   tgUser: TelegramUser | null;
+  isGroupView?: boolean;
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const router = useRouter();
   const [showDelete, setShowDelete] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -37,15 +42,11 @@ const ExpenseRow = ({
     // Optimistically update the cache
     if (tgUser) {
       const userId = tgUser.id.toString();
-      const queryKeys = [
-        ["expensesWithBudget", userId],
-        ["allEntries", userId],
-      ];
+      const queryKeys = [["allEntries", userId, tx.chat_id]];
 
       // Update each query's data optimistically
       queryKeys.forEach((queryKey) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        queryClient.setQueryData(queryKey, (oldData: any) => {
+        queryClient.setQueryData(queryKey, (oldData: QueryData | unknown) => {
           if (!oldData) return oldData;
 
           // Handle both array and object responses
@@ -54,17 +55,20 @@ const ExpenseRow = ({
           }
 
           // Handle the allEntries structure
-          if (oldData.expenses || oldData.income) {
+          if (
+            oldData &&
+            typeof oldData === "object" &&
+            ("expenses" in oldData || "income" in oldData)
+          ) {
+            const typedData = oldData as QueryData;
             return {
-              ...oldData,
+              ...typedData,
               expenses: tx.isIncome
-                ? oldData.expenses
-                : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  oldData.expenses.filter((e: any) => e.id !== tx.id),
+                ? typedData.expenses
+                : typedData.expenses?.filter((e) => e.id !== tx.id) || [],
               income: tx.isIncome
-                ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  oldData.income.filter((i: any) => i.id !== tx.id)
-                : oldData.income,
+                ? typedData.income?.filter((i) => i.id !== tx.id) || []
+                : typedData.income,
             };
           }
 
@@ -72,8 +76,22 @@ const ExpenseRow = ({
         });
       });
 
-      // Then trigger a background refetch to ensure consistency
-      refetchExpensesQueries(queryClient, userId);
+      // Direct cache invalidation for immediate update
+      queryClient.invalidateQueries({
+        queryKey: ["allEntries", userId, tx.chat_id],
+      });
+      console.log("🗑️ Cache invalidated after expense deletion");
+    }
+  };
+
+  const handleDeleteError = () => {
+    // Invalidate queries to revert optimistic update
+    if (tgUser) {
+      const userId = tgUser.id.toString();
+      queryClient.invalidateQueries({
+        queryKey: ["allEntries", userId, tx.chat_id],
+      });
+      console.log("❌ Cache invalidated after delete error");
     }
   };
 
@@ -109,6 +127,8 @@ const ExpenseRow = ({
           setShowConfirm={setShowConfirm}
           tgUser={tgUser}
           isIncome={tx.isIncome}
+          deleteFromCache={handleDeleteSuccess}
+          onError={handleDeleteError}
         />
 
         {/* Main card */}
@@ -129,9 +149,14 @@ const ExpenseRow = ({
             justifyContent: "space-between",
             cursor: "pointer",
           }}
-          onClick={() =>
-            router.push(`/expenses/${tx.id}?isIncome=${tx.isIncome}`)
-          }
+          onClick={() => {
+            // Pre-populate React Query cache with expense data for instant access
+            queryClient.setQueryData(["expense", tx.id.toString()], tx);
+
+            router.push(
+              `/expenses/${tx.id}?isIncome=${tx.isIncome}&chat_id=${tx.chat_id}&isGroupView=${isGroupView}`
+            );
+          }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             {/* Category Icon */}
@@ -140,7 +165,12 @@ const ExpenseRow = ({
                 width: 36,
                 height: 36,
                 borderRadius: 1.5,
-                bgcolor: alpha(colors.text, 0.04),
+                bgcolor: tx.category?.id
+                  ? getCategoryColor(
+                      cleanCategoryName(tx.category.name).name,
+                      isDark
+                    )
+                  : alpha(colors.text, 0.04),
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -152,17 +182,40 @@ const ExpenseRow = ({
 
             {/* Description and Time */}
             <Box>
-              <Typography
+              <Box
                 sx={{
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                  color: colors.text,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
                   mb: 0.25,
-                  lineHeight: 1.2,
                 }}
               >
-                {tx.description}
-              </Typography>
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                    color: colors.text,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {tx.description}
+                </Typography>
+                {tx.isPersonalShare && (
+                  <Box
+                    sx={{
+                      fontSize: "0.6rem",
+                      bgcolor: colors.primary,
+                      color: "white",
+                      px: 0.5,
+                      py: 0.1,
+                      borderRadius: 0.5,
+                      fontWeight: 600,
+                    }}
+                  >
+                    SHARE
+                  </Box>
+                )}
+              </Box>
               <Typography
                 sx={{
                   color: colors.textSecondary,
@@ -176,19 +229,37 @@ const ExpenseRow = ({
           </Box>
 
           {/* Amount */}
-          <Typography
-            sx={{
-              fontWeight: 600,
-              color: tx.isIncome ? colors.income : colors.expense,
-              fontSize: "0.95rem",
-            }}
-          >
-            {tx.isIncome ? "+" : "-"}$
-            {Math.abs(tx.amount).toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </Typography>
+          <Box sx={{ textAlign: "right" }}>
+            <Typography
+              sx={{
+                fontWeight: 600,
+                color: tx.isIncome ? colors.income : colors.expense,
+                fontSize: "0.95rem",
+              }}
+            >
+              {tx.isIncome ? "+" : "-"}$
+              {Math.abs(tx.amount).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </Typography>
+
+            {/* Show share information for personal expenses */}
+            {tx.isPersonalShare &&
+              tx.originalAmount &&
+              tx.originalAmount !== tx.amount && (
+                <Typography
+                  sx={{
+                    fontSize: "0.7rem",
+                    color: colors.textSecondary,
+                    opacity: 0.7,
+                    lineHeight: 1,
+                  }}
+                >
+                  Share of ${tx.originalAmount}
+                </Typography>
+              )}
+          </Box>
         </Box>
       </Box>
     </Box>

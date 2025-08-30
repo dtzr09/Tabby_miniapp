@@ -1,4 +1,6 @@
-import { TelegramWebApp } from "../utils/types";
+import { QueryObserverResult } from "@tanstack/react-query";
+import { Expense, TelegramWebApp, BudgetWithCategory } from "../utils/types";
+import { fetchUser } from "./users";
 
 export const deleteExpense = async (id: number) => {
   try {
@@ -24,15 +26,29 @@ export const deleteExpense = async (id: number) => {
     if (!response.ok) {
       throw new Error("Failed to delete expense");
     }
+
+    console.log("🗑️ Expense deleted successfully");
   } catch (err) {
     console.error("Delete failed:", err);
+    throw err; // Re-throw to maintain error handling
   }
 };
 
-export const fetchExpenses = async (telegram_id: string, initData: string) => {
+export const fetchExpenses = async (
+  telegram_id: string,
+  initData: string,
+  group_id: string
+) => {
+  const user = await fetchUser(telegram_id, initData, group_id);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
   const params = new URLSearchParams({
     telegram_id,
     initData,
+    group_id,
+    user: JSON.stringify(user),
   });
 
   const response = await fetch(`/api/expenses?${params.toString()}`);
@@ -84,12 +100,19 @@ export const fetchExpenseDetail = async (
 
 export const fetchExpensesAndBudgets = async (
   telegram_id: string,
-  initData: string
+  initData: string,
+  group_id: string
 ) => {
+  const user = await fetchUser(telegram_id, initData, group_id);
+  if (!user) {
+    throw new Error("User not found");
+  }
   const params = new URLSearchParams({
     telegram_id,
     initData,
+    group_id: group_id,
     isPeriod: "true",
+    user: JSON.stringify(user),
   });
 
   const expensesResponse = fetch(`/api/expenses?${params.toString()}`).then(
@@ -124,6 +147,38 @@ export const fetchExpensesAndBudgets = async (
   return { expenses: expenses || [], budgets: budgets || [] };
 };
 
+export const fetchGroupExpenses = async (
+  telegram_id: string,
+  initData: string,
+  group_id: string,
+  group_view: boolean
+) => {
+  const user = await fetchUser(telegram_id, initData, group_id);
+  if (!user) {
+    throw new Error("User not found");
+  }
+  //fetch all expenses from the group whether or not user is involved
+  const params = new URLSearchParams({
+    telegram_id,
+    initData,
+    group_id,
+    isPeriod: "true",
+    group_view: group_view.toString(),
+    user: JSON.stringify(user),
+  });
+
+  const response = await fetch(`/api/group-expenses?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error(
+      `Group expenses error ${response.status}: ${response.statusText}`
+    );
+  }
+
+  const data = await response.json();
+  return data;
+};
+
 export const fetchExpensesForBudgets = async (
   telegram_id: string,
   initData: string
@@ -147,7 +202,7 @@ export const fetchExpensesForBudgets = async (
   );
 
   const budgetCategoriesIds = budgetsResponse.map(
-    (budget: any) => budget.category_id
+    (budget: BudgetWithCategory) => budget.category_id
   );
 
   const expensesParams = new URLSearchParams({
@@ -171,4 +226,74 @@ export const fetchExpensesForBudgets = async (
   const expenses = await expensesResponse;
 
   return expenses;
+};
+
+export const updateExpenseAmount = async (
+  id: number,
+  amount: number,
+  initData: string,
+  chat_id: string,
+  isIncome: boolean
+) => {
+  try {
+    const response = await fetch(`/api/entries/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount,
+        chat_id: chat_id,
+        initData,
+        isIncome,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("❌ Update expense amount API Error:", text);
+      throw new Error(
+        `Update expense amount error ${response.status}: ${text}`
+      );
+    }
+
+    return response.json();
+  } catch (err) {
+    console.error("Update expense amount failed:", err);
+    throw err;
+  }
+};
+
+export const updateExpenseShares = async (
+  id: number,
+  shares: Array<{ user_id: string | number; share_amount: number }>,
+  initData: string,
+  chat_id: string
+) => {
+  try {
+    const response = await fetch(`/api/entries/${id}/shares`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        shares,
+        chat_id: chat_id,
+        initData,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("❌ Update expense shares API Error:", text);
+      throw new Error(
+        `Update expense shares error ${response.status}: ${text}`
+      );
+    }
+
+    return response.json();
+  } catch (err) {
+    console.error("Update expense shares failed:", err);
+    throw err;
+  }
 };

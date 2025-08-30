@@ -75,7 +75,7 @@ export const applyFilter = (
   }
 
   if (filterType === "category" && options?.categoryId) {
-    filteredEntries = filteredEntries.filter(entry => entry.category === options.categoryId);
+    filteredEntries = filteredEntries.filter(entry => entry.category?.id?.toString() === options.categoryId);
   }
 
   // Always sort by date (newest first)
@@ -89,7 +89,7 @@ export const getUniqueCategories = (entries: UnifiedEntry[]) => {
   const categories = new Set<string>();
   entries.forEach(entry => {
     if (entry.category) {
-      categories.add(entry.category);
+      categories.add(entry.category.name);
     }
   });
   return Array.from(categories);

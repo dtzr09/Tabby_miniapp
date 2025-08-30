@@ -1,14 +1,7 @@
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-} from "@mui/material";
 import { TelegramUser } from "../../dashboard";
-import { useTheme } from "@/contexts/ThemeContext";
 import { TelegramWebApp } from "../../../utils/types";
 import { showPopup } from "@telegram-apps/sdk";
+import BottomSheet, { BottomSheetButton } from "../../common/BottomSheet";
 
 interface DeleteExpenseDialogProps {
   id: number;
@@ -18,6 +11,7 @@ interface DeleteExpenseDialogProps {
   setShowConfirm: (show: boolean) => void;
   tgUser: TelegramUser | null;
   deleteFromCache?: () => void;
+  onError?: () => void;
 }
 
 export default function DeleteExpenseDialog({
@@ -27,8 +21,8 @@ export default function DeleteExpenseDialog({
   showConfirm,
   setShowConfirm,
   deleteFromCache,
+  onError,
 }: DeleteExpenseDialogProps) {
-  const { colors } = useTheme();
 
   const handleDelete = async () => {
     try {
@@ -56,7 +50,7 @@ export default function DeleteExpenseDialog({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          telegram_id: user.id.toString(),
+          chat_id: user.id.toString(),
           initData,
           isIncome,
         }),
@@ -65,57 +59,45 @@ export default function DeleteExpenseDialog({
       if (!response.ok) {
         throw new Error("Failed to delete expense");
       }
+
+      console.log("🗑️ Expense deleted successfully");
     } catch (err) {
       console.error("Delete failed:", err);
-      // Show error message but don't revert UI since we already navigated
+
+      // Call onError to potentially revert optimistic update
+      if (onError) {
+        onError();
+      }
+
+      // Show error message
       showPopup({
         title: "Error",
-        message: "Failed to delete. Please refresh the page.",
+        message: "Failed to delete. Please try again.",
         buttons: [{ type: "ok" }],
       });
     }
   };
 
+  const buttons: BottomSheetButton[] = [
+    {
+      text: "Delete",
+      onClick: handleDelete,
+      variant: "destructive",
+    },
+    {
+      text: "Cancel",
+      onClick: () => setShowConfirm(false),
+      variant: "secondary",
+    },
+  ];
+
   return (
-    <Dialog
+    <BottomSheet
       open={showConfirm}
       onClose={() => setShowConfirm(false)}
-      PaperProps={{
-        sx: {
-          backgroundColor: colors.background,
-          color: colors.text,
-        },
-      }}
-    >
-      <DialogTitle sx={{ color: colors.text }}>
-        Delete {isIncome ? "Income" : "Expense"}
-      </DialogTitle>
-      <DialogContent>
-        <div style={{ color: colors.text }}>
-          Are you sure you want to delete this {isIncome ? "income" : "expense"}
-          ?
-        </div>
-      </DialogContent>
-      <DialogActions>
-        <Button
-          onClick={() => setShowConfirm(false)}
-          sx={{ color: colors.text }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleDelete}
-          sx={{
-            color: colors.text,
-            backgroundColor: colors.expense,
-            "&:hover": {
-              backgroundColor: colors.expenseBg,
-            },
-          }}
-        >
-          Delete
-        </Button>
-      </DialogActions>
-    </Dialog>
+      title={`Delete ${isIncome ? "Income" : "Expense"}`}
+      description="This action cannot be undone."
+      buttons={buttons}
+    />
   );
 }

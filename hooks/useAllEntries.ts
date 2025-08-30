@@ -9,14 +9,18 @@ interface UseAllEntriesReturn {
   isError: boolean;
 }
 
-export const useAllEntries = (userId?: string, initData?: string): UseAllEntriesReturn => {
+export const useAllEntries = (
+  userId?: string,
+  initData?: string | null,
+  chat_id?: string | null
+): UseAllEntriesReturn => {
   // Query for categories
-  const { 
+  const {
     data: categoriesData,
     isLoading: isCategoriesLoading,
-    isError: isCategoriesError
+    isError: isCategoriesError,
   } = useQuery({
-    queryKey: ["categories", userId],
+    queryKey: ["categories", userId?.toString()],
     queryFn: async () => {
       if (!userId || !initData) return { categories: [] };
 
@@ -36,21 +40,26 @@ export const useAllEntries = (userId?: string, initData?: string): UseAllEntries
   });
 
   // Query for all entries
-  const { 
+  const {
     data: allEntries,
     isLoading: isEntriesLoading,
-    isError: isEntriesError
+    isError: isEntriesError,
   } = useQuery<AllEntriesResponse>({
-    queryKey: ["allEntries", userId],
+    queryKey: ["allEntries", userId?.toString(), chat_id],
     queryFn: () => {
       if (userId && initData) {
-        return fetchAllEntries(userId, initData);
+        return fetchAllEntries(userId, initData, chat_id);
       }
       return Promise.resolve({ expenses: [], income: [], budgets: [] });
     },
     enabled: !!userId && !!initData,
-    gcTime: 300000, // Cache for 5 minutes
-    refetchOnWindowFocus: true,
+    // Use cache-first strategy - data stays fresh for 5 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    // Rely on optimistic updates, don't refetch unnecessarily
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchInterval: false,
   });
 
   return {
@@ -59,4 +68,4 @@ export const useAllEntries = (userId?: string, initData?: string): UseAllEntries
     isLoading: isEntriesLoading || isCategoriesLoading,
     isError: isEntriesError || isCategoriesError,
   };
-}; 
+};

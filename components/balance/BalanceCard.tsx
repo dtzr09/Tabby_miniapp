@@ -20,6 +20,9 @@ interface BalanceCardProps {
   expensesWithBudget: Expense[];
   budgets: Budget[];
   totalBudget: number;
+  selectedGroupId?: string | null;
+  isGroupView?: boolean;
+  userCount?: number;
 }
 
 type ViewType = "weekly" | "monthly";
@@ -36,6 +39,9 @@ export default function BalanceCard({
   expensesWithBudget,
   budgets,
   totalBudget,
+  selectedGroupId,
+  isGroupView,
+  userCount,
 }: BalanceCardProps) {
   const { colors } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -76,18 +82,18 @@ export default function BalanceCard({
     const today = new Date();
     const year = today.getFullYear();
     const month = today.getMonth();
-    
+
     // Get the last day of the current month
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    
+
     // Get the first day of the month
     const firstDay = new Date(year, month, 1);
     const firstDayOfWeek = firstDay.getDay();
-    
+
     // Calculate total weeks (including partial weeks)
     const weeksInMonth = Math.ceil((daysInMonth + firstDayOfWeek) / 7);
-    
+
     return {
       daysInMonth,
       weeksInMonth,
@@ -107,39 +113,22 @@ export default function BalanceCard({
   const monthInfo = getMonthInfo();
   const weeklyBudget = totalBudget / monthInfo.weeksInMonth;
   const currentBudget = viewType === "weekly" ? weeklyBudget : totalBudget;
-  const availableBalance = currentBudget - periodExpenses;
+  const budget =
+    selectedGroupId && !isGroupView && userCount
+      ? currentBudget / userCount
+      : currentBudget;
+
+  const availableBalance = budget - periodExpenses;
 
   // Calculate budget usage percentage based on current period
-  const usagePercentage = hasBudget
-    ? (periodExpenses / currentBudget) * 100
-    : 0;
+  const usagePercentage = hasBudget ? (periodExpenses / budget) * 100 : 0;
   const dailyBudget = availableBalance / daysRemaining;
-
-  // Group expenses by category for current period
-  // const categoryExpenses = expensesWithBudget.reduce((acc, exp) => {
-  //   const expDate = new Date(exp.date);
-  //   const startDate = getStartDate();
-
-  //   if (expDate >= startDate) {
-  //     const categoryName = exp.category?.name || "Uncategorized";
-  //     if (!acc[categoryName]) {
-  //       acc[categoryName] = {
-  //         total: 0,
-  //         budget:
-  //           viewType === "weekly" ? (totalBudget * 0.3) / 4 : totalBudget * 0.3,
-  //         color: getProgressColor(0), // Placeholder, will be updated by BudgetBreakdown
-  //       };
-  //     }
-  //     acc[categoryName].total += exp.amount || 0;
-  //   }
-  //   return acc;
-  // }, {} as Record<string, { total: number; budget: number; color: string }>);
 
   return (
     <Card
       sx={{
         borderRadius: 3,
-        bgcolor: colors.card,
+        bgcolor: colors.background,
         boxShadow: 0,
         border: `1px solid ${colors.border}`,
       }}
@@ -181,10 +170,6 @@ export default function BalanceCard({
                 alignItems: "center",
                 justifyContent: "center",
                 border: `1px solid ${alpha(colors.text, 0.15)}`,
-                "&:hover": {
-                  border: `1px solid ${alpha(colors.text, 0.25)}`,
-                  bgcolor: alpha(colors.text, 0.07),
-                },
               }}
             >
               {viewType === "weekly" ? "Week" : "Month"}
@@ -225,7 +210,7 @@ export default function BalanceCard({
                       marginLeft: "8px",
                     }}
                   >
-                    of ${currentBudget.toFixed(2)}
+                    of ${budget.toFixed(2)}
                   </span>
                 </>
               );
@@ -297,6 +282,9 @@ export default function BalanceCard({
               expenses={expensesWithBudget}
               budgets={budgets}
               viewType={viewType}
+              selectedGroupId={selectedGroupId}
+              isGroupView={isGroupView}
+              userCount={userCount}
             />
           </Collapse>
         </Box>

@@ -35,7 +35,7 @@ const ExpensesAndBudgetOverview = ({
         px: 2,
         pt: 2,
         borderRadius: 4,
-        bgcolor: colors.card,
+        bgcolor: colors.background,
         boxShadow: "none",
         border: `1px solid ${colors.border}`,
       }}

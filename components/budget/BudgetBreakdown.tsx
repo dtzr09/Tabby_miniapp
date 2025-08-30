@@ -8,12 +8,18 @@ interface BudgetBreakdownProps {
   expenses: Expense[];
   budgets: Budget[];
   viewType: "weekly" | "monthly";
+  selectedGroupId?: string | null;
+  isGroupView?: boolean;
+  userCount?: number;
 }
 
 export default function BudgetBreakdown({
   expenses,
   budgets,
   viewType,
+  selectedGroupId,
+  isGroupView,
+  userCount,
 }: BudgetBreakdownProps) {
   const { colors } = useTheme();
 
@@ -23,10 +29,15 @@ export default function BudgetBreakdown({
   // Calculate adjusted budgets and spending, and sort flexible to bottom
   const adjustedCategories = categories
     .map((category) => {
-      const adjustedBudget =
+      let adjustedBudget =
         viewType === "weekly" ? category.budget / 4 : category.budget;
       const adjustedSpent =
         viewType === "weekly" ? category.spent : category.spent;
+
+      // Divide budget by user count when in group and not group view
+      if (selectedGroupId && !isGroupView && userCount && userCount > 1) {
+        adjustedBudget = adjustedBudget / userCount;
+      }
 
       return {
         ...category,
@@ -66,7 +77,7 @@ export default function BudgetBreakdown({
                       width: 24,
                       height: 24,
                       borderRadius: "50%",
-                      bgcolor: alpha(category.color, 0.1),
+                      bgcolor: alpha(category.color, 0.2),
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",

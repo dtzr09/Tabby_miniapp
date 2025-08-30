@@ -59,10 +59,6 @@ const FilterOptionCard = (props: FilterOptionCardProps) => {
           fontSize: "0.75rem",
           py: 0.5,
           borderRadius: 4,
-          "&:hover": {
-            bgcolor: "#5a6e90",
-            borderColor: "#5a6e90",
-          },
           "& .MuiButton-endIcon": {
             color: "#a0a0a0",
           },
