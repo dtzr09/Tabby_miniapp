@@ -137,19 +137,31 @@ async function handleUpdateCategory(
       }
 
       // Update category name
-      const { data: updatedCategory, error } = await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from("all_categories")
         .update({ name, updated_at: new Date().toISOString() })
         .eq("id", id)
-        .eq("chat_id", effectiveChatId)
-        .select()
-        .single();
-      console.log("Updated category:", updatedCategory);
+        .eq("chat_id", effectiveChatId);
 
-      if (error) {
-        return res.status(500).json({ error: error.message });
+      if (updateError) {
+        console.log("Update error:", updateError);
+        return res.status(500).json({ error: updateError.message });
       }
 
+      // Fetch the updated category separately
+      const { data: updatedCategory, error: fetchError } = await supabaseAdmin
+        .from("all_categories")
+        .select("*")
+        .eq("id", id)
+        .eq("chat_id", effectiveChatId)
+        .single();
+
+      if (fetchError) {
+        console.log("Fetch error:", fetchError);
+        return res.status(500).json({ error: fetchError.message });
+      }
+
+      console.log("Updated category:", updatedCategory);
       return res.status(200).json({ category: updatedCategory });
     }
   } catch (error) {
