@@ -19,11 +19,14 @@ const ExpenseRow = ({
   tx,
   tgUser,
   isGroupView,
+  chat_id,
 }: {
   tx: UnifiedEntry;
   tgUser: TelegramUser | null;
   isGroupView?: boolean;
+  chat_id?: string;
 }) => {
+  console.log("ExpenseRow received:", { tx_chat_id: tx.chat_id, prop_chat_id: chat_id, final_chat_id: tx.chat_id || chat_id });
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const [showDelete, setShowDelete] = useState(false);
@@ -126,6 +129,7 @@ const ExpenseRow = ({
           showConfirm={showConfirm}
           setShowConfirm={setShowConfirm}
           tgUser={tgUser}
+          chat_id={tx.chat_id || chat_id}
           isIncome={tx.isIncome}
           deleteFromCache={handleDeleteSuccess}
           onError={handleDeleteError}

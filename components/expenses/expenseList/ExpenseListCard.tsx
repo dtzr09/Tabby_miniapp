@@ -9,6 +9,7 @@ export interface ExpenseListCardProps {
   entries: UnifiedEntry[];
   tgUser: TelegramUser | null;
   isGroupView?: boolean;
+  chat_id?: string;
 }
 
 interface GroupedEntries {
@@ -150,9 +151,15 @@ const ExpenseListCard = (props: ExpenseListCardProps) => {
             }}
           />
           {groupedEntries[date].entries.map((tx) => (
-            <ExpenseRow key={tx.id} tx={tx} tgUser={props.tgUser} isGroupView={props.isGroupView} />
+            <ExpenseRow
+              key={tx.id}
+              tx={tx}
+              tgUser={props.tgUser}
+              isGroupView={props.isGroupView}
+              chat_id={props.chat_id}
+            />
           ))}
-          <Box sx={{ mb: 2}} />
+          <Box sx={{ mb: 2 }} />
         </React.Fragment>
       ))}
     </List>

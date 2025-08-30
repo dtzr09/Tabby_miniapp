@@ -135,6 +135,7 @@ const ExpenseDetail = () => {
         showConfirm={showDeleteDialog}
         setShowConfirm={setShowDeleteDialog}
         tgUser={tgUser}
+        chat_id={chat_id as string}
         deleteFromCache={deleteExpenseFromCache}
       />
     </AppLayout>

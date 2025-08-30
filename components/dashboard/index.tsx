@@ -75,6 +75,8 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     selectedGroupId || undefined
   );
 
+  console.log("selectedGroupId in Dashboard", selectedGroupId);
+
   const { data: groups } = useQuery({
     queryKey: ["groupsWithExpenses", tgUser?.id],
     queryFn: () => {
@@ -260,6 +262,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   // Only show loading when we have user data and are actually fetching
   if (
     !filteredAllEntries ||
+    !selectedGroupId ||
     (tgUser && initData && (isAllEntriesLoading || isUserLoading))
   ) {
     return <LoadingSkeleton />;
@@ -421,6 +424,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
                 allEntries={filteredAllEntries}
                 tgUser={tgUser}
                 isGroupView={isGroupView}
+                chat_id={selectedGroupId}
               />
             </Box>
           </Box>

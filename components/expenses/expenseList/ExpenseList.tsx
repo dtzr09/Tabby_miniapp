@@ -32,6 +32,7 @@ interface ExpenseListProps {
   isPersonalView?: boolean;
   userId?: string | number;
   isGroupView?: boolean;
+  chat_id?: string;
 }
 
 export default function ExpenseList({
@@ -40,6 +41,7 @@ export default function ExpenseList({
   isPersonalView,
   userId,
   isGroupView,
+  chat_id,
 }: ExpenseListProps) {
   const { colors } = useTheme();
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -313,6 +315,7 @@ export default function ExpenseList({
               entries={filteredEntries}
               tgUser={tgUser}
               isGroupView={isGroupView}
+              chat_id={chat_id}
             />
           </List>
         </Box>

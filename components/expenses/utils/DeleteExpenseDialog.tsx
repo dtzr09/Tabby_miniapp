@@ -10,6 +10,7 @@ interface DeleteExpenseDialogProps {
   showConfirm: boolean;
   setShowConfirm: (show: boolean) => void;
   tgUser: TelegramUser | null;
+  chat_id?: string;
   deleteFromCache?: () => void;
   onError?: () => void;
 }
@@ -20,10 +21,10 @@ export default function DeleteExpenseDialog({
   onSuccess,
   showConfirm,
   setShowConfirm,
+  chat_id,
   deleteFromCache,
   onError,
 }: DeleteExpenseDialogProps) {
-
   const handleDelete = async () => {
     try {
       // Optimistically update cache and UI
@@ -44,13 +45,20 @@ export default function DeleteExpenseDialog({
         throw new Error("Missing Telegram data");
       }
 
+      console.log("🗑️ Deleting expense:", {
+        chat_id: chat_id?.toString(),
+        user_id: user.id.toString(),
+        initData,
+        isIncome,
+      });
+
       const response = await fetch(`/api/entries/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          chat_id: user.id.toString(),
+          chat_id: chat_id || user.id.toString(),
           initData,
           isIncome,
         }),
