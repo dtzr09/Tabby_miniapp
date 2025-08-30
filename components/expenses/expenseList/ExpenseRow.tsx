@@ -26,7 +26,6 @@ const ExpenseRow = ({
   isGroupView?: boolean;
   chat_id?: string;
 }) => {
-  console.log("ExpenseRow received:", { tx_chat_id: tx.chat_id, prop_chat_id: chat_id, final_chat_id: tx.chat_id || chat_id });
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const [showDelete, setShowDelete] = useState(false);

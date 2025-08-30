@@ -75,8 +75,6 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     selectedGroupId || undefined
   );
 
-  console.log("selectedGroupId in Dashboard", selectedGroupId);
-
   const { data: groups } = useQuery({
     queryKey: ["groupsWithExpenses", tgUser?.id],
     queryFn: () => {
@@ -93,26 +91,28 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     queryKey: ["dashboardConfig", tgUser?.id, selectedGroupId],
     queryFn: async () => {
       if (tgUser && initData) {
-        console.log("🌐 Dashboard making API calls for prefetch:", {
-          userId: tgUser.id,
-          selectedGroupId
-        });
         try {
           const [preferences, categories, user] = await Promise.all([
-            fetchPreferences(tgUser.id, initData, selectedGroupId).catch(err => {
-              console.warn("Failed to fetch preferences:", err);
-              return null;
-            }),
-            fetchCategories(tgUser.id, initData, selectedGroupId).catch(err => {
-              console.warn("Failed to fetch categories:", err);
-              return null;
-            }),
-            fetchUser(tgUser.id, initData, selectedGroupId || undefined).catch(err => {
-              console.warn("Failed to fetch user:", err);
-              return null;
-            }),
+            fetchPreferences(tgUser.id, initData, selectedGroupId).catch(
+              (err) => {
+                console.warn("Failed to fetch preferences:", err);
+                return null;
+              }
+            ),
+            fetchCategories(tgUser.id, initData, selectedGroupId).catch(
+              (err) => {
+                console.warn("Failed to fetch categories:", err);
+                return null;
+              }
+            ),
+            fetchUser(tgUser.id, initData, selectedGroupId || undefined).catch(
+              (err) => {
+                console.warn("Failed to fetch user:", err);
+                return null;
+              }
+            ),
           ]);
-          
+
           return {
             preferences,
             categories,
@@ -140,21 +140,27 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
         hasCategories: !!dashboardConfig.categories,
         hasUser: !!dashboardConfig.user,
       });
-      
+
       // Cache preferences separately
       if (dashboardConfig.preferences) {
         const preferencesQueryKey = ["preferences", tgUser.id, selectedGroupId];
         console.log("📦 Caching preferences with key:", preferencesQueryKey);
-        queryClient.setQueryData(preferencesQueryKey, dashboardConfig.preferences);
+        queryClient.setQueryData(
+          preferencesQueryKey,
+          dashboardConfig.preferences
+        );
       }
-      
-      // Cache categories separately  
+
+      // Cache categories separately
       if (dashboardConfig.categories) {
         const categoriesQueryKey = ["categories", tgUser.id, selectedGroupId];
         console.log("📦 Caching categories with key:", categoriesQueryKey);
-        queryClient.setQueryData(categoriesQueryKey, dashboardConfig.categories);
+        queryClient.setQueryData(
+          categoriesQueryKey,
+          dashboardConfig.categories
+        );
       }
-      
+
       // Cache user data separately
       if (dashboardConfig.user) {
         const userQueryKey = ["user", tgUser.id, selectedGroupId];

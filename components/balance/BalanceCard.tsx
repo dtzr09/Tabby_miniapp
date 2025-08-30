@@ -51,14 +51,21 @@ export default function BalanceCard({
     setViewType(viewType === "weekly" ? "monthly" : "weekly");
   };
 
-  const daysRemaining =
-    viewType === "weekly"
-      ? 7 - new Date().getDay() || 7 // If Sunday (0), show 7 days remaining
-      : new Date(
-          new Date().getFullYear(),
-          new Date().getMonth() + 1,
-          0
-        ).getDate() - new Date().getDate();
+  const daysRemaining = (() => {
+    const today = new Date();
+    if (viewType === "weekly") {
+      // Days left in the current week (0 = Sunday is end of week)
+      return new Date().getDay() === 0 ? 0 : 7 - new Date().getDay();
+    } else {
+      // Days left in the current month
+      const lastDayOfMonth = new Date(
+        today.getFullYear(),
+        today.getMonth() + 1,
+        0
+      ).getDate();
+      return lastDayOfMonth - today.getDate();
+    }
+  })();
 
   const hasBudget = totalBudget > 0;
 
@@ -122,7 +129,7 @@ export default function BalanceCard({
 
   // Calculate budget usage percentage based on current period
   const usagePercentage = hasBudget ? (periodExpenses / budget) * 100 : 0;
-  const dailyBudget = availableBalance / daysRemaining;
+  const dailyBudget = availableBalance / (daysRemaining || 1);
 
   return (
     <Card
@@ -218,7 +225,7 @@ export default function BalanceCard({
           </Typography>
         </Box>
         {/* Budget Info Box - Only show if there's a budget */}
-        {hasBudget && daysRemaining > 0 && (
+        {hasBudget && daysRemaining >= 0 && (
           <>
             <Box
               sx={{
@@ -226,6 +233,7 @@ export default function BalanceCard({
                 justifyContent: "space-between",
                 alignItems: "flex-start",
                 mb: 2,
+                mt: 1,
               }}
             >
               <Typography
