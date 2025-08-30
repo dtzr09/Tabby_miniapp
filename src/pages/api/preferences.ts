@@ -10,6 +10,7 @@ export default async function handler(
 ) {
   if (req.method === "GET") {
     const { telegram_id, initData, chat_id } = req.query;
+    const effectiveChatId = chat_id || telegram_id; // Use group chat_id if provided, otherwise use telegram_id for personal
 
     // Validate Telegram WebApp data
     const isValid = validateTelegramWebApp(initData as string, BOT_TOKEN);
@@ -18,28 +19,38 @@ export default async function handler(
       return res.status(401).json({ error: "Invalid Telegram WebApp data" });
     }
 
+    console.log("🔍 Preferences API called with:", { telegram_id, chat_id, effectiveChatId });
+
     if (isLocal) {
       // Use local PostgreSQL for development
       console.log("🔧 Using local PostgreSQL connection for preferences");
 
       try {
         let result;
-        if (chat_id) {
-          // Get group preferences
+        if (chat_id && chat_id !== telegram_id) {
+          // Get group preferences - first try groups table
           result = await postgresClient.query(
             "SELECT currency, timezone, country FROM groups WHERE chat_id = $1 LIMIT 1",
-            [chat_id]
+            [effectiveChatId]
           );
+          
+          // If no group found, fall back to users table
+          if (result.rows.length === 0) {
+            result = await postgresClient.query(
+              "SELECT currency, timezone, country FROM users WHERE telegram_id = $1 LIMIT 1",
+              [effectiveChatId]
+            );
+          }
         } else {
           // Get user preferences by telegram_id
           result = await postgresClient.query(
             "SELECT currency, timezone, country FROM users WHERE telegram_id = $1 LIMIT 1",
-            [telegram_id]
+            [effectiveChatId]
           );
         }
 
         if (result.rows.length === 0) {
-          return res.status(404).json({ error: chat_id ? "Group not found" : "User not found" });
+          return res.status(404).json({ error: "Preferences not found" });
         }
 
         console.log("✅ Preferences fetched locally:", result.rows[0]);
@@ -60,22 +71,34 @@ export default async function handler(
 
       try {
         let data, error;
-        if (chat_id) {
-          // Get group preferences
-          const result = await supabaseAdmin
+        if (chat_id && chat_id !== telegram_id) {
+          // Get group preferences - first try groups table
+          const groupResult = await supabaseAdmin
             .from("groups")
             .select("currency, timezone, country")
-            .eq("chat_id", chat_id as string)
+            .eq("chat_id", effectiveChatId as string)
             .limit(1)
             .single();
-          data = result.data;
-          error = result.error;
+          
+          if (groupResult.data) {
+            data = groupResult.data;
+          } else {
+            // If no group found, fall back to users table
+            const userResult = await supabaseAdmin
+              .from("users")
+              .select("currency, timezone, country")
+              .eq("telegram_id", effectiveChatId as string)
+              .limit(1)
+              .single();
+            data = userResult.data;
+            error = userResult.error;
+          }
         } else {
           // Get user preferences by telegram_id
           const result = await supabaseAdmin
             .from("users")
             .select("currency, timezone, country")
-            .eq("telegram_id", telegram_id as string)
+            .eq("telegram_id", effectiveChatId as string)
             .limit(1)
             .single();
           data = result.data;
@@ -83,7 +106,7 @@ export default async function handler(
         }
 
         if (error || !data) {
-          return res.status(404).json({ error: chat_id ? "Group not found" : "User not found" });
+          return res.status(404).json({ error: "Preferences not found" });
         }
 
         console.log("✅ Preferences fetched from Supabase:", data);

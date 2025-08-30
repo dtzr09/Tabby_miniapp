@@ -91,6 +91,10 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     queryKey: ["dashboardConfig", tgUser?.id, selectedGroupId],
     queryFn: async () => {
       if (tgUser && initData) {
+        console.log("🌐 Dashboard making API calls for prefetch:", {
+          userId: tgUser.id,
+          selectedGroupId
+        });
         try {
           const [preferences, categories, user] = await Promise.all([
             fetchPreferences(tgUser.id, initData, selectedGroupId).catch(err => {
@@ -127,21 +131,32 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   // Cache individual items when dashboardConfig is available (outside of query to avoid loops)
   useEffect(() => {
     if (dashboardConfig && tgUser?.id) {
+      console.log("🔄 Dashboard caching data for future use:", {
+        userId: tgUser.id,
+        selectedGroupId,
+        hasPreferences: !!dashboardConfig.preferences,
+        hasCategories: !!dashboardConfig.categories,
+        hasUser: !!dashboardConfig.user,
+      });
+      
       // Cache preferences separately
       if (dashboardConfig.preferences) {
         const preferencesQueryKey = ["preferences", tgUser.id, selectedGroupId];
+        console.log("📦 Caching preferences with key:", preferencesQueryKey);
         queryClient.setQueryData(preferencesQueryKey, dashboardConfig.preferences);
       }
       
       // Cache categories separately  
       if (dashboardConfig.categories) {
         const categoriesQueryKey = ["categories", tgUser.id, selectedGroupId];
+        console.log("📦 Caching categories with key:", categoriesQueryKey);
         queryClient.setQueryData(categoriesQueryKey, dashboardConfig.categories);
       }
       
       // Cache user data separately
       if (dashboardConfig.user) {
         const userQueryKey = ["user", tgUser.id, selectedGroupId];
+        console.log("📦 Caching user data with key:", userQueryKey);
         queryClient.setQueryData(userQueryKey, dashboardConfig.user);
       }
     }

@@ -22,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchPreferences } from "../../services/preferences";
 import { fetchGroups } from "../../services/group";
 import { Group } from "../../utils/types";
+import { loadNavigationState } from "../../utils/navigationState";
 
 // Types
 interface UserPreferences {
@@ -105,6 +106,23 @@ const Settings = ({ onViewChange }: SettingsProps) => {
   // Use optimized Telegram WebApp hook
   const { user, initData, isReady } = useTelegramWebApp();
 
+  // Initialize chat_id from Dashboard's navigation state to match cache keys
+  useEffect(() => {
+    if (user?.id && chat_id === null) {
+      // Load the same navigation state that Dashboard uses
+      const savedState = loadNavigationState();
+      const selectedGroupId = savedState?.selectedGroupId || user.id.toString();
+      
+      console.log("🔧 Settings initializing chat_id from navigation state:", {
+        savedSelectedGroupId: savedState?.selectedGroupId,
+        fallbackToUserId: user.id.toString(),
+        finalChatId: selectedGroupId
+      });
+      
+      setChatId(selectedGroupId);
+    }
+  }, [user?.id, chat_id]);
+
   const defaultValues: UserPreferences = useMemo(
     () => ({
       currency: "SGD",
@@ -123,12 +141,32 @@ const Settings = ({ onViewChange }: SettingsProps) => {
   const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
 
   // Use React Query for data fetching to leverage prefetched data from dashboard
-  const { data: preferencesData, isLoading: preferencesLoading } = useQuery({
+  const { data: preferencesData, isLoading: preferencesLoading, isFetching } = useQuery({
     queryKey: ["preferences", user?.id?.toString(), chat_id],
-    queryFn: () => fetchPreferences(user!.id.toString(), initData!, chat_id),
+    queryFn: () => {
+      console.log("🌐 Settings making fresh API call for preferences", {
+        userId: user?.id?.toString(),
+        chatId: chat_id
+      });
+      return fetchPreferences(user!.id.toString(), initData!, chat_id);
+    },
     enabled: !!(user?.id && initData && isReady),
     staleTime: 10 * 60 * 1000, // 10 minutes - matches dashboard prefetch
   });
+
+  // Log whether we're using cached data or fetching fresh
+  useEffect(() => {
+    if (user?.id && chat_id !== null) {
+      const queryKey = ["preferences", user.id.toString(), chat_id];
+      console.log("🔍 Settings preferences query:", {
+        queryKey,
+        isLoading: preferencesLoading,
+        isFetching,
+        hasData: !!preferencesData,
+        status: isFetching ? "FETCHING" : preferencesData ? "USING_CACHE" : "NO_DATA"
+      });
+    }
+  }, [user?.id, chat_id, preferencesLoading, isFetching, preferencesData]);
 
   const { data: groupsData, isLoading: groupsLoading } = useQuery({
     queryKey: ["groupsWithExpenses", user?.id],
@@ -617,7 +655,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     if (availableGroups.length === 0) return null;
 
     // Get the current group name
-    const currentGroupName = chat_id
+    const currentGroupName = chat_id && chat_id !== user?.id?.toString()
       ? groupName ||
         availableGroups.find((g: Group) => g.chat_id === chat_id)?.name ||
         availableGroups.find((g: Group) => g.chat_id === chat_id)?.title ||
@@ -664,8 +702,8 @@ const Settings = ({ onViewChange }: SettingsProps) => {
           }}
         >
           <MenuItem
-            onClick={() => handleGroupSelect(null)}
-            selected={!chat_id}
+            onClick={() => handleGroupSelect(user?.id?.toString() || null)}
+            selected={!chat_id || chat_id === user?.id?.toString()}
             sx={{
               color: colors.text,
               fontSize: "0.75rem",
