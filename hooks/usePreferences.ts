@@ -60,12 +60,15 @@ export const usePreferences = () => {
           return false;
         }
 
+        console.log("🔍 Preferences:", preferences);
+
         const response = await fetch("/api/preferences", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             telegram_id: user.id.toString(),
             initData,
+            chat_id: user.id.toString(),
             ...preferences,
           }),
         });

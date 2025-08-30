@@ -18,7 +18,7 @@ import { SettingsItem } from "./SettingsItem";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
 import { SelectionList } from "./SelectionList";
 import CategoriesSettings from "../../src/pages/settings/categories";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchPreferences } from "../../services/preferences";
 import { fetchGroups } from "../../services/group";
 import { Group } from "../../utils/types";
@@ -95,6 +95,7 @@ const SETTINGS_CONFIG = {
 
 const Settings = ({ onViewChange }: SettingsProps) => {
   const { colors, isDark, currentTheme, setTheme } = useTheme();
+  const queryClient = useQueryClient();
   const [chat_id, setChatId] = useState<string | null>(null);
   const [isLoading] = useState(false);
   const [currentView, setCurrentView] = useState<SettingsView>("main");
@@ -105,6 +106,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
 
   // Use optimized Telegram WebApp hook
   const { user, initData, isReady } = useTelegramWebApp();
+  const isGroup = chat_id && chat_id !== user?.id?.toString();
 
   // Initialize chat_id from Dashboard's navigation state to match cache keys
   useEffect(() => {
@@ -112,13 +114,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
       // Load the same navigation state that Dashboard uses
       const savedState = loadNavigationState();
       const selectedGroupId = savedState?.selectedGroupId || user.id.toString();
-      
-      console.log("🔧 Settings initializing chat_id from navigation state:", {
-        savedSelectedGroupId: savedState?.selectedGroupId,
-        fallbackToUserId: user.id.toString(),
-        finalChatId: selectedGroupId
-      });
-      
+
       setChatId(selectedGroupId);
     }
   }, [user?.id, chat_id]);
@@ -141,12 +137,16 @@ const Settings = ({ onViewChange }: SettingsProps) => {
   const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
 
   // Use React Query for data fetching to leverage prefetched data from dashboard
-  const { data: preferencesData, isLoading: preferencesLoading, isFetching } = useQuery({
-    queryKey: ["preferences", user?.id?.toString(), chat_id],
+  const {
+    data: preferencesData,
+    isLoading: preferencesLoading,
+    isFetching,
+  } = useQuery({
+    queryKey: ["preferences", user?.id, chat_id],
     queryFn: () => {
       console.log("🌐 Settings making fresh API call for preferences", {
         userId: user?.id?.toString(),
-        chatId: chat_id
+        chatId: isGroup ? chat_id : undefined,
       });
       return fetchPreferences(user!.id.toString(), initData!, chat_id);
     },
@@ -157,13 +157,17 @@ const Settings = ({ onViewChange }: SettingsProps) => {
   // Log whether we're using cached data or fetching fresh
   useEffect(() => {
     if (user?.id && chat_id !== null) {
-      const queryKey = ["preferences", user.id.toString(), chat_id];
+      const queryKey = ["preferences", user.id, chat_id];
       console.log("🔍 Settings preferences query:", {
         queryKey,
         isLoading: preferencesLoading,
         isFetching,
         hasData: !!preferencesData,
-        status: isFetching ? "FETCHING" : preferencesData ? "USING_CACHE" : "NO_DATA"
+        status: isFetching
+          ? "FETCHING"
+          : preferencesData
+          ? "USING_CACHE"
+          : "NO_DATA",
       });
     }
   }, [user?.id, chat_id, preferencesLoading, isFetching, preferencesData]);
@@ -184,11 +188,16 @@ const Settings = ({ onViewChange }: SettingsProps) => {
   // Update form data when preferences are loaded
   useEffect(() => {
     if (preferencesData) {
+      console.log("🔍 Raw preferences data from API:", preferencesData);
+
       const formData = {
         currency: preferencesData.currency || defaultValues.currency,
         timezone: preferencesData.timezone || defaultValues.timezone,
         country: preferencesData.country || defaultValues.country,
       };
+
+      console.log("🔄 Form data being set:", formData);
+      console.log("💰 Currency being set:", formData.currency);
 
       reset(formData);
       setSelectedCountry(formData.country);
@@ -300,11 +309,8 @@ const Settings = ({ onViewChange }: SettingsProps) => {
           telegram_id: user.id.toString(),
           initData,
           country: countryId,
+          chat_id: isGroup ? chat_id : undefined,
         };
-
-        if (chat_id) {
-          updateData.chat_id = chat_id as string;
-        }
 
         // Auto-update timezone and currency based on country
         if (country && country.timezones && country.timezones.length > 0) {
@@ -336,6 +342,11 @@ const Settings = ({ onViewChange }: SettingsProps) => {
         });
 
         if (response.ok) {
+          // Invalidate and refetch preferences cache - ensure key matches Dashboard cache format
+          await queryClient.invalidateQueries({
+            queryKey: ["preferences", user.id, chat_id],
+          });
+
           setCurrentView("main");
           reset({
             currency: updateData.currency || selectedCurrency,
@@ -367,6 +378,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
       defaultValues,
       reset,
       chat_id,
+      queryClient,
     ]
   );
 
@@ -389,11 +401,8 @@ const Settings = ({ onViewChange }: SettingsProps) => {
           telegram_id: user.id.toString(),
           initData,
           currency: currencyCode,
+          chat_id: isGroup ? chat_id : undefined,
         };
-
-        if (chat_id) {
-          updateData.chat_id = chat_id as string;
-        }
 
         const response = await fetch("/api/preferences", {
           method: "POST",
@@ -402,6 +411,11 @@ const Settings = ({ onViewChange }: SettingsProps) => {
         });
 
         if (response.ok) {
+          // Invalidate and refetch preferences cache - ensure key matches Dashboard cache format
+          await queryClient.invalidateQueries({
+            queryKey: ["preferences", user.id, chat_id],
+          });
+
           setCurrentView("main");
           reset({
             currency: currencyCode,
@@ -425,7 +439,15 @@ const Settings = ({ onViewChange }: SettingsProps) => {
         });
       }
     },
-    [user, initData, defaultValues, selectedCountry, reset, chat_id]
+    [
+      user,
+      initData,
+      defaultValues,
+      selectedCountry,
+      reset,
+      chat_id,
+      queryClient,
+    ]
   );
 
   // View handlers
@@ -655,12 +677,13 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     if (availableGroups.length === 0) return null;
 
     // Get the current group name
-    const currentGroupName = chat_id && chat_id !== user?.id?.toString()
-      ? groupName ||
-        availableGroups.find((g: Group) => g.chat_id === chat_id)?.name ||
-        availableGroups.find((g: Group) => g.chat_id === chat_id)?.title ||
-        "Group"
-      : "Personal";
+    const currentGroupName =
+      chat_id && chat_id !== user?.id?.toString()
+        ? groupName ||
+          availableGroups.find((g: Group) => g.chat_id === chat_id)?.name ||
+          availableGroups.find((g: Group) => g.chat_id === chat_id)?.title ||
+          "Group"
+        : "Personal";
 
     return (
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

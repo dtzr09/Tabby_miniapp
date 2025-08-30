@@ -10,7 +10,7 @@ export default async function handler(
 ) {
   if (req.method === "GET") {
     const { telegram_id, initData, chat_id } = req.query;
-    const effectiveChatId = chat_id || telegram_id; // Use group chat_id if provided, otherwise use telegram_id for personal
+    const effectiveChatId = chat_id ? chat_id : telegram_id; // Use group chat_id if provided, otherwise use telegram_id for personal
 
     // Validate Telegram WebApp data
     const isValid = validateTelegramWebApp(initData as string, BOT_TOKEN);
@@ -18,8 +18,6 @@ export default async function handler(
     if (!isValid) {
       return res.status(401).json({ error: "Invalid Telegram WebApp data" });
     }
-
-    console.log("🔍 Preferences API called with:", { telegram_id, chat_id, effectiveChatId });
 
     if (isLocal) {
       // Use local PostgreSQL for development
@@ -33,7 +31,7 @@ export default async function handler(
             "SELECT currency, timezone, country FROM groups WHERE chat_id = $1 LIMIT 1",
             [effectiveChatId]
           );
-          
+
           // If no group found, fall back to users table
           if (result.rows.length === 0) {
             result = await postgresClient.query(
@@ -44,7 +42,7 @@ export default async function handler(
         } else {
           // Get user preferences by telegram_id
           result = await postgresClient.query(
-            "SELECT currency, timezone, country FROM users WHERE telegram_id = $1 LIMIT 1",
+            "SELECT currency, timezone, country FROM users WHERE telegram_id = $1 AND chat_id = $1 LIMIT 1",
             [effectiveChatId]
           );
         }
@@ -53,7 +51,6 @@ export default async function handler(
           return res.status(404).json({ error: "Preferences not found" });
         }
 
-        console.log("✅ Preferences fetched locally:", result.rows[0]);
         return res.status(200).json(result.rows[0]);
       } catch (error) {
         console.error("❌ Local database error:", error);
@@ -79,7 +76,7 @@ export default async function handler(
             .eq("chat_id", effectiveChatId as string)
             .limit(1)
             .single();
-          
+
           if (groupResult.data) {
             data = groupResult.data;
           } else {
@@ -109,7 +106,6 @@ export default async function handler(
           return res.status(404).json({ error: "Preferences not found" });
         }
 
-        console.log("✅ Preferences fetched from Supabase:", data);
         return res.status(200).json(data);
       } catch (error) {
         console.error("❌ Supabase error:", error);
@@ -119,7 +115,8 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const { telegram_id, initData, currency, timezone, country, chat_id } = req.body;
+    const { telegram_id, initData, currency, timezone, country, chat_id } =
+      req.body;
 
     // Validate Telegram WebApp data
     const isValid = validateTelegramWebApp(initData as string, BOT_TOKEN);
@@ -132,11 +129,6 @@ export default async function handler(
     if (!telegram_id) {
       return res.status(400).json({ error: "telegram_id is required" });
     }
-
-    // Use appropriate client based on environment
-    const isLocal =
-      process.env.NODE_ENV === "development" &&
-      process.env.DATABASE_URL?.includes("postgresql://");
 
     if (isLocal) {
       // Use local PostgreSQL for development
@@ -161,7 +153,7 @@ export default async function handler(
         } else {
           // Handle user preferences
           const userResult = await postgresClient.query(
-            "SELECT id FROM users WHERE telegram_id = $1 LIMIT 1",
+            "SELECT id FROM users WHERE telegram_id = $1 AND chat_id = $1 LIMIT 1",
             [telegram_id]
           );
 
@@ -204,14 +196,13 @@ export default async function handler(
         updateValues.push(targetId);
         const updateQuery = `
           UPDATE ${tableName} 
-          SET ${updateFields.join(", ")}, updated_at = NOW()
+          SET ${updateFields.join(", ")}
           WHERE ${idField} = $${paramIndex}
           RETURNING ${idField}, currency, timezone, country
         `;
 
         const result = await postgresClient.query(updateQuery, updateValues);
 
-        console.log("✅ Preferences updated locally:", result.rows[0]);
         return res.status(200).json(result.rows[0]);
       } catch (error) {
         console.error("❌ Local database error:", error);
@@ -250,6 +241,7 @@ export default async function handler(
             .from("users")
             .select("id")
             .eq("telegram_id", telegram_id as string)
+            .eq("chat_id", telegram_id as string)
             .limit(1);
 
           if (userError || !users || users.length === 0) {
@@ -266,7 +258,6 @@ export default async function handler(
         if (currency !== undefined) updateData.currency = currency;
         if (timezone !== undefined) updateData.timezone = timezone;
         if (country !== undefined) updateData.country = country;
-        updateData.updated_at = new Date().toISOString();
 
         if (Object.keys(updateData).length === 0) {
           return res.status(400).json({ error: "No valid fields to update" });
