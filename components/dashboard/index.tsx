@@ -13,7 +13,7 @@ import { isSameMonth } from "../../utils/isSameMonth";
 import { calculateSummaryData } from "../../utils/calculateSummaryData";
 import { getDashboardData } from "../../utils/getDashboardData";
 import { useAllEntries } from "../../hooks/useAllEntries";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import GroupSwitcher from "./GroupSwitcher";
 import { GroupOutlined, PersonOutlineOutlined } from "@mui/icons-material";
 import GroupPersonalToggle from "./GroupPersonalToggle";
@@ -22,6 +22,9 @@ import { useUser } from "../../hooks/useUser";
 import { getPersonalExpensesFromGroup } from "../../utils/getPersonalExpensesFromGroup";
 import { fetchUserCount } from "../../services/userCount";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
+import { fetchPreferences } from "../../services/preferences";
+import { fetchCategories } from "../../services/categories";
+import { fetchUser } from "../../services/users";
 import { AppLayout } from "../AppLayout";
 import {
   saveNavigationState,
@@ -44,6 +47,7 @@ interface DashboardProps {
 
 const Dashboard = ({ onViewChange }: DashboardProps) => {
   const { colors, fontFamily } = useTheme();
+  const queryClient = useQueryClient();
   const [tgUser, setTgUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | null>(null);
 
@@ -80,6 +84,47 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
       return Promise.resolve(null);
     },
     enabled: !!tgUser && !!initData,
+  });
+
+  // Prefetch preferences, categories, and user data when dashboard loads
+  useQuery({
+    queryKey: ["dashboardConfig", tgUser?.id, selectedGroupId],
+    queryFn: async () => {
+      if (tgUser && initData) {
+        const [preferences, categories, user] = await Promise.all([
+          fetchPreferences(tgUser.id, initData, selectedGroupId),
+          fetchCategories(tgUser.id, initData, selectedGroupId),
+          fetchUser(tgUser.id, initData, selectedGroupId || undefined),
+        ]);
+        
+        return {
+          preferences,
+          categories,
+          user,
+        };
+      }
+      return Promise.resolve(null);
+    },
+    enabled: !!tgUser && !!initData,
+    staleTime: 10 * 60 * 1000, // 10 minutes for preferences, categories are fairly static
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    select: (data) => {
+      // Also cache individual items for components that query them directly
+      if (data) {
+        // Cache preferences separately
+        const preferencesQueryKey = ["preferences", tgUser?.id, selectedGroupId];
+        queryClient.setQueryData(preferencesQueryKey, data.preferences);
+        
+        // Cache categories separately  
+        const categoriesQueryKey = ["categories", tgUser?.id, selectedGroupId];
+        queryClient.setQueryData(categoriesQueryKey, data.categories);
+        
+        // Cache user data separately
+        const userQueryKey = ["user", tgUser?.id, selectedGroupId];
+        queryClient.setQueryData(userQueryKey, data.user);
+      }
+      return data;
+    },
   });
 
   // Filter entries based on group and personal view settings

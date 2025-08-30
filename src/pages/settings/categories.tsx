@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { showPopup } from "@telegram-apps/sdk";
 import {
   Box,
@@ -20,6 +20,7 @@ import { DeleteOutline, EditOutlined } from "@mui/icons-material";
 import BottomSheet from "../../../components/common/BottomSheet";
 import { useTelegramWebApp } from "../../../hooks/useTelegramWebApp";
 import { AppLayout } from "../../../components/AppLayout";
+import { useQuery } from "@tanstack/react-query";
 
 interface CategoriesSettingsProps {
   chat_id?: string | null;
@@ -29,10 +30,17 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
   const { colors } = useTheme();
   const [userCategories, setUserCategories] = useState<Category[]>([]);
   const [staticCategories, setStaticCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading state
 
   // Use optimized Telegram WebApp hook
   const { user, initData, isReady } = useTelegramWebApp();
+
+  // Use prefetched categories data from dashboard
+  const { data: categoriesData, isLoading } = useQuery({
+    queryKey: ["categories", user?.id?.toString(), chat_id],
+    queryFn: () => fetchCategories(user!.id.toString(), initData!, chat_id),
+    enabled: !!(user?.id && initData && isReady),
+    staleTime: 10 * 60 * 1000, // 10 minutes - matches dashboard prefetch
+  });
   const [editDialog, setEditDialog] = useState<{
     open: boolean;
     category: Category | null;
@@ -57,41 +65,13 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
     message: "",
   });
 
-  const loadCategories = useCallback(async () => {
-    try {
-      if (!user?.id || !initData) {
-        console.error("Missing Telegram user/init data");
-        return;
-      }
-
-      setIsLoading(true);
-
-      const response = await fetchCategories(
-        user.id.toString(),
-        initData,
-        chat_id
-      );
-      setUserCategories(response.userCategories || []);
-      setStaticCategories(response.staticCategories || []);
-    } catch (error) {
-      console.error("Error loading categories:", error);
-      showPopup({
-        title: "Error",
-        message: "Failed to load categories",
-        buttons: [{ type: "ok" }],
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, initData, chat_id, userCategories.length, staticCategories.length]);
-
-  // No need to handle Telegram UI setup when embedded
-
-  // Load categories when Telegram data is ready
+  // Update local state when prefetched data is available
   useEffect(() => {
-    if (!isReady || !user?.id || !initData) return;
-    loadCategories();
-  }, [isReady, user, initData, loadCategories]);
+    if (categoriesData) {
+      setUserCategories(categoriesData.userCategories || []);
+      setStaticCategories(categoriesData.staticCategories || []);
+    }
+  }, [categoriesData]);
 
   const handleEditCategory = (category: Category) => {
     setEditDialog({

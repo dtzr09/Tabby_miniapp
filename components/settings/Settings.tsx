@@ -122,19 +122,19 @@ const Settings = ({ onViewChange }: SettingsProps) => {
   const [filterDataLoaded, setFilterDataLoaded] = useState(false);
   const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
 
-  // Use React Query for data fetching to leverage prefetched data
+  // Use React Query for data fetching to leverage prefetched data from dashboard
   const { data: preferencesData, isLoading: preferencesLoading } = useQuery({
     queryKey: ["preferences", user?.id, chat_id],
     queryFn: () => fetchPreferences(user!.id.toString(), initData!, chat_id),
     enabled: !!(user?.id && initData && isReady),
-    staleTime: 120000, // 2minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes - matches dashboard prefetch
   });
 
   const { data: groupsData, isLoading: groupsLoading } = useQuery({
     queryKey: ["groupsWithExpenses", user?.id],
     queryFn: () => fetchGroups(user!.id.toString(), initData!),
     enabled: !!(user?.id && initData && isReady),
-    staleTime: 120000, // 2 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes - matches dashboard prefetch
   });
 
   // Use grouped data directly from React Query with useMemo to prevent re-renders

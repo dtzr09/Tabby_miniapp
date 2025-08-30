@@ -15,29 +15,21 @@ export const fetchAllEntries = async (
       params.set("chat_id", chat_id);
     }
 
-    // Fetch all entries with isIncome parameter
-    const [expensesResponse, incomesResponse] = await Promise.all([
-      fetch(`/api/entries?${params.toString()}&isIncome=false`),
-      fetch(`/api/entries?${params.toString()}&isIncome=true`),
+    // Fetch entries and budgets in parallel
+    const [entriesResponse, budgetsResponse] = await Promise.all([
+      // Use the new efficient all-entries endpoint (single query with UNION ALL)
+      fetch(`/api/all-entries?${params.toString()}`),
+      // Fetch budgets separately
+      fetch(`/api/budgets?${params.toString()}`),
     ]);
 
-    if (!expensesResponse.ok) {
-      throw new Error(
-        `Failed to fetch expenses: ${expensesResponse.statusText}`
-      );
+    if (!entriesResponse.ok) {
+      throw new Error(`Failed to fetch entries: ${entriesResponse.statusText}`);
     }
 
-    if (!incomesResponse.ok) {
-      throw new Error(`Failed to fetch income: ${incomesResponse.statusText}`);
-    }
-
-    const [expenses, income] = await Promise.all([
-      expensesResponse.json(),
-      incomesResponse.json(),
-    ]);
-
-    // Fetch budgets
-    const budgetsResponse = await fetch(`/api/budgets?${params.toString()}`);
+    const entriesData = await entriesResponse.json();
+    
+    // Handle budgets (may not exist)
     let budgets = [];
     if (budgetsResponse.ok) {
       budgets = await budgetsResponse.json();
@@ -46,13 +38,11 @@ export const fetchAllEntries = async (
       throw new Error(`Failed to fetch budgets: ${budgetsResponse.statusText}`);
     }
 
-    const result = {
-      expenses,
-      income,
+    return {
+      expenses: entriesData.expenses,
+      income: entriesData.income,
       budgets,
     };
-
-    return result;
   } catch (error) {
     console.error("Error fetching all entries:", error);
     return {
