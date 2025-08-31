@@ -293,9 +293,11 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     setIsGroupView(newIsGroupView);
 
     // Save state to localStorage
+    const existingState = loadNavigationState();
     saveNavigationState({
       selectedGroupId,
       isGroupView: newIsGroupView,
+      currentView: existingState?.currentView || "dashboard",
     });
   };
 
@@ -373,9 +375,11 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
                     setSelectedGroupId={(groupId: string | null) => {
                       setSelectedGroupId(groupId);
                       // Save state to localStorage
+                      const existingState = loadNavigationState();
                       saveNavigationState({
                         selectedGroupId: groupId,
                         isGroupView,
+                        currentView: existingState?.currentView || "dashboard",
                       });
                     }}
                     userId={tgUser?.id}

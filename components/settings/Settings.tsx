@@ -3,110 +3,51 @@ import {
   init,
   mainButton,
   setMainButtonParams,
-  showPopup,
 } from "@telegram-apps/sdk";
-import React, { useCallback, useEffect, useState, useMemo } from "react";
-import { Box, Typography, Skeleton, Chip, Menu, MenuItem } from "@mui/material";
+import React, { useCallback, useEffect, useState } from "react";
+import { Box, Typography, Skeleton } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { currencies } from "../../utils/preferencesData";
-import { Country, getAllCountries } from "countries-and-timezones";
-import countryToCurrency from "country-to-currency";
-import { useForm, Controller } from "react-hook-form";
+import { Controller } from "react-hook-form";
 import { AppLayout } from "../AppLayout";
 import { SettingsSection } from "./SettingsSection";
 import { SettingsItem } from "./SettingsItem";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
 import { SelectionList } from "./SelectionList";
 import CategoriesSettings from "../../src/pages/settings/categories";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchPreferences } from "../../services/preferences";
+import { useQuery } from "@tanstack/react-query";
 import { fetchGroups } from "../../services/group";
 import { Group } from "../../utils/types";
 import { loadNavigationState } from "../../utils/navigationState";
-
-// Types
-interface UserPreferences {
-  currency: string;
-  timezone: string;
-  country: string;
-}
-
-interface SettingsItemConfig {
-  key: string;
-  title: string;
-  icon: string;
-  iconBg: string;
-  getValue?: (
-    field: { value: string },
-    filteredCountries?: Country[]
-  ) => string;
-}
-
-type SettingsView = "main" | "country" | "currency" | "categories" | "theme";
-
-interface ViewConfig {
-  title: string;
-  component: React.ReactNode;
-}
+import { usePreferences } from "../../hooks/usePreferences";
+import { SettingsView, UserPreferences, ViewConfig } from "./utils/types";
+import { SETTINGS_CONFIG, SettingsItemConfig } from "./utils/configuration";
+import GroupSwitcherChip from "./GroupSwitcherChip";
 
 interface SettingsProps {
   onViewChange: (view: "dashboard" | "settings") => void;
 }
 
-// Configuration
-const SETTINGS_CONFIG = {
-  general: [
-    {
-      key: "country",
-      title: "Country",
-      icon: "🌍",
-      iconBg: "#34C759",
-      getValue: (
-        field: { value: string },
-        filteredCountries: Country[] = []
-      ) => {
-        const country = filteredCountries.find((c) => c.id === field.value);
-        return country ? country.name : field.value;
-      },
-    },
-    {
-      key: "currency",
-      title: "Currency",
-      icon: "💰",
-      iconBg: "#007AFF",
-      getValue: (field: { value: string }) => field.value || "SGD",
-    },
-    {
-      key: "theme",
-      title: "Appearance",
-      icon: "🎨",
-      iconBg: "#FF9500",
-    },
-  ] as SettingsItemConfig[],
-  data: [
-    {
-      key: "categories",
-      title: "Categories",
-      icon: "📋",
-      iconBg: "#5856D6",
-    },
-  ] as SettingsItemConfig[],
-};
-
 const Settings = ({ onViewChange }: SettingsProps) => {
   const { colors, isDark, currentTheme, setTheme } = useTheme();
-  const queryClient = useQueryClient();
   const [chat_id, setChatId] = useState<string | null>(null);
-  const [isLoading] = useState(false);
   const [currentView, setCurrentView] = useState<SettingsView>("main");
-  const [selectedCountry, setSelectedCountry] = useState("SG");
-  const [selectedCurrency, setSelectedCurrency] = useState("SGD");
-  const [initialLoad, setInitialLoad] = useState(true);
   const [groupName, setGroupName] = useState<string | null>(null);
 
   // Use optimized Telegram WebApp hook
-  const { user, initData, isReady } = useTelegramWebApp();
-  const isGroup = chat_id && chat_id !== user?.id?.toString();
+  const { user, initData, isReady, error } = useTelegramWebApp();
+
+  // Use preferences hook - MUST be called before any early returns
+  const {
+    filteredCountries,
+    selectedCountry,
+    selectedCurrency,
+    isLoading: preferencesLoading,
+    initialLoad,
+    control,
+    handleCountrySelect,
+    handleCurrencySelect,
+  } = usePreferences(chat_id);
 
   // Initialize chat_id from Dashboard's navigation state to match cache keys
   useEffect(() => {
@@ -119,59 +60,6 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     }
   }, [user?.id, chat_id]);
 
-  const defaultValues: UserPreferences = useMemo(
-    () => ({
-      currency: "SGD",
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      country: "SG",
-    }),
-    []
-  );
-
-  const { control, reset } = useForm<UserPreferences>({
-    defaultValues,
-    mode: "onChange",
-  });
-
-  const [filterDataLoaded, setFilterDataLoaded] = useState(false);
-  const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
-
-  // Use React Query for data fetching to leverage prefetched data from dashboard
-  const {
-    data: preferencesData,
-    isLoading: preferencesLoading,
-    isFetching,
-  } = useQuery({
-    queryKey: ["preferences", user?.id, chat_id],
-    queryFn: () => {
-      console.log("🌐 Settings making fresh API call for preferences", {
-        userId: user?.id?.toString(),
-        chatId: isGroup ? chat_id : undefined,
-      });
-      return fetchPreferences(user!.id.toString(), initData!, chat_id);
-    },
-    enabled: !!(user?.id && initData && isReady),
-    staleTime: 10 * 60 * 1000, // 10 minutes - matches dashboard prefetch
-  });
-
-  // Log whether we're using cached data or fetching fresh
-  useEffect(() => {
-    if (user?.id && chat_id !== null) {
-      const queryKey = ["preferences", user.id, chat_id];
-      console.log("🔍 Settings preferences query:", {
-        queryKey,
-        isLoading: preferencesLoading,
-        isFetching,
-        hasData: !!preferencesData,
-        status: isFetching
-          ? "FETCHING"
-          : preferencesData
-          ? "USING_CACHE"
-          : "NO_DATA",
-      });
-    }
-  }, [user?.id, chat_id, preferencesLoading, isFetching, preferencesData]);
-
   const { data: groupsData, isLoading: groupsLoading } = useQuery({
     queryKey: ["groupsWithExpenses", user?.id],
     queryFn: () => fetchGroups(user!.id.toString(), initData!),
@@ -179,69 +67,21 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     staleTime: 10 * 60 * 1000, // 10 minutes - matches dashboard prefetch
   });
 
-  // Use grouped data directly from React Query with useMemo to prevent re-renders
-  const availableGroups = useMemo(() => groupsData || [], [groupsData]);
-
-  // Initialize chat_id from URL query on mount (if we still need this)
-  // For now, we'll start with null and handle group switching internally
-
-  // Update form data when preferences are loaded
-  useEffect(() => {
-    if (preferencesData) {
-      console.log("🔍 Raw preferences data from API:", preferencesData);
-
-      const formData = {
-        currency: preferencesData.currency || defaultValues.currency,
-        timezone: preferencesData.timezone || defaultValues.timezone,
-        country: preferencesData.country || defaultValues.country,
-      };
-
-      console.log("🔄 Form data being set:", formData);
-      console.log("💰 Currency being set:", formData.currency);
-
-      reset(formData);
-      setSelectedCountry(formData.country);
-      setSelectedCurrency(formData.currency);
-      setInitialLoad(false);
-    }
-  }, [preferencesData, defaultValues, reset]);
-
   // Update group name when groups change or chat_id changes
   useEffect(() => {
-    if (chat_id && availableGroups.length > 0) {
-      const currentGroup = availableGroups.find(
-        (g: Group) => g.chat_id === chat_id
-      );
+    if (chat_id && groupsData && groupsData.length > 0) {
+      const currentGroup = groupsData.find((g: Group) => g.chat_id === chat_id);
       setGroupName(currentGroup?.name || currentGroup?.title || "Group");
     } else {
       setGroupName(null);
     }
-  }, [chat_id, availableGroups]);
+  }, [chat_id, groupsData]);
 
-  // Initialize filtered countries
-  useEffect(() => {
-    const allCountries = getAllCountries();
-    const supportedCurrencyCodes = new Set(
-      currencies.map((c) => c.code as keyof typeof countryToCurrency)
-    );
-
-    const validCountries = Object.values(allCountries).filter((country) => {
-      const currency =
-        countryToCurrency[country.id as keyof typeof countryToCurrency];
-      return (
-        currency &&
-        supportedCurrencyCodes.has(currency as keyof typeof countryToCurrency)
-      );
-    });
-
-    setFilteredCountries(validCountries);
-    setFilterDataLoaded(true);
-  }, []);
-
-  // Telegram UI setup - mount and show back button in settings
+  // Telegram UI setup and back button handler
   useEffect(() => {
     if (!isReady) return;
 
+    // Initialize Telegram UI
     try {
       init(); // Initialize Telegram WebApp
       backButton.mount(); // Mount back button
@@ -257,12 +97,8 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     } catch (err) {
       console.error("Error setting up Telegram UI:", err);
     }
-  }, [isReady]);
 
-  // Back button handler
-  useEffect(() => {
-    if (!isReady) return;
-
+    // Set up back button handler
     const handleBack = () => {
       if (currentView === "main") {
         onViewChange("dashboard");
@@ -277,6 +113,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
       console.error("Error setting up back button:", err);
     }
 
+    // Cleanup
     return () => {
       try {
         backButton.offClick(handleBack);
@@ -286,201 +123,12 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     };
   }, [isReady, onViewChange, currentView]);
 
-  // Selection handlers
-  const handleCountrySelect = useCallback(
-    async (countryId: string) => {
-      setSelectedCountry(countryId);
-
-      try {
-        if (!user?.id || !initData) {
-          console.error("Missing Telegram user/init data");
-          return;
-        }
-
-        const country = filteredCountries.find((c) => c.id === countryId);
-        let updateData: {
-          telegram_id: string;
-          initData: string;
-          country: string;
-          timezone?: string;
-          currency?: string;
-          chat_id?: string;
-        } = {
-          telegram_id: user.id.toString(),
-          initData,
-          country: countryId,
-          chat_id: isGroup ? chat_id : undefined,
-        };
-
-        // Auto-update timezone and currency based on country
-        if (country && country.timezones && country.timezones.length > 0) {
-          updateData = {
-            ...updateData,
-            timezone: country.timezones[0],
-          };
-
-          const countryCurrency =
-            countryToCurrency[countryId as keyof typeof countryToCurrency];
-          if (countryCurrency) {
-            const isCurrencySupported = currencies.some(
-              (c) => c.code === countryCurrency
-            );
-            if (isCurrencySupported) {
-              updateData = {
-                ...updateData,
-                currency: countryCurrency,
-              };
-              setSelectedCurrency(countryCurrency);
-            }
-          }
-        }
-
-        const response = await fetch("/api/preferences", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updateData),
-        });
-
-        if (response.ok) {
-          // Invalidate and refetch preferences cache - ensure key matches Dashboard cache format
-          await queryClient.invalidateQueries({
-            queryKey: ["preferences", user.id, chat_id],
-          });
-
-          setCurrentView("main");
-          reset({
-            currency: updateData.currency || selectedCurrency,
-            timezone: updateData.timezone || defaultValues.timezone,
-            country: countryId,
-          });
-        } else {
-          console.error("Failed to save preferences:", await response.text());
-          showPopup({
-            title: "Error",
-            message: "Failed to update country",
-            buttons: [{ type: "ok" }],
-          });
-        }
-      } catch (err) {
-        console.error("Error saving country:", err);
-        showPopup({
-          title: "Error",
-          message: "Failed to update country",
-          buttons: [{ type: "ok" }],
-        });
-      }
-    },
-    [
-      user,
-      initData,
-      filteredCountries,
-      selectedCurrency,
-      defaultValues,
-      reset,
-      chat_id,
-      queryClient,
-    ]
-  );
-
-  const handleCurrencySelect = useCallback(
-    async (currencyCode: string) => {
-      setSelectedCurrency(currencyCode);
-
-      try {
-        if (!user?.id || !initData) {
-          console.error("Missing Telegram user/init data");
-          return;
-        }
-
-        const updateData: {
-          telegram_id: string;
-          initData: string;
-          currency: string;
-          chat_id?: string;
-        } = {
-          telegram_id: user.id.toString(),
-          initData,
-          currency: currencyCode,
-          chat_id: isGroup ? chat_id : undefined,
-        };
-
-        const response = await fetch("/api/preferences", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updateData),
-        });
-
-        if (response.ok) {
-          // Invalidate and refetch preferences cache - ensure key matches Dashboard cache format
-          await queryClient.invalidateQueries({
-            queryKey: ["preferences", user.id, chat_id],
-          });
-
-          setCurrentView("main");
-          reset({
-            currency: currencyCode,
-            timezone: defaultValues.timezone,
-            country: selectedCountry,
-          });
-        } else {
-          console.error("Failed to save preferences:", await response.text());
-          showPopup({
-            title: "Error",
-            message: "Failed to update currency",
-            buttons: [{ type: "ok" }],
-          });
-        }
-      } catch (err) {
-        console.error("Error saving currency:", err);
-        showPopup({
-          title: "Error",
-          message: "Failed to update currency",
-          buttons: [{ type: "ok" }],
-        });
-      }
-    },
-    [
-      user,
-      initData,
-      defaultValues,
-      selectedCountry,
-      reset,
-      chat_id,
-      queryClient,
-    ]
-  );
-
-  // View handlers
+  // View handlers - MUST be before any early returns
   const handleViewChange = useCallback((view: SettingsView) => {
     setCurrentView(view);
   }, []);
 
-  // Group switcher state
-  const [groupMenuAnchor, setGroupMenuAnchor] = useState<null | HTMLElement>(
-    null
-  );
-
-  // Handler for group selection
-  const handleGroupMenuOpen = useCallback(
-    (event: React.MouseEvent<HTMLElement>) => {
-      setGroupMenuAnchor(event.currentTarget);
-    },
-    []
-  );
-
-  const handleGroupMenuClose = useCallback(() => {
-    setGroupMenuAnchor(null);
-  }, []);
-
-  const handleGroupSelect = useCallback(
-    (groupId: string | null) => {
-      setChatId(groupId);
-      handleGroupMenuClose();
-    },
-    [handleGroupMenuClose]
-  );
-
-  // View configurations - easy to extend
+  // View configurations - MUST be before any early returns
   const getViewConfig = useCallback((): ViewConfig | null => {
     switch (currentView) {
       case "country":
@@ -494,7 +142,10 @@ const Settings = ({ onViewChange }: SettingsProps) => {
             <SelectionList
               items={countryItems}
               selectedId={selectedCountry}
-              onSelect={handleCountrySelect}
+              onSelect={async (countryId) => {
+                const success = await handleCountrySelect(countryId);
+                if (success) setCurrentView("main");
+              }}
               isLoading={initialLoad}
               skeletonCount={8}
             />
@@ -513,7 +164,10 @@ const Settings = ({ onViewChange }: SettingsProps) => {
             <SelectionList
               items={currencyItems}
               selectedId={selectedCurrency}
-              onSelect={handleCurrencySelect}
+              onSelect={async (currencyCode) => {
+                const success = await handleCurrencySelect(currencyCode);
+                if (success) setCurrentView("main");
+              }}
               isLoading={initialLoad}
               skeletonCount={8}
             />
@@ -565,7 +219,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     setTheme,
   ]);
 
-  // Render settings item
+  // Render settings item - MUST be before any early returns
   const renderSettingsItem = useCallback(
     (item: SettingsItemConfig, isLast: boolean = false) => {
       if (item.key === "categories") {
@@ -672,127 +326,35 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     [control, filteredCountries, handleViewChange, isDark, currentTheme]
   );
 
-  // Create the group switcher chip
-  const groupSwitcherChip = useMemo(() => {
-    if (availableGroups.length === 0) return null;
-
-    // Get the current group name
-    const currentGroupName =
-      chat_id && chat_id !== user?.id?.toString()
-        ? groupName ||
-          availableGroups.find((g: Group) => g.chat_id === chat_id)?.name ||
-          availableGroups.find((g: Group) => g.chat_id === chat_id)?.title ||
-          "Group"
-        : "Personal";
-
+  // Handle early returns AFTER all hooks
+  // Handle Telegram initialization errors
+  if (isReady && (!user || !initData)) {
     return (
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Chip
-          label={currentGroupName}
-          onClick={handleGroupMenuOpen}
+      <AppLayout title="Settings">
+        <Box
           sx={{
-            color: colors.text,
-            border: `1px solid ${colors.border}`,
-            fontSize: "0.75rem",
-            height: "28px",
-          }}
-          clickable
-        />
-        <Menu
-          anchorEl={groupMenuAnchor}
-          open={Boolean(groupMenuAnchor)}
-          onClose={handleGroupMenuClose}
-          anchorOrigin={{
-            vertical: "bottom",
-            horizontal: "center",
-          }}
-          transformOrigin={{
-            vertical: "top",
-            horizontal: "center",
-          }}
-          slotProps={{
-            paper: {
-              sx: {
-                bgcolor: colors.card,
-                borderColor: colors.border,
-                boxShadow: `0 2px 4px -1px ${colors.border}`,
-                borderRadius: 3,
-                minWidth: 100,
-                mt: 0.5,
-                py: 0.25,
-              },
-            },
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            alignItems: "center",
+            textAlign: "center",
+            py: 4,
           }}
         >
-          <MenuItem
-            onClick={() => handleGroupSelect(user?.id?.toString() || null)}
-            selected={!chat_id || chat_id === user?.id?.toString()}
-            sx={{
-              color: colors.text,
-              fontSize: "0.75rem",
-              py: 0.5,
-              px: 1,
-              minHeight: "auto",
-              borderRadius: 2,
-              mx: 0.5,
-              "&.Mui-selected": {
-                bgcolor: colors.incomeExpenseCard,
-                color: colors.text,
-                "&:hover": {
-                  bgcolor: colors.incomeExpenseCard,
-                },
-              },
-              "&:hover": {
-                bgcolor: colors.surface,
-              },
-            }}
-          >
-            Personal
-          </MenuItem>
-          {availableGroups.map((group: Group) => (
-            <MenuItem
-              key={group.chat_id}
-              onClick={() => handleGroupSelect(group.chat_id)}
-              selected={chat_id === group.chat_id}
-              sx={{
-                color: colors.text,
-                fontSize: "0.75rem",
-                py: 0.5,
-                px: 1,
-                minHeight: "auto",
-                borderRadius: 2,
-                mx: 0.5,
-                "&.Mui-selected": {
-                  bgcolor: colors.incomeExpenseCard,
-                  color: colors.text,
-                  "&:hover": {
-                    bgcolor: colors.incomeExpenseCard,
-                  },
-                },
-                "&:hover": {
-                  bgcolor: colors.surface,
-                },
-              }}
-            >
-              {group.name || group.title}
-            </MenuItem>
-          ))}
-        </Menu>
-      </Box>
+          <Typography variant="h6" sx={{ color: colors.error || "#ff4444" }}>
+            Access Error
+          </Typography>
+          <Typography sx={{ color: colors.textSecondary, maxWidth: 300 }}>
+            {error ||
+              "Unable to access Telegram user data. Please make sure you're using this app through Telegram."}
+          </Typography>
+        </Box>
+      </AppLayout>
     );
-  }, [
-    availableGroups,
-    chat_id,
-    groupName,
-    colors,
-    handleGroupMenuOpen,
-    groupMenuAnchor,
-    handleGroupMenuClose,
-    handleGroupSelect,
-  ]);
+  }
 
   // Loading state
-  if (!filterDataLoaded || preferencesLoading || groupsLoading || isLoading) {
+  if (preferencesLoading || groupsLoading) {
     return (
       <AppLayout title="Settings">
         <Box
@@ -826,7 +388,17 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     return (
       <AppLayout
         title={viewConfig.title}
-        headerExtra={currentView === "main" ? groupSwitcherChip : null}
+        headerExtra={
+          currentView === "main" ? (
+            <GroupSwitcherChip
+              chat_id={chat_id}
+              user={user}
+              availableGroups={groupsData || []}
+              groupName={groupName}
+              setChatId={setChatId}
+            />
+          ) : null
+        }
       >
         {viewConfig.component}
       </AppLayout>
@@ -835,7 +407,20 @@ const Settings = ({ onViewChange }: SettingsProps) => {
 
   // Main settings view
   return (
-    <AppLayout title="Settings" headerExtra={groupSwitcherChip}>
+    <AppLayout
+      title="Settings"
+      headerExtra={
+        currentView === "main" ? (
+          <GroupSwitcherChip
+            chat_id={chat_id}
+            user={user}
+            availableGroups={groupsData || []}
+            groupName={groupName}
+            setChatId={setChatId}
+          />
+        ) : null
+      }
+    >
       <SettingsSection title="GENERAL">
         {SETTINGS_CONFIG.general.map((item, index) =>
           renderSettingsItem(item, index === SETTINGS_CONFIG.general.length - 1)

@@ -8,6 +8,7 @@ interface TelegramWebAppData {
   user: TelegramUser | null;
   initData: string | null;
   isReady: boolean;
+  error?: string;
 }
 
 let telegramInitialized = false;

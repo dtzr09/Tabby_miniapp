@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { showPopup } from "@telegram-apps/sdk";
 import {
   Box,
@@ -20,7 +20,7 @@ import { DeleteOutline, EditOutlined } from "@mui/icons-material";
 import BottomSheet from "../../../components/common/BottomSheet";
 import { useTelegramWebApp } from "../../../hooks/useTelegramWebApp";
 import { AppLayout } from "../../../components/AppLayout";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface CategoriesSettingsProps {
   chat_id?: string | null;
@@ -28,8 +28,7 @@ interface CategoriesSettingsProps {
 
 const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
   const { colors } = useTheme();
-  const [userCategories, setUserCategories] = useState<Category[]>([]);
-  const [staticCategories, setStaticCategories] = useState<Category[]>([]);
+  const queryClient = useQueryClient();
 
   // Use optimized Telegram WebApp hook
   const { user, initData, isReady } = useTelegramWebApp();
@@ -41,6 +40,11 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
     enabled: !!(user?.id && initData && isReady),
     staleTime: 10 * 60 * 1000, // 10 minutes - matches dashboard prefetch
   });
+
+  // Extract categories directly from query data
+  const userCategories = categoriesData?.userCategories || [];
+  const staticCategories = categoriesData?.staticCategories || [];
+
   const [editDialog, setEditDialog] = useState<{
     open: boolean;
     category: Category | null;
@@ -64,14 +68,6 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
     open: false,
     message: "",
   });
-
-  // Update local state when prefetched data is available
-  useEffect(() => {
-    if (categoriesData) {
-      setUserCategories(categoriesData.userCategories || []);
-      setStaticCategories(categoriesData.staticCategories || []);
-    }
-  }, [categoriesData]);
 
   const handleEditCategory = (category: Category) => {
     setEditDialog({
@@ -106,27 +102,10 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
         chat_id
       );
 
-      // Update the appropriate category list
-      const isUserCategory = userCategories.some(
-        (cat) => cat.id === editDialog.category!.id
-      );
-      if (isUserCategory) {
-        setUserCategories((prev) =>
-          prev.map((cat) =>
-            cat.id === editDialog.category!.id
-              ? { ...cat, name: editDialog.newName.trim() }
-              : cat
-          )
-        );
-      } else {
-        setStaticCategories((prev) =>
-          prev.map((cat) =>
-            cat.id === editDialog.category!.id
-              ? { ...cat, name: editDialog.newName.trim() }
-              : cat
-          )
-        );
-      }
+      // Invalidate categories query to refetch data
+      await queryClient.invalidateQueries({
+        queryKey: ["categories", user.id.toString(), chat_id],
+      });
 
       setEditDialog({ open: false, category: null, newName: "" });
 
@@ -156,19 +135,10 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
         chat_id
       );
 
-      // Remove from the appropriate category list
-      const isUserCategory = userCategories.some(
-        (cat) => cat.id === deleteDialog.category!.id
-      );
-      if (isUserCategory) {
-        setUserCategories((prev) =>
-          prev.filter((cat) => cat.id !== deleteDialog.category!.id)
-        );
-      } else {
-        setStaticCategories((prev) =>
-          prev.filter((cat) => cat.id !== deleteDialog.category!.id)
-        );
-      }
+      // Invalidate categories query to refetch data
+      await queryClient.invalidateQueries({
+        queryKey: ["categories", user.id.toString(), chat_id],
+      });
 
       setDeleteDialog({ open: false, category: null });
 
@@ -244,7 +214,7 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
         {userCategories.length > 0 ? (
           <Card sx={{ borderRadius: 2, bgcolor: colors.card, boxShadow: 0 }}>
             <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
-              {userCategories.map((category, index) => (
+              {userCategories.map((category: Category, index: number) => (
                 <Box
                   key={category.id}
                   sx={{
@@ -327,7 +297,7 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
           </Typography>
           <Card sx={{ borderRadius: 2, bgcolor: colors.card, boxShadow: 0 }}>
             <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
-              {staticCategories.map((category, index) => (
+              {staticCategories.map((category: Category, index: number) => (
                 <Box
                   key={category.id}
                   sx={{

@@ -1,6 +1,7 @@
 interface NavigationState {
   selectedGroupId: string | null;
   isGroupView: boolean;
+  currentView?: "dashboard" | "settings";
 }
 
 const NAVIGATION_STATE_KEY = 'tabby_navigation_state';
