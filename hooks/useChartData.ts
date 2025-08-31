@@ -19,31 +19,62 @@ interface ChartColors {
   accent: string;
 }
 
+interface FilterOptions {
+  categoryId?: string;
+  showIncome?: boolean;
+}
+
 export const useChartData = (
   allEntries: AllEntriesResponse | undefined,
   dateRange: DateRange,
   viewType: "Week" | "Month",
   colors: ChartColors,
   isPersonalView?: boolean,
-  userId?: string | number
+  userId?: string | number,
+  filterOptions?: FilterOptions
 ): ChartDataPoint[] => {
   return useMemo(() => {
-    // Only use expense entries from allEntries.expenses
-    const entries =
-      allEntries?.expenses?.map((expense) => {
-        // Check if this is a personal view and expense has shares
+    // Combine both expenses and income entries
+    const allEntriesData = [
+      ...(allEntries?.expenses?.map((expense) => {
         const personalData = getPersonalAmount(expense, !!isPersonalView, userId);
-
         return {
           id: expense.id,
           description: expense.description,
-          category: expense.category?.name || "Other",
+          category: expense.category,
           emoji: expense.category?.emoji,
           date: expense.date,
           amount: personalData.amount,
           isIncome: expense.is_income,
         };
-      }) || [];
+      }) || []),
+      ...(allEntries?.income?.map((income) => ({
+        id: income.id,
+        description: income.description,
+        category: income.category,
+        emoji: income.category?.emoji,
+        date: income.date,
+        amount: income.amount,
+        isIncome: true,
+      })) || [])
+    ];
+
+    // Apply filters
+    let entries = allEntriesData;
+    
+    // Filter by entry type (income vs expense)
+    if (filterOptions?.showIncome !== undefined) {
+      entries = entries.filter((entry) =>
+        filterOptions.showIncome ? entry.isIncome : !entry.isIncome
+      );
+    }
+
+    // Filter by category
+    if (filterOptions?.categoryId) {
+      entries = entries.filter(
+        (entry) => entry.category?.id?.toString() === filterOptions.categoryId
+      );
+    }
 
     const start = new Date(dateRange.start);
     const end = new Date(dateRange.end);
@@ -118,5 +149,5 @@ export const useChartData = (
         fill: day === todayKey ? colors.primary : colors.accent,
       }));
     }
-  }, [dateRange, allEntries, colors.primary, colors.accent, viewType, isPersonalView, userId]);
+  }, [dateRange, allEntries, colors.primary, colors.accent, viewType, isPersonalView, userId, filterOptions]);
 };

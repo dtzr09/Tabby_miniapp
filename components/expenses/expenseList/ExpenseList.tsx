@@ -123,7 +123,8 @@ export default function ExpenseList({
     viewType,
     { primary: colors.primary, accent: colors.accent },
     isPersonalView,
-    userId
+    userId,
+    filterOptions
   );
 
   return (
