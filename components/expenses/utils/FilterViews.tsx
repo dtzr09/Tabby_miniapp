@@ -16,6 +16,7 @@ interface FilterViewsProps {
 }
 
 interface CategoryInfo {
+  id: string;
   name: string;
   isIncome: boolean;
 }
@@ -34,8 +35,10 @@ export default function FilterViews({
     // Get unique categories with their income/expense status
     const categoriesMap = new Map<string, CategoryInfo>();
     entries.forEach((entry) => {
-      if (entry.category && entry.category.name) {
-        categoriesMap.set(entry.category.name, {
+      if (entry.category && entry.category.name && entry.category.id) {
+        const categoryId = entry.category.id.toString();
+        categoriesMap.set(categoryId, {
+          id: categoryId,
           name: entry.category.name,
           isIncome: entry.isIncome,
         });
@@ -100,10 +103,10 @@ export default function FilterViews({
           )}
           {categories
             .filter((cat) => cat.isIncome === (selectedType === "income"))
-            .map(({ name }) => (
+            .map(({ id, name }) => (
               <Box
-                key={name}
-                onClick={() => onCategorySelect(name)}
+                key={id}
+                onClick={() => onCategorySelect(id)}
                 sx={{
                   display: "flex",
                   alignItems: "center",
@@ -111,11 +114,11 @@ export default function FilterViews({
                   px: 1.5,
                   borderRadius: 2,
                   fontSize: "0.75rem",
-                  fontWeight: selectedCategory === name ? 600 : 500,
+                  fontWeight: selectedCategory === id ? 600 : 500,
                   color:
-                    selectedCategory === name ? colors.primary : colors.text,
+                    selectedCategory === id ? colors.primary : colors.text,
                   bgcolor:
-                    selectedCategory === name
+                    selectedCategory === id
                       ? alpha(colors.primary, 0.1)
                       : colors.incomeExpenseCard,
                   cursor: "pointer",

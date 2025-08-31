@@ -8,7 +8,6 @@ import { TelegramUser } from "../../dashboard";
 export interface ExpenseListCardProps {
   entries: UnifiedEntry[];
   tgUser: TelegramUser | null;
-  isGroupView?: boolean;
   chat_id?: string;
 }
 
@@ -155,7 +154,6 @@ const ExpenseListCard = (props: ExpenseListCardProps) => {
               key={tx.id}
               tx={tx}
               tgUser={props.tgUser}
-              isGroupView={props.isGroupView}
               chat_id={props.chat_id}
             />
           ))}

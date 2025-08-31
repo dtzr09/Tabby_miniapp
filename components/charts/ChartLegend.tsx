@@ -2,6 +2,7 @@ import { Box, Typography } from "@mui/material";
 import React from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { chartColors } from "../../utils/chartColors";
+import { cleanCategoryName } from "../../utils/categoryUtils";
 
 interface ChartLegendProps {
   data: {
@@ -22,10 +23,7 @@ const ChartLegend = (props: ChartLegendProps) => {
           mt: 3,
           display: "flex",
           justifyContent: "center",
-          gap: {
-            xs: 2,
-            sm: 4,
-          },
+          gap: 8,
           mb: 3,
         }}
       >
@@ -71,7 +69,7 @@ const ChartLegend = (props: ChartLegendProps) => {
                     textAlign: "right",
                   }}
                 >
-                  {entry.name}
+                  {cleanCategoryName(entry.name).name}
                 </Typography>
               </Box>
             ))}
@@ -121,7 +119,7 @@ const ChartLegend = (props: ChartLegendProps) => {
                     flex: 1,
                   }}
                 >
-                  {entry.name}
+                  {cleanCategoryName(entry.name).name}
                 </Typography>
               </Box>
             ))}

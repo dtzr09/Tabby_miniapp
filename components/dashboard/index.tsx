@@ -173,12 +173,12 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   // Filter entries based on group and personal view settings
   const getPersonalFilteredExpenses = useCallback(
     (expenses: Expense[]) => {
-      if (selectedGroupId && !isGroupView && dbUser?.id) {
+      if (selectedGroupId && selectedGroupId !== tgUser?.id?.toString() && !isGroupView && dbUser?.id) {
         return getPersonalExpensesFromGroup(expenses, dbUser.id);
       }
       return expenses;
     },
-    [selectedGroupId, isGroupView, dbUser?.id]
+    [selectedGroupId, isGroupView, dbUser?.id, tgUser?.id]
   );
 
   const filteredAllEntries = useMemo(() => {
@@ -433,7 +433,8 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
               <ExpenseList
                 allEntries={filteredAllEntries}
                 tgUser={tgUser}
-                isGroupView={isGroupView}
+                isPersonalView={!isGroupView}
+                userId={dbUser?.id}
                 chat_id={selectedGroupId}
               />
             </Box>

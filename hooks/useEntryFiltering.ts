@@ -18,7 +18,8 @@ export const useEntryFiltering = (
   allEntries: AllEntriesResponse | undefined,
   isPersonalView?: boolean,
   userId?: string | number,
-  isGroupView?: boolean
+  chat_id?: string,
+  tgUserId?: string
 ) => {
   // Helper function to check if an expense is personal (user is payer and only participant)
   const isPersonalExpense = (expense: Expense): boolean => {
@@ -43,6 +44,10 @@ export const useEntryFiltering = (
 
     return false;
   };
+
+  // Derive if we're in a group context
+  const isGroup = chat_id !== tgUserId;
+  const isGroupView = isGroup && !isPersonalView;
 
   // Combine income and expenses into unified entries
   const combineEntries = useCallback((): UnifiedEntry[] => {

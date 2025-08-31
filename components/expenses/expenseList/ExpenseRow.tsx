@@ -18,12 +18,10 @@ import { cleanCategoryName } from "../../../utils/categoryUtils";
 const ExpenseRow = ({
   tx,
   tgUser,
-  isGroupView,
   chat_id,
 }: {
   tx: UnifiedEntry;
   tgUser: TelegramUser | null;
-  isGroupView?: boolean;
   chat_id?: string;
 }) => {
   const { colors, isDark } = useTheme();
@@ -31,6 +29,10 @@ const ExpenseRow = ({
   const [showDelete, setShowDelete] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const queryClient = useQueryClient();
+  
+  // Derive if this is a group view based on chat_id vs tgUser id
+  const isGroup = chat_id !== tgUser?.id?.toString();
+  const isGroupView = isGroup;
 
   const handlers = useSwipeable({
     onSwipedLeft: () => setShowDelete(true),

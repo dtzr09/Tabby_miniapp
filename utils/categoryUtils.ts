@@ -1,8 +1,8 @@
 import { UnifiedEntry } from "./types";
 
-// Regex for matching emoji characters
+// Comprehensive regex for matching emoji characters including variation selectors
 const EMOJI_REGEX =
-  /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}]\s*/u;
+  /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{238C}-\u{2454}\u{20D0}-\u{20FF}\u{FE00}-\u{FE0F}\u{E0100}-\u{E01EF}]+\s*/u;
 
 /**
  * Removes emoji from the start of a category name and trims whitespace
@@ -16,10 +16,23 @@ export const cleanCategoryName = (
 } => {
   // First trim any leading/trailing whitespace from the original string
   const trimmedCategory = categoryName.trim();
-  const emoji = trimmedCategory.match(EMOJI_REGEX)?.[0] || "🏷️";
-
-  // Then remove emoji and trim again to handle any space that was after the emoji
-  const cleanedName = trimmedCategory.replace(EMOJI_REGEX, "").trim();
+  
+  // More aggressive cleaning: remove any leading non-letter characters and whitespace
+  let cleanedName = trimmedCategory;
+  
+  // Remove emoji using the regex
+  const emojiMatch = trimmedCategory.match(EMOJI_REGEX);
+  const emoji = emojiMatch?.[0]?.trim() || "🏷️";
+  
+  if (emojiMatch) {
+    cleanedName = trimmedCategory.replace(EMOJI_REGEX, "").trim();
+  }
+  
+  // Additional cleanup: remove any remaining leading non-alphanumeric characters
+  cleanedName = cleanedName.replace(/^[^\w\s]+\s*/, "").trim();
+  
+  // Remove any invisible characters or zero-width characters
+  cleanedName = cleanedName.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
 
   // Return the cleaned name or "Other" if empty
   return {
