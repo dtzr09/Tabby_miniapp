@@ -12,6 +12,8 @@ export interface UserPreferences {
   currency: string;
   timezone: string;
   country: string;
+  notification_enabled?: boolean;
+  daily_reminder_hour?: number;
 }
 
 export const usePreferences = (chat_id?: string | null) => {
@@ -28,6 +30,8 @@ export const usePreferences = (chat_id?: string | null) => {
       currency: "SGD",
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       country: "SG",
+      notification_enabled: true,
+      daily_reminder_hour: 21,
     }),
     []
   );
@@ -76,6 +80,7 @@ export const usePreferences = (chat_id?: string | null) => {
   useEffect(() => {
     if (preferencesData) {
       console.log("🔍 Raw preferences data from API:", preferencesData);
+      console.log("🔍 notification_enabled specifically:", preferencesData.notification_enabled);
 
       const formData = {
         currency: preferencesData.currency || defaultValues.currency,

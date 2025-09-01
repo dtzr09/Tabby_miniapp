@@ -5,6 +5,8 @@ import { FilterType } from "../../../utils/advancedFilterUtils";
 import { UnifiedEntry } from "../../../utils/types";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
+import { getCategoryColor } from "../../../utils/categoryColors";
+import { cleanCategoryName } from "../../../utils/categoryUtils";
 
 interface FilterViewsProps {
   filterType: FilterType;
@@ -29,12 +31,17 @@ export default function FilterViews({
   selectedType,
   onTypeSelect,
 }: FilterViewsProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   if (filterType === "category") {
-    // Get unique categories with their income/expense status
+    // Get unique categories that match the selected type
     const categoriesMap = new Map<string, CategoryInfo>();
-    entries.forEach((entry) => {
+    const filteredEntries = entries.filter((entry) => {
+      const entryIsIncome = entry.isIncome === true;
+      return entryIsIncome === (selectedType === "income");
+    });
+
+    filteredEntries.forEach((entry) => {
       if (entry.category && entry.category.name && entry.category.id) {
         const categoryId = entry.category.id.toString();
         categoriesMap.set(categoryId, {
@@ -47,7 +54,7 @@ export default function FilterViews({
     const categories = Array.from(categoriesMap.values());
 
     return (
-      <Box sx={{ mt: 1 }}>
+      <Box sx={{ mt: 0.5, mb: 1.5 }}>
         <Box
           sx={{
             display: "flex",
@@ -101,12 +108,20 @@ export default function FilterViews({
               <AddIcon sx={{ fontSize: "1rem" }} />
             </Box>
           )}
-          {categories
-            .filter((cat) => cat.isIncome === (selectedType === "income"))
-            .map(({ id, name }) => (
+          {categories.map(({ id, name }) => {
+            const cleanedCategory = cleanCategoryName(name);
+            const categoryColor = getCategoryColor(
+              cleanedCategory.name,
+              isDark
+            );
+            const isSelected = selectedCategory === id;
+
+            return (
               <Box
                 key={id}
-                onClick={() => onCategorySelect(id)}
+                onClick={() =>
+                  onCategorySelect(selectedCategory === id ? "" : id)
+                }
                 sx={{
                   display: "flex",
                   alignItems: "center",
@@ -114,21 +129,25 @@ export default function FilterViews({
                   px: 1.5,
                   borderRadius: 2,
                   fontSize: "0.75rem",
-                  fontWeight: selectedCategory === id ? 600 : 500,
-                  color:
-                    selectedCategory === id ? colors.primary : colors.text,
-                  bgcolor:
-                    selectedCategory === id
-                      ? alpha(colors.primary, 0.1)
-                      : colors.incomeExpenseCard,
+                  fontWeight: isSelected ? 600 : 500,
+                  color: isSelected ? "white" : colors.text,
+                  bgcolor: isSelected
+                    ? categoryColor
+                    : isDark
+                    ? alpha(categoryColor, 0.2)
+                    : alpha(categoryColor, 0.1),
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                   transition: "all 0.2s ease-in-out",
+                  border: isSelected
+                    ? "none"
+                    : `1px solid ${alpha(categoryColor, 0.3)}`,
                 }}
               >
                 {name}
               </Box>
-            ))}
+            );
+          })}
         </Box>
       </Box>
     );
@@ -136,7 +155,14 @@ export default function FilterViews({
 
   if (filterType === "type") {
     return (
-      <Box sx={{ mt: 1, display: "flex", justifyContent: "center" }}>
+      <Box
+        sx={{
+          mt: 0.5,
+          mb: 1.5,
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
         <Box
           sx={{
             display: "flex",

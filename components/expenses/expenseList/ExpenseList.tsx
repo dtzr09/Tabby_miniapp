@@ -123,7 +123,8 @@ export default function ExpenseList({
     viewType,
     { primary: colors.primary, accent: colors.accent },
     isPersonalView,
-    userId
+    userId,
+    filterOptions
   );
 
   return (
@@ -301,7 +302,7 @@ export default function ExpenseList({
                   entries={combineEntries()}
                   selectedCategory={filterOptions.categoryId}
                   onCategorySelect={handlers.handleCategorySelect}
-                  selectedType={filterOptions.showIncome ? "income" : "expense"}
+                  selectedType={filterOptions.showIncome === true ? "income" : "expense"}
                   onTypeSelect={handlers.handleTypeSelect}
                 />
               </Box>

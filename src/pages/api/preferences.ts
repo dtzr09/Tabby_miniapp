@@ -28,21 +28,21 @@ export default async function handler(
         if (chat_id && chat_id !== telegram_id) {
           // Get group preferences - first try groups table
           result = await postgresClient.query(
-            "SELECT currency, timezone, country FROM groups WHERE chat_id = $1 LIMIT 1",
+            "SELECT currency, timezone, country, notification_enabled, daily_reminder_hour FROM groups WHERE chat_id = $1 LIMIT 1",
             [effectiveChatId]
           );
 
           // If no group found, fall back to users table
           if (result.rows.length === 0) {
             result = await postgresClient.query(
-              "SELECT currency, timezone, country FROM users WHERE telegram_id = $1 LIMIT 1",
+              "SELECT currency, timezone, country, notification_enabled, daily_reminder_hour FROM users WHERE telegram_id = $1 LIMIT 1",
               [effectiveChatId]
             );
           }
         } else {
           // Get user preferences by telegram_id
           result = await postgresClient.query(
-            "SELECT currency, timezone, country FROM users WHERE telegram_id = $1 AND chat_id = $1 LIMIT 1",
+            "SELECT currency, timezone, country, notification_enabled, daily_reminder_hour FROM users WHERE telegram_id = $1 AND chat_id = $1 LIMIT 1",
             [effectiveChatId]
           );
         }
@@ -72,7 +72,7 @@ export default async function handler(
           // Get group preferences - first try groups table
           const groupResult = await supabaseAdmin
             .from("groups")
-            .select("currency, timezone, country")
+            .select("currency, timezone, country, notification_enabled, daily_reminder_hour")
             .eq("chat_id", effectiveChatId as string)
             .limit(1)
             .single();
@@ -83,7 +83,7 @@ export default async function handler(
             // If no group found, fall back to users table
             const userResult = await supabaseAdmin
               .from("users")
-              .select("currency, timezone, country")
+              .select("currency, timezone, country, notification_enabled, daily_reminder_hour")
               .eq("telegram_id", effectiveChatId as string)
               .limit(1)
               .single();
@@ -94,7 +94,7 @@ export default async function handler(
           // Get user preferences by telegram_id
           const result = await supabaseAdmin
             .from("users")
-            .select("currency, timezone, country")
+            .select("currency, timezone, country, notification_enabled, daily_reminder_hour")
             .eq("telegram_id", effectiveChatId as string)
             .limit(1)
             .single();
@@ -115,7 +115,7 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const { telegram_id, initData, currency, timezone, country, chat_id } =
+    const { telegram_id, initData, currency, timezone, country, chat_id, notification_enabled, daily_reminder_hour } =
       req.body;
 
     // Validate Telegram WebApp data
@@ -189,6 +189,18 @@ export default async function handler(
           paramIndex++;
         }
 
+        if (notification_enabled !== undefined) {
+          updateFields.push(`notification_enabled = $${paramIndex}`);
+          updateValues.push(notification_enabled);
+          paramIndex++;
+        }
+
+        if (daily_reminder_hour !== undefined) {
+          updateFields.push(`daily_reminder_hour = $${paramIndex}`);
+          updateValues.push(daily_reminder_hour);
+          paramIndex++;
+        }
+
         if (updateFields.length === 0) {
           return res.status(400).json({ error: "No valid fields to update" });
         }
@@ -198,7 +210,7 @@ export default async function handler(
           UPDATE ${tableName} 
           SET ${updateFields.join(", ")}
           WHERE ${idField} = $${paramIndex}
-          RETURNING ${idField}, currency, timezone, country
+          RETURNING ${idField}, currency, timezone, country, notification_enabled, daily_reminder_hour
         `;
 
         const result = await postgresClient.query(updateQuery, updateValues);
@@ -254,10 +266,12 @@ export default async function handler(
         }
 
         // Prepare update data
-        const updateData: Record<string, string | Date> = {};
+        const updateData: Record<string, string | number | boolean | Date> = {};
         if (currency !== undefined) updateData.currency = currency;
         if (timezone !== undefined) updateData.timezone = timezone;
         if (country !== undefined) updateData.country = country;
+        if (notification_enabled !== undefined) updateData.notification_enabled = notification_enabled;
+        if (daily_reminder_hour !== undefined) updateData.daily_reminder_hour = daily_reminder_hour;
 
         if (Object.keys(updateData).length === 0) {
           return res.status(400).json({ error: "No valid fields to update" });
@@ -268,7 +282,7 @@ export default async function handler(
           .from(tableName)
           .update(updateData)
           .eq(idField, targetId)
-          .select(`${idField}, currency, timezone, country`)
+          .select(`${idField}, currency, timezone, country, notification_enabled, daily_reminder_hour`)
           .single();
 
         if (error) {
