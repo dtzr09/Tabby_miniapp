@@ -3,6 +3,8 @@ export interface UserPreferences {
   currency: string;
   timezone: string;
   country: string;
+  notification_enabled?: boolean;
+  daily_reminder_hour?: number;
 }
 
 export type SettingsView =
@@ -10,7 +12,8 @@ export type SettingsView =
   | "country"
   | "currency"
   | "categories"
-  | "theme";
+  | "theme"
+  | "notifications";
 
 export interface ViewConfig {
   title: string;

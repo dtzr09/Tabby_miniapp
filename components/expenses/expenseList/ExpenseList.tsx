@@ -302,7 +302,7 @@ export default function ExpenseList({
                   entries={combineEntries()}
                   selectedCategory={filterOptions.categoryId}
                   onCategorySelect={handlers.handleCategorySelect}
-                  selectedType={filterOptions.showIncome ? "income" : "expense"}
+                  selectedType={filterOptions.showIncome === true ? "income" : "expense"}
                   onTypeSelect={handlers.handleTypeSelect}
                 />
               </Box>

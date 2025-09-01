@@ -15,7 +15,8 @@ import { SettingsItem } from "./SettingsItem";
 import { useTelegramWebApp } from "../../hooks/useTelegramWebApp";
 import { SelectionList } from "./SelectionList";
 import CategoriesSettings from "../../src/pages/settings/categories";
-import { useQuery } from "@tanstack/react-query";
+import NotificationsSettings from "./NotificationsSettings";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchGroups } from "../../services/group";
 import { Group } from "../../utils/types";
 import { loadNavigationState } from "../../utils/navigationState";
@@ -30,6 +31,7 @@ interface SettingsProps {
 
 const Settings = ({ onViewChange }: SettingsProps) => {
   const { colors, isDark, currentTheme, setTheme } = useTheme();
+  const queryClient = useQueryClient();
   const [chat_id, setChatId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<SettingsView>("main");
   const [groupName, setGroupName] = useState<string | null>(null);
@@ -47,6 +49,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     control,
     handleCountrySelect,
     handleCurrencySelect,
+    preferencesData,
   } = usePreferences(chat_id);
 
   // Initialize chat_id from Dashboard's navigation state to match cache keys
@@ -180,6 +183,49 @@ const Settings = ({ onViewChange }: SettingsProps) => {
           component: <CategoriesSettings chat_id={chat_id} />,
         };
 
+      case "notifications":
+        return {
+          title: "Notifications",
+          component: (
+            <NotificationsSettings
+              notificationsEnabled={preferencesData?.notification_enabled}
+              dailyReminderHour={preferencesData?.daily_reminder_hour}
+              onUpdateNotifications={async (enabled, hour) => {
+                try {
+                  const response = await fetch("/api/preferences", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      telegram_id: user?.id,
+                      initData,
+                      notification_enabled: enabled,
+                      daily_reminder_hour: hour,
+                      chat_id: chat_id !== user?.id?.toString() ? chat_id : undefined,
+                    }),
+                  });
+                  
+                  if (response.ok) {
+                    console.log("🔄 Invalidating cache for:", ["preferences", user?.id, chat_id]);
+                    // Invalidate queries to refresh data
+                    await queryClient.invalidateQueries({
+                      queryKey: ["preferences", user?.id, chat_id]
+                    });
+                    // Force refetch immediately
+                    await queryClient.refetchQueries({
+                      queryKey: ["preferences", user?.id, chat_id]
+                    });
+                    console.log("✅ Cache invalidated and refetched");
+                  }
+                } catch (error) {
+                  console.error("Error updating notifications:", error);
+                }
+              }}
+            />
+          ),
+        };
+
       case "theme":
         const themeItems = [
           { id: "auto", label: "System" },
@@ -217,6 +263,10 @@ const Settings = ({ onViewChange }: SettingsProps) => {
     chat_id,
     currentTheme,
     setTheme,
+    preferencesData,
+    user,
+    initData,
+    queryClient,
   ]);
 
   // Render settings item - MUST be before any early returns
@@ -244,6 +294,37 @@ const Settings = ({ onViewChange }: SettingsProps) => {
             }
             title={item.title}
             onClick={() => handleViewChange("categories")}
+            showBorder={!isLast}
+          />
+        );
+      }
+
+      if (item.key === "notifications") {
+        return (
+          <SettingsItem
+            key={item.key}
+            icon={
+              <Box
+                sx={{
+                  bgcolor: item.iconBg,
+                  width: "100%",
+                  borderRadius: 1.2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography sx={{ fontSize: "1.1rem", color: "white" }}>
+                  {item.icon}
+                </Typography>
+              </Box>
+            }
+            title={item.title}
+            value={(() => {
+              console.log("📱 Settings page - notification_enabled:", preferencesData?.notification_enabled);
+              return preferencesData?.notification_enabled ? "On" : "Off";
+            })()}
+            onClick={() => handleViewChange("notifications")}
             showBorder={!isLast}
           />
         );
@@ -323,7 +404,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
         />
       );
     },
-    [control, filteredCountries, handleViewChange, isDark, currentTheme]
+    [control, filteredCountries, handleViewChange, isDark, currentTheme, preferencesData]
   );
 
   // Handle early returns AFTER all hooks
