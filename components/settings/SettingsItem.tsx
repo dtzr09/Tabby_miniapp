@@ -6,7 +6,7 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 interface SettingsItemProps {
   icon: React.ReactNode;
   title: string;
-  value?: string;
+  value?: string | number | boolean;
   onClick: () => void;
   showBorder?: boolean;
   onMouseEnter?: () => void;
@@ -60,14 +60,14 @@ export const SettingsItem: React.FC<SettingsItemProps> = ({
         </Typography>
       </Box>
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
-        {value && (
+        {value !== undefined && value !== null && (
           <Typography
             sx={{
               color: colors.textSecondary,
               fontSize: "0.85rem",
             }}
           >
-            {value}
+            {typeof value === 'boolean' ? (value ? 'On' : 'Off') : value.toString()}
           </Typography>
         )}
         <ArrowForwardIos

@@ -2,10 +2,10 @@ import { ChevronLeftOutlined, ChevronRightOutlined } from "@mui/icons-material";
 import { Box, Button } from "@mui/material";
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import TimeScrollPicker from "./TimeScrollPicker";
-import PeriodScrollPicker from "./PeriodScrollPicker";
 import MonthScrollPicker from "./MonthScrollPicker";
 import YearScrollPicker from "./YearScrollPicker";
+import DateTimePickerBase from "./DateTimePickerBase";
+import TimeDisplay from "./TimeDisplay";
 
 export interface DateTimePickerProps {
   date: Date;
@@ -366,112 +366,30 @@ const ExpenseDateTimePicker = ({ date, onDateChange }: DateTimePickerProps) => {
 
                 {/* Time Picker Overlay */}
                 {showTimePicker && (
-                  <Box
-                    onClick={(e) => e.stopPropagation()}
-                    sx={{
-                      backgroundColor: colors.surface,
-                      borderRadius: 2,
-                      position: "absolute",
-                      bottom: 0,
-                      right: 0,
-                      zIndex: 20,
-                      width: "fit-content",
-                      p: "0.25rem",
-                      mx: 1,
-                      boxShadow: "0 0 30px 8px rgba(0, 0, 0, 0.4)",
-                    }}
-                  >
-                    <Box sx={{ position: "relative" }}>
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: "50%",
-                          left: "0.8rem",
-                          right: "0.8rem",
-                          transform: "translateY(-50%)",
-                          height: "2rem",
-                          backgroundColor: "rgba(75, 85, 99,0.4)",
-                          borderRadius: 2.5,
-                          zIndex: 1,
-                        }}
-                      />
-                      <Box
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr 1fr",
-                          alignItems: "center",
-                          py: 0.8,
-                          px: 1,
-                        }}
-                      >
-                        <TimeScrollPicker
-                          type="hour"
-                          value={selectedHour}
-                          onChange={setSelectedHour}
-                          max={12}
-                        />
-                        <TimeScrollPicker
-                          type="minute"
-                          value={selectedMinute}
-                          onChange={setSelectedMinute}
-                          max={59}
-                        />
-                        <PeriodScrollPicker
-                          value={selectedPeriod}
-                          onChange={setSelectedPeriod}
-                        />
-                      </Box>
-                    </Box>
-                  </Box>
+                  <DateTimePickerBase
+                    date={selectedDate}
+                    onDateChange={onDateChange}
+                    selectedHour={selectedHour}
+                    setSelectedHour={setSelectedHour}
+                    selectedMinute={selectedMinute}
+                    setSelectedMinute={setSelectedMinute}
+                    selectedPeriod={selectedPeriod}
+                    setSelectedPeriod={setSelectedPeriod}
+                  />
                 )}
               </Box>
             )}
           </Box>
 
           {/* Time Display */}
-          <Box
-            sx={{
-              width: "100%",
-              margin: "auto",
-              marginTop: "0.5rem",
-              paddingTop: "0.5rem",
-              px: "0.5rem",
-              borderTop: `1px solid ${colors.border}`,
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <span style={{ color: colors.text, fontSize: "1rem" }}>Time</span>
-              <Button
-                variant="text"
-                onClick={() => {
-                  setShowTimePicker(!showTimePicker);
-                  if (!showTimePicker) {
-                    setShowMonthPicker(false);
-                  }
-                }}
-                sx={{
-                  color: colors.text,
-                  fontSize: "1rem",
-                  letterSpacing: "0.05rem",
-                  whiteSpace: "nowrap",
-                  textTransform: "none",
-                  backgroundColor: colors.card,
-                  borderRadius: 3,
-                  px: 1,
-                  py: 0.5,
-                }}
-              >
-                {selectedHour}:{selectedMinute.toString().padStart(2, "0")} {""}
-                {selectedPeriod}
-              </Button>
-            </Box>
-          </Box>
+          <TimeDisplay
+            selectedHour={selectedHour}
+            selectedMinute={selectedMinute}
+            selectedPeriod={selectedPeriod}
+            showTimePicker={showTimePicker}
+            setShowTimePicker={setShowTimePicker}
+            setShowMonthPicker={setShowMonthPicker}
+          />
         </Box>
       </Box>
     </Box>

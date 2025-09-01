@@ -6,7 +6,7 @@ export interface SettingsItemConfig {
   icon: string;
   iconBg: string;
   getValue?: (
-    field: { value: string },
+    field: { value: string | number | boolean | undefined },
     filteredCountries?: Country[]
   ) => string;
 }
@@ -19,11 +19,11 @@ export const SETTINGS_CONFIG = {
       icon: "🌍",
       iconBg: "#34C759",
       getValue: (
-        field: { value: string },
+        field: { value: string | number | boolean | undefined },
         filteredCountries: Country[] = []
       ) => {
         const country = filteredCountries.find((c) => c.id === field.value);
-        return country ? country.name : field.value;
+        return country ? country.name : (field.value?.toString() || "");
       },
     },
     {
@@ -31,7 +31,13 @@ export const SETTINGS_CONFIG = {
       title: "Currency",
       icon: "💰",
       iconBg: "#007AFF",
-      getValue: (field: { value: string }) => field.value || "SGD",
+      getValue: (field: { value: string | number | boolean | undefined }) => field.value?.toString() || "SGD",
+    },
+    {
+      key: "notifications",
+      title: "Notifications",
+      icon: "🔔",
+      iconBg: "#FF2D92",
     },
     {
       key: "theme",
