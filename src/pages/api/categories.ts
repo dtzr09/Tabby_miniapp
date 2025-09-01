@@ -57,18 +57,26 @@ async function handleGetCategories(
       return res.status(500).json({ error: "Supabase client not configured" });
     }
 
-    const { data: static_categories } = await supabaseAdmin
+    // Single optimized query to get both user and static categories
+    const { data: allCategoriesData, error } = await supabaseAdmin
       .from("all_categories")
       .select("*")
-      .is("user_id", null)
-      .is("chat_id", null)
+      .or(`and(user_id.is.null,chat_id.is.null),chat_id.eq.${effectiveChatId}`)
       .order("name");
 
-    const { data: user_categories } = await supabaseAdmin
-      .from("all_categories")
-      .select("*")
-      .eq("chat_id", effectiveChatId)
-      .order("name");
+    if (error) {
+      console.error("Supabase categories query error:", error);
+      return res.status(500).json({ error: "Failed to fetch categories" });
+    }
+
+    // Separate static and user categories
+    const static_categories = allCategoriesData?.filter(
+      cat => cat.user_id === null && cat.chat_id === null
+    ) || [];
+    
+    const user_categories = allCategoriesData?.filter(
+      cat => cat.chat_id === effectiveChatId
+    ) || [];
 
     return res.status(200).json({
       userCategories: user_categories || [],

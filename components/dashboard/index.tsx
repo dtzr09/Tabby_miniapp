@@ -86,22 +86,24 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     enabled: !!tgUser && !!initData,
   });
 
-  // Prefetch preferences, categories, and user data when dashboard loads
+  // Prefetch categories with proper cache key for instant settings loading
+  useQuery({
+    queryKey: ["categories", tgUser?.id?.toString(), selectedGroupId],
+    queryFn: () => fetchCategories(tgUser!.id, initData!, selectedGroupId),
+    enabled: !!(tgUser?.id && initData),
+    staleTime: 10 * 60 * 1000, // 10 minutes - matches settings page
+  });
+
+  // Prefetch preferences and user data when dashboard loads
   const { data: dashboardConfig } = useQuery({
     queryKey: ["dashboardConfig", tgUser?.id, selectedGroupId],
     queryFn: async () => {
       if (tgUser && initData) {
         try {
-          const [preferences, categories, user] = await Promise.all([
+          const [preferences, user, categories] = await Promise.all([
             fetchPreferences(tgUser.id, initData, selectedGroupId).catch(
               (err) => {
                 console.warn("Failed to fetch preferences:", err);
-                return null;
-              }
-            ),
-            fetchCategories(tgUser.id, initData, selectedGroupId).catch(
-              (err) => {
-                console.warn("Failed to fetch categories:", err);
                 return null;
               }
             ),
@@ -111,12 +113,18 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
                 return null;
               }
             ),
+            fetchCategories(tgUser.id, initData, selectedGroupId).catch(
+              (err) => {
+                console.warn("Failed to fetch categories:", err);
+                return null;
+              }
+            ),
           ]);
 
           return {
             preferences,
-            categories,
             user,
+            categories,
           };
         } catch (error) {
           console.error("Dashboard config prefetch failed:", error);
@@ -173,7 +181,12 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   // Filter entries based on group and personal view settings
   const getPersonalFilteredExpenses = useCallback(
     (expenses: Expense[]) => {
-      if (selectedGroupId && selectedGroupId !== tgUser?.id?.toString() && !isGroupView && dbUser?.id) {
+      if (
+        selectedGroupId &&
+        selectedGroupId !== tgUser?.id?.toString() &&
+        !isGroupView &&
+        dbUser?.id
+      ) {
         return getPersonalExpensesFromGroup(expenses, dbUser.id);
       }
       return expenses;

@@ -33,12 +33,15 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
   // Use optimized Telegram WebApp hook
   const { user, initData, isReady } = useTelegramWebApp();
 
-  // Use prefetched categories data from dashboard
+  // Use prefetched categories data from dashboard with instant loading
   const { data: categoriesData, isLoading } = useQuery({
     queryKey: ["categories", user?.id?.toString(), chat_id],
     queryFn: () => fetchCategories(user!.id.toString(), initData!, chat_id),
     enabled: !!(user?.id && initData && isReady),
     staleTime: 10 * 60 * 1000, // 10 minutes - matches dashboard prefetch
+    // Use cached data immediately, show loading only if no cache exists
+    placeholderData: (previousData) => previousData,
+    refetchOnMount: false, // Don't refetch if we have cached data
   });
 
   // Extract categories directly from query data
@@ -164,8 +167,8 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
     }
   };
 
-  // Categories are now already segregated from the API
-  if (isLoading) {
+  // Only show loading skeleton if we have no cached data AND we're actually loading
+  if (isLoading && !categoriesData) {
     return (
       <AppLayout title="Categories">
         <Box
@@ -195,6 +198,28 @@ const CategoriesSettings = ({ chat_id }: CategoriesSettingsProps) => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+      {/* Background refresh indicator */}
+      {/* {isFetching && categoriesData && (
+        <Box 
+          sx={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 2,
+            bgcolor: colors.primary,
+            opacity: 0.6,
+            animation: 'pulse 1.5s ease-in-out infinite',
+            zIndex: 9999,
+            '@keyframes pulse': {
+              '0%': { opacity: 0.6 },
+              '50%': { opacity: 1 },
+              '100%': { opacity: 0.6 },
+            },
+          }}
+        />
+      )} */}
+
       {/* User Categories - Show First */}
       <Box sx={{ mb: userCategories.length > 0 ? 2 : 1.5 }}>
         <Typography

@@ -14,20 +14,21 @@ export const useAllEntries = (
   initData?: string | null,
   chat_id?: string | null
 ): UseAllEntriesReturn => {
-  // Query for categories
+  // Use the same categories query key as dashboard for cache sharing
   const {
     data: categoriesData,
     isLoading: isCategoriesLoading,
     isError: isCategoriesError,
   } = useQuery({
-    queryKey: ["categories", userId?.toString()],
+    queryKey: ["categories", userId?.toString(), chat_id],
     queryFn: async () => {
-      if (!userId || !initData) return { categories: [] };
+      if (!userId || !initData) return { userCategories: [], staticCategories: [] };
 
       const params = new URLSearchParams({
         telegram_id: userId,
         initData,
       });
+      if (chat_id) params.append('chat_id', chat_id);
 
       const response = await fetch(`/api/categories?${params.toString()}`);
       if (!response.ok) {
@@ -37,6 +38,7 @@ export const useAllEntries = (
       return response.json();
     },
     enabled: !!userId && !!initData,
+    staleTime: 10 * 60 * 1000, // Match dashboard cache settings
   });
 
   // Query for all entries
@@ -64,7 +66,10 @@ export const useAllEntries = (
 
   return {
     data: allEntries,
-    categories: categoriesData?.categories || [],
+    categories: [
+      ...(categoriesData?.userCategories || []),
+      ...(categoriesData?.staticCategories || [])
+    ],
     isLoading: isEntriesLoading || isCategoriesLoading,
     isError: isEntriesError || isCategoriesError,
   };
