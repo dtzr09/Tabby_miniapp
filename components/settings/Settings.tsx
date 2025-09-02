@@ -267,7 +267,6 @@ const Settings = ({ onViewChange }: SettingsProps) => {
                   );
 
                   console.log("✅ Notifications updated successfully");
-                  return true;
                 } catch (error) {
                   console.error("❌ Error updating notifications:", error);
                   // Revert optimistic update on error

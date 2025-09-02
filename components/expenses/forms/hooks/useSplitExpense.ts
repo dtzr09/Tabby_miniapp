@@ -5,6 +5,7 @@ import {
   ExpenseFormData,
   ExpenseShare,
   UnifiedEntry,
+  AllEntriesResponse,
 } from "../../../../utils/types";
 import {
   updateExpenseAmount,
@@ -296,6 +297,33 @@ export const useSplitExpense = ({
       queryClient.setQueryData(["expense", expense.id], updatedExpense);
     }
 
+    // Also update the allEntries cache to ensure consistency
+    if (tgUser?.id) {
+      const userId = tgUser.id.toString();
+      queryClient.setQueryData<AllEntriesResponse>(["allEntries", userId, chat_id], (oldData) => {
+        if (!oldData || !oldData.expenses) return oldData;
+        
+        // Convert UnifiedEntry back to Expense format for AllEntriesResponse
+        const updatedExpenseForCache: Expense = {
+          id: updatedExpense.id,
+          amount: updatedExpense.amount,
+          description: updatedExpense.description,
+          date: updatedExpense.date,
+          is_income: updatedExpense.isIncome,
+          category: updatedExpense.category,
+          shares: updatedExpense.shares,
+          chat_id: chat_id || undefined,
+        };
+        
+        return {
+          ...oldData,
+          expenses: oldData.expenses.map((exp) => 
+            exp.id === expense.id ? updatedExpenseForCache : exp
+          )
+        };
+      });
+    }
+
     // Update form immediately with proper date handling
     const updatedFormData: ExpenseFormData = {
       description: expense.description,
@@ -368,6 +396,33 @@ export const useSplitExpense = ({
           updateExpenseInCache(originalExpense);
         } else {
           queryClient.setQueryData(["expense", expense.id], originalExpense);
+        }
+
+        // Also revert the allEntries cache
+        if (tgUser?.id) {
+          const userId = tgUser.id.toString();
+          queryClient.setQueryData<AllEntriesResponse>(["allEntries", userId, chat_id], (oldData) => {
+            if (!oldData || !oldData.expenses) return oldData;
+            
+            // Convert UnifiedEntry back to Expense format for AllEntriesResponse
+            const originalExpenseForCache: Expense = {
+              id: originalExpense.id,
+              amount: originalExpense.amount,
+              description: originalExpense.description,
+              date: originalExpense.date,
+              is_income: originalExpense.isIncome,
+              category: originalExpense.category,
+              shares: originalExpense.shares,
+              chat_id: chat_id || undefined,
+            };
+            
+            return {
+              ...oldData,
+              expenses: oldData.expenses.map((exp) => 
+                exp.id === expense.id ? originalExpenseForCache : exp
+              )
+            };
+          });
         }
 
         // Revert form data with proper date handling

@@ -29,7 +29,7 @@ const ExpenseRow = ({
   const [showDelete, setShowDelete] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const queryClient = useQueryClient();
-  
+
   // Derive if this is a group view based on chat_id vs tgUser id
   const isGroup = chat_id !== tgUser?.id?.toString();
   const isGroupView = isGroup;
@@ -203,21 +203,6 @@ const ExpenseRow = ({
                 >
                   {tx.description}
                 </Typography>
-                {tx.isPersonalShare && (
-                  <Box
-                    sx={{
-                      fontSize: "0.6rem",
-                      bgcolor: colors.primary,
-                      color: "white",
-                      px: 0.5,
-                      py: 0.1,
-                      borderRadius: 0.5,
-                      fontWeight: 600,
-                    }}
-                  >
-                    SHARE
-                  </Box>
-                )}
               </Box>
               <Typography
                 sx={{
