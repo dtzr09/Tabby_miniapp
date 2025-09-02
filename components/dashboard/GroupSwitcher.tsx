@@ -4,6 +4,7 @@ import {
 } from "@mui/icons-material";
 import { Box, Button, Menu, MenuItem, Typography } from "@mui/material";
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { fetchAllEntries } from "../../services/allEntries";
 
@@ -23,16 +24,19 @@ export interface GroupSwitcherProps {
 const GroupSwitcher = (props: GroupSwitcherProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  const queryClient = useQueryClient();
   const { colors } = useTheme();
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
 
-    // Prefetch all group data when dropdown opens
+    // Prefetch all group data when dropdown opens (respects already-prefetched tracking)
     if (props.groups && props.userId && props.initData) {
       props.groups.forEach((group) => {
         prefetchGroupData(group.id);
       });
+      // Also prefetch personal data if not selected
+      prefetchGroupData(null);
     }
   };
 
@@ -49,16 +53,28 @@ const GroupSwitcher = (props: GroupSwitcherProps) => {
 
   const prefetchGroupData = (groupId: string | null) => {
     if (!props.userId || !props.initData) return;
+    if (groupId === props.selectedGroupId) return; // Don't prefetch current group
 
-    // Only prefetch if not already cached or selected
-    if (groupId !== props.selectedGroupId) {
-      fetchAllEntries(props.userId, props.initData, groupId)
-        .then(() => {
-          console.log(`📦 Prefetched data for group: ${groupId || "personal"}`);
-        })
-        .catch((error) => {
-          console.warn("Failed to prefetch group data:", error);
-        });
+    const queryKey = ["allEntries", props.userId, groupId];
+    
+    // Check if query exists and is fresh (not stale)
+    const queryState = queryClient.getQueryState(queryKey);
+    const now = Date.now();
+    const staleTime = 5 * 60 * 1000; // 5 minutes
+    
+    // Consider stale if no data exists or if data is older than staleTime
+    const isStale = !queryState || 
+                   !queryState.dataUpdatedAt || 
+                   (now - queryState.dataUpdatedAt) > staleTime;
+    
+    // Only prefetch if data is stale or doesn't exist
+    if (isStale) {
+      queryClient.prefetchQuery({
+        queryKey,
+        queryFn: () => fetchAllEntries(props.userId!, props.initData!, groupId),
+        staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
+        gcTime: 10 * 60 * 1000,   // Keep in cache for 10 minutes
+      });
     }
   };
 

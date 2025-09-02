@@ -11,6 +11,13 @@ export default async function handler(
   if (req.method === "GET") {
     const { telegram_id, initData, chat_id } = req.query;
     const effectiveChatId = chat_id ? chat_id : telegram_id; // Use group chat_id if provided, otherwise use telegram_id for personal
+    
+    console.log("🔍 GET preferences request:", {
+      telegram_id,
+      chat_id,
+      effectiveChatId,
+      isGroup: chat_id && chat_id !== telegram_id,
+    });
 
     // Validate Telegram WebApp data
     const isValid = validateTelegramWebApp(initData as string, BOT_TOKEN);
@@ -23,7 +30,7 @@ export default async function handler(
       // Use local PostgreSQL for development
       console.log("🔧 Using local PostgreSQL connection for preferences");
 
-      try {
+      try { 
         let result;
         if (chat_id && chat_id !== telegram_id) {
           // Get group preferences - first try groups table
@@ -51,7 +58,9 @@ export default async function handler(
           return res.status(404).json({ error: "Preferences not found" });
         }
 
-        return res.status(200).json(result.rows[0]);
+        const responseData = result.rows[0];
+        console.log("✅ Returning preferences data:", responseData);
+        return res.status(200).json(responseData);
       } catch (error) {
         console.error("❌ Local database error:", error);
         return res.status(500).json({ error: "Database error" });
@@ -91,11 +100,12 @@ export default async function handler(
             error = userResult.error;
           }
         } else {
-          // Get user preferences by telegram_id
+          // Get user preferences by telegram_id and chat_id (both should match for personal)
           const result = await supabaseAdmin
             .from("users")
             .select("currency, timezone, country, notification_enabled, daily_reminder_hour")
             .eq("telegram_id", effectiveChatId as string)
+            .eq("chat_id", effectiveChatId as string)
             .limit(1)
             .single();
           data = result.data;
@@ -103,9 +113,11 @@ export default async function handler(
         }
 
         if (error || !data) {
+          console.log("❌ No data found or error:", error);
           return res.status(404).json({ error: "Preferences not found" });
         }
 
+        console.log("✅ Returning preferences data:", data);
         return res.status(200).json(data);
       } catch (error) {
         console.error("❌ Supabase error:", error);
