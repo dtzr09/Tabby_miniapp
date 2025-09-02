@@ -9,7 +9,7 @@ import HourTimePicker from "../common/HourTimePicker";
 interface NotificationsSettingsProps {
   notificationsEnabled?: boolean;
   dailyReminderHour?: number;
-  onUpdateNotifications: (enabled: boolean, hour?: number) => void;
+  onUpdateNotifications: (enabled: boolean, hour?: number) => Promise<boolean>;
 }
 
 const NotificationsSettings: React.FC<NotificationsSettingsProps> = ({
@@ -56,9 +56,17 @@ const NotificationsSettings: React.FC<NotificationsSettingsProps> = ({
         </Typography>
         <CustomToggle
           checked={enabled}
-          onChange={(newEnabled) => {
-            setEnabled(newEnabled);
-            onUpdateNotifications(newEnabled, reminderHour);
+          onChange={async (newEnabled) => {
+            try {
+              // Only update local state after successful API call
+              const success = await onUpdateNotifications(newEnabled, reminderHour);
+              if (success) {
+                setEnabled(newEnabled);
+              }
+            } catch (error) {
+              console.error("Failed to update notifications:", error);
+              // Don't update local state on error - keep the original value
+            }
           }}
         />
       </Box>
@@ -79,9 +87,15 @@ const NotificationsSettings: React.FC<NotificationsSettingsProps> = ({
         >
           {/* Every evening (9:00 PM) Option */}
           <Box
-            onClick={() => {
-              setReminderHour(21);
-              onUpdateNotifications(enabled, 21);
+            onClick={async () => {
+              try {
+                const success = await onUpdateNotifications(enabled, 21);
+                if (success) {
+                  setReminderHour(21);
+                }
+              } catch (error) {
+                console.error("Failed to update reminder hour:", error);
+              }
             }}
             sx={{
               display: "flex",
@@ -211,10 +225,21 @@ const NotificationsSettings: React.FC<NotificationsSettingsProps> = ({
             }
             setTempReminderHour(newHour24);
           }}
-          onClose={() => {
+          onClose={async () => {
             setShowTimePicker(false);
-            setReminderHour(tempReminderHour);
-            onUpdateNotifications(enabled, tempReminderHour);
+            try {
+              const success = await onUpdateNotifications(enabled, tempReminderHour);
+              if (success) {
+                setReminderHour(tempReminderHour);
+              } else {
+                // Reset temp hour if update failed
+                setTempReminderHour(reminderHour);
+              }
+            } catch (error) {
+              console.error("Failed to update reminder hour:", error);
+              // Reset temp hour if update failed
+              setTempReminderHour(reminderHour);
+            }
           }}
           anchorElementId="time-display-container"
         />

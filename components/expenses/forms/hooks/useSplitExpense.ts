@@ -97,9 +97,11 @@ export const useSplitExpense = ({
   }, [splitHasChanges]);
 
   // Update splitInputValues when currentAmount changes and we're in even split mode
+  // Only do this when there are no pending changes to avoid overriding user input
   useEffect(() => {
     if (
       !isCustomSplit &&
+      !splitHasChanges && // Don't override user changes
       expense?.shares &&
       currentAmount &&
       parseFloat(currentAmount) > 0
@@ -123,7 +125,7 @@ export const useSplitExpense = ({
         setSplitInputValues(newInputValues);
       }
     }
-  }, [currentAmount, isCustomSplit, expense?.shares, splitInputValues]);
+  }, [currentAmount, isCustomSplit, splitHasChanges, expense?.shares, splitInputValues]);
 
   // Custom setSplitInputValues that also updates form state
   const handleSplitInputValuesChange = useCallback(
@@ -193,13 +195,12 @@ export const useSplitExpense = ({
     if (isExpense && expense?.shares) {
       const shares = expense.shares;
 
-      // Always use splitInputValues if they exist and we're in custom split mode or have changes
+      // Use splitInputValues if they exist and we have active changes or are in custom split mode
       const hasInputChanges = Object.keys(splitInputValues).length > 0;
-      const shouldUseInputValues =
-        hasInputChanges && (splitHasChanges || isCustomSplit);
+      const shouldUseInputValues = hasInputChanges && splitHasChanges;
 
       if (shouldUseInputValues) {
-        // Calculate from input values when user is actively editing or in custom split mode
+        // Calculate from input values when user is actively editing
         const amounts = shares.map((share) => {
           const inputValue = splitInputValues[share.user_id];
           if (inputValue !== undefined && inputValue !== "") {
@@ -212,6 +213,7 @@ export const useSplitExpense = ({
         return total.toFixed(2);
       } else {
         // Use actual expense share amounts as the source of truth
+        // This ensures that after saving, we show the saved amounts
         const shareAmounts = shares.map((share) => share.share_amount);
         const total = sumCurrencyValues(shareAmounts);
         return total.toFixed(2);
@@ -224,7 +226,7 @@ export const useSplitExpense = ({
     splitHasChanges,
     currentAmount,
     isExpense,
-    expense,
+    expense?.shares,
     isCustomSplit,
   ]);
 
@@ -321,6 +323,12 @@ export const useSplitExpense = ({
     // Preserve the current split mode by setting override
     setSplitModeOverride(isCustomSplit);
     setSavedExpense(true);
+
+    // Ensure form shares field is properly synchronized
+    setValue(FormValues.SHARES, updatedShares, { 
+      shouldDirty: false,
+      shouldValidate: false 
+    });
 
     // Background sync with backend (don't await)
     Promise.all([

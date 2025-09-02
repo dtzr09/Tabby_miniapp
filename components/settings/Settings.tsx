@@ -20,8 +20,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchGroups } from "../../services/group";
 import { Group } from "../../utils/types";
 import { loadNavigationState } from "../../utils/navigationState";
-import { usePreferences } from "../../hooks/usePreferences";
-import { SettingsView, UserPreferences, ViewConfig } from "./utils/types";
+import { usePreferences, UserPreferences } from "../../hooks/usePreferences";
+import { SettingsView, ViewConfig } from "./utils/types";
 import { SETTINGS_CONFIG, SettingsItemConfig } from "./utils/configuration";
 import GroupSwitcherChip from "./GroupSwitcherChip";
 
@@ -192,6 +192,8 @@ const Settings = ({ onViewChange }: SettingsProps) => {
               dailyReminderHour={preferencesData?.daily_reminder_hour}
               onUpdateNotifications={async (enabled, hour) => {
                 try {
+                  console.log("🔄 Updating notifications:", { enabled, hour, userId: user?.id, chatId: chat_id });
+                  
                   const response = await fetch("/api/preferences", {
                     method: "POST",
                     headers: {
@@ -206,20 +208,39 @@ const Settings = ({ onViewChange }: SettingsProps) => {
                     }),
                   });
                   
-                  if (response.ok) {
-                    console.log("🔄 Invalidating cache for:", ["preferences", user?.id, chat_id]);
-                    // Invalidate queries to refresh data
-                    await queryClient.invalidateQueries({
-                      queryKey: ["preferences", user?.id, chat_id]
-                    });
-                    // Force refetch immediately
-                    await queryClient.refetchQueries({
-                      queryKey: ["preferences", user?.id, chat_id]
-                    });
-                    console.log("✅ Cache invalidated and refetched");
+                  if (!response.ok) {
+                    const errorData = await response.text();
+                    console.error("❌ API call failed:", response.status, errorData);
+                    throw new Error(`API call failed: ${response.status}`);
                   }
+
+                  const updatedData = await response.json();
+                  console.log("✅ API response:", updatedData);
+                  
+                  // Use optimistic update with setQueryData for immediate feedback
+                  queryClient.setQueryData<UserPreferences>(
+                    ["preferences", user?.id, chat_id], 
+                    (oldData) => {
+                      if (!oldData) return oldData;
+                      const updated = {
+                        ...oldData,
+                        notification_enabled: enabled,
+                        daily_reminder_hour: hour,
+                      };
+                      console.log("📝 Updating cache with:", updated);
+                      return updated;
+                    }
+                  );
+                  
+                  console.log("✅ Notifications updated successfully");
+                  return true;
                 } catch (error) {
-                  console.error("Error updating notifications:", error);
+                  console.error("❌ Error updating notifications:", error);
+                  // Revert optimistic update on error
+                  await queryClient.invalidateQueries({
+                    queryKey: ["preferences", user?.id, chat_id]
+                  });
+                  throw error; // Re-throw so NotificationsSettings can handle it
                 }
               }}
             />
