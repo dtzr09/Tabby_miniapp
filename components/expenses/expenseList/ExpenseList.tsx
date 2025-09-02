@@ -126,6 +126,7 @@ export default function ExpenseList({
     userId,
     filterOptions
   );
+  console.log(chat_id, tgUser?.id?.toString());
 
   return (
     <Card
@@ -237,15 +238,17 @@ export default function ExpenseList({
                   }}
                 >
                   Transactions{" "}
-                  <span
-                    style={{
-                      marginLeft: 0.5,
-                      fontSize: "0.7rem",
-                      color: colors.textSecondary,
-                    }}
-                  >
-                    {!isPersonalView ? "(Group)" : "(You)"}
-                  </span>
+                  {chat_id !== tgUser?.id?.toString() && (
+                    <span
+                      style={{
+                        marginLeft: 0.5,
+                        fontSize: "0.7rem",
+                        color: colors.textSecondary,
+                      }}
+                    >
+                      {!isPersonalView ? "(Group)" : "(You)"}
+                    </span>
+                  )}
                 </Typography>
               </Box>
               <MoreMenuButtons
