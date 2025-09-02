@@ -105,8 +105,8 @@ const TimeRangeToggle = ({
               fontSize: "0.8rem",
             }}
           >
-            This bar chart currently only reflects expenses. Income transactions
-            are not included in this visualization.
+            Switch between expenses and income views using the chart&apos;s type
+            filter.
           </Typography>
         </DialogContent>
       </Dialog>

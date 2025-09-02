@@ -219,18 +219,35 @@ export default function ExpenseList({
             </>
           ) : (
             <>
-              <Typography
-                variant="h5"
+              <Box
                 sx={{
-                  fontWeight: 700,
-                  color: colors.text,
-                  fontSize: "1rem",
-                  letterSpacing: "-.025em",
-                  left: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 0.5,
                 }}
               >
-                Transactions
-              </Typography>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 700,
+                    color: colors.text,
+                    fontSize: "1rem",
+                    letterSpacing: "-.025em",
+                    left: 0,
+                  }}
+                >
+                  Transactions{" "}
+                  <span
+                    style={{
+                      marginLeft: 0.5,
+                      fontSize: "0.7rem",
+                      color: colors.textSecondary,
+                    }}
+                  >
+                    {!isPersonalView ? "(Group)" : "(You)"}
+                  </span>
+                </Typography>
+              </Box>
               <MoreMenuButtons
                 moreMenuAnchor={moreMenuAnchor}
                 setMoreMenuAnchor={setMoreMenuAnchor}
@@ -302,7 +319,9 @@ export default function ExpenseList({
                   entries={combineEntries()}
                   selectedCategory={filterOptions.categoryId}
                   onCategorySelect={handlers.handleCategorySelect}
-                  selectedType={filterOptions.showIncome === true ? "income" : "expense"}
+                  selectedType={
+                    filterOptions.showIncome === true ? "income" : "expense"
+                  }
                   onTypeSelect={handlers.handleTypeSelect}
                 />
               </Box>

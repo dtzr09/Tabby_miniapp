@@ -53,7 +53,7 @@ const IncomeExpenseCard = ({ amount, type }: IncomeExpenseCardProps) => {
             mb: 0.5,
           }}
         >
-          {type === "income" ? "Income" : "Expense"}
+          {type === "income" ? "Income" : "Expenses"}
         </Typography>
       </Box>
     </Box>
