@@ -173,7 +173,12 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   // Filter entries based on group and personal view settings
   const getPersonalFilteredExpenses = useCallback(
     (expenses: Expense[]) => {
-      if (selectedGroupId && selectedGroupId !== tgUser?.id?.toString() && !isGroupView && dbUser?.id) {
+      if (
+        selectedGroupId &&
+        selectedGroupId !== tgUser?.id?.toString() &&
+        !isGroupView &&
+        dbUser?.id
+      ) {
         return getPersonalExpensesFromGroup(expenses, dbUser.id);
       }
       return expenses;
@@ -240,7 +245,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
 
         // Load navigation state from localStorage
         const savedState = loadNavigationState();
-        if (savedState) {
+        if (savedState && savedState.selectedGroupId) {
           setSelectedGroupId(savedState.selectedGroupId);
           setIsGroupView(savedState.isGroupView);
         } else if (user.id) {
@@ -265,6 +270,12 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
 
   const userCount = userCountData || 1;
 
+  console.log("filteredAllEntries", filteredAllEntries);
+  console.log("selectedGroupId", selectedGroupId);
+  console.log("tgUser", tgUser);
+  console.log("initData", initData);
+  console.log("isAllEntriesLoading", isAllEntriesLoading);
+  console.log("isUserLoading", isUserLoading);
   // Only show loading when we have user data and are actually fetching
   if (
     !filteredAllEntries ||
