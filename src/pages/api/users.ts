@@ -63,8 +63,12 @@ export default async function handler(
           .from("users")
           .select("*")
           .eq("telegram_id", telegram_id)
-          .eq("chat_id", chat_id)
+          .eq("chat_id", chat_id_to_use)
           .limit(1);
+
+        console.log(users);
+        console.log(telegram_id);
+        console.log(chat_id_to_use);
 
         if (userError) {
           console.error("Supabase user query error:", userError);
