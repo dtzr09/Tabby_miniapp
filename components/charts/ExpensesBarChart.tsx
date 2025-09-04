@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { alpha, Box } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { BarChartData } from "../../utils/types";
 import {
@@ -26,8 +26,10 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
   // Remove local state and use prop instead
   // const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
 
-  // Calculate max value and generate nice ticks
+  // Calculate max value and average spending
   const maxValue = Math.max(...props.chartData.map((d) => d.amount));
+  const averageSpending =
+    props.chartData.length > 0 ? props.chartData[0]?.lineValue || 0 : 0;
   const niceMaxValue = (() => {
     // Round up to nearest nice number based on scale
     if (maxValue <= 100) {
@@ -51,13 +53,26 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
     niceMaxValue,
   ];
 
+  // Add average to ticks if it's not too close to existing ticks
+  const ticksWithAverage = [...yAxisTicks];
+  if (averageSpending > 0) {
+    const isCloseToExisting = yAxisTicks.some(
+      (tick) => Math.abs(tick - averageSpending) < niceMaxValue * 0.05
+    );
+    if (!isCloseToExisting) {
+      ticksWithAverage.push(Math.round(averageSpending));
+      ticksWithAverage.sort((a, b) => a - b);
+    }
+  }
+
   const formatYAxisTick = (value: number) => {
     // Round to integer first
     value = Math.round(value);
-    if (value >= 1000) {
-      return `${Math.round(value / 1000)}k`;
-    }
-    return value.toString();
+    const formattedValue =
+      value >= 1000 ? `${Math.round(value / 1000)}k` : value.toString();
+
+    // Check if this is the average value
+    return formattedValue;
   };
 
   // Generate dynamic date ticks based on the first data point's date
@@ -114,9 +129,9 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
   };
 
   return (
-    <Box 
-      sx={{ 
-        height: 140, 
+    <Box
+      sx={{
+        height: 140,
         mt: 2,
         "& .recharts-wrapper": {
           outline: "none",
@@ -129,7 +144,7 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
         },
         "& *": {
           outline: "none !important",
-        }
+        },
       }}
     >
       <ResponsiveContainer width="100%" height="100%">
@@ -148,6 +163,13 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
               yAxisId="right"
             />
           ))}
+          <ReferenceLine
+            y={averageSpending}
+            stroke={alpha(colors.primary, 0.3)}
+            strokeWidth={2}
+            strokeDasharray="5 5"
+            yAxisId="right"
+          />
           <XAxis
             dataKey="name"
             stroke={colors.textSecondary}
@@ -163,11 +185,29 @@ const ExpensesBarChart = (props: ExpensesBarChartProps) => {
             stroke={colors.textSecondary}
             fontSize={11}
             tickFormatter={(value) => `$${formatYAxisTick(value)}`}
-            ticks={yAxisTicks}
+            ticks={ticksWithAverage}
             domain={[0, niceMaxValue]}
             axisLine={false}
             tickLine={false}
             width={35}
+            tick={(props) => {
+              const { x, y, payload } = props;
+              const value = Math.round(payload.value);
+              const isAverageValue = Math.abs(value - averageSpending) < 1;
+              return (
+                <text
+                  x={x}
+                  y={y}
+                  textAnchor="start"
+                  fontSize={11}
+                  fill={isAverageValue ? colors.primary : colors.textSecondary}
+                  fontWeight={isAverageValue ? 600 : 400}
+                  dy={4}
+                >
+                  ${formatYAxisTick(value)}
+                </text>
+              );
+            }}
           />
           {/* <Tooltip content={<ChartToolTip />} /> */}
           <Bar

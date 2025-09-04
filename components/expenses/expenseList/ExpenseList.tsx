@@ -9,6 +9,8 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useState, useMemo } from "react";
 import ExpenseListCard from "./ExpenseListCard";
@@ -32,6 +34,7 @@ interface ExpenseListProps {
   isPersonalView?: boolean;
   userId?: string | number;
   chat_id?: string;
+  sharedTimePeriod?: "weekly" | "monthly";
 }
 
 export default function ExpenseList({
@@ -126,7 +129,111 @@ export default function ExpenseList({
     userId,
     filterOptions
   );
-  console.log(chat_id, tgUser?.id?.toString());
+
+  // Calculate filtered amounts based on current transaction list date range
+  const filteredAmounts = useMemo(() => {
+    if (!allEntries || !dateRange) {
+      return { expenses: 0, income: 0 };
+    }
+
+    // Filter expenses
+    let expensesData = allEntries.expenses || [];
+    let incomeData = allEntries.income || [];
+
+    // Apply personal filtering if needed
+    if (isPersonalView && userId && chat_id !== tgUser?.id?.toString()) {
+      expensesData = expensesData.filter(
+        (expense) =>
+          expense.payer_id === userId ||
+          expense.shares?.some((share) => share.user_id === userId)
+      );
+      incomeData = incomeData.filter(
+        (income) => income.category?.id === userId
+      );
+    }
+
+    // Filter by the same date range as the transaction list
+    const filteredExpenses = expensesData
+      .filter((expense) => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate >= dateRange.start && expenseDate <= dateRange.end;
+      })
+      .reduce((sum, expense) => sum + expense.amount, 0);
+
+    const filteredIncome = incomeData
+      .filter((income) => {
+        const incomeDate = new Date(income.date);
+        return incomeDate >= dateRange.start && incomeDate <= dateRange.end;
+      })
+      .reduce((sum, income) => sum + income.amount, 0);
+
+    return {
+      expenses: filteredExpenses,
+      income: filteredIncome,
+    };
+  }, [allEntries, dateRange, isPersonalView, userId, chat_id, tgUser?.id]);
+
+  // Calculate percentage change compared to previous period
+  const percentageChange = useMemo(() => {
+    if (!allEntries || !dateRange) {
+      return { percentage: 0, isDecrease: false };
+    }
+
+    // Calculate previous period dates
+    const previousStart = new Date(dateRange.start);
+    const previousEnd = new Date(dateRange.end);
+
+    if (viewType === "Week") {
+      // Previous week: go back 7 days from both start and end
+      previousStart.setDate(previousStart.getDate() - 7);
+      previousEnd.setDate(previousEnd.getDate() - 7);
+    } else {
+      // Previous month: go back 1 month from both start and end
+      previousStart.setMonth(previousStart.getMonth() - 1);
+      previousEnd.setMonth(previousEnd.getMonth() - 1);
+    }
+
+    // Get expenses for previous period
+    let previousExpensesData = allEntries.expenses || [];
+
+    // Apply personal filtering if needed
+    if (isPersonalView && userId && chat_id !== tgUser?.id?.toString()) {
+      previousExpensesData = previousExpensesData.filter(
+        (expense) =>
+          expense.payer_id === userId ||
+          expense.shares?.some((share) => share.user_id === userId)
+      );
+    }
+
+    const previousExpenses = previousExpensesData
+      .filter((expense) => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate >= previousStart && expenseDate <= previousEnd;
+      })
+      .reduce((sum, expense) => sum + expense.amount, 0);
+
+    if (previousExpenses === 0) {
+      return { percentage: 0, isDecrease: filteredAmounts.expenses === 0 };
+    }
+
+    const change =
+      ((filteredAmounts.expenses - previousExpenses) / previousExpenses) * 100;
+    const isDecrease = change < 0;
+
+    return {
+      percentage: Math.abs(Math.round(change)),
+      isDecrease,
+    };
+  }, [
+    allEntries,
+    dateRange,
+    filteredAmounts.expenses,
+    viewType,
+    isPersonalView,
+    userId,
+    chat_id,
+    tgUser?.id,
+  ]);
 
   return (
     <Card
@@ -159,7 +266,7 @@ export default function ExpenseList({
             alignItems: "center",
             justifyContent: "space-between",
             position: "relative",
-            mb: isSearchActive ? 2 : 0.5, // Increased bottom margin when search is active
+            mb: isSearchActive ? 2 : 1, // Increased bottom margin when search is active
           }}
         >
           {isSearchActive ? (
@@ -287,6 +394,86 @@ export default function ExpenseList({
           {/* Time Range Controls - Only show when search is not active */}
           {!isSearchActive && (
             <>
+              {/* Total Spent Display */}
+              {dateRange && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "left",
+                    py: 2,
+                  }}
+                >
+                  {/* Large Dollar Amount */}
+                  <Typography
+                    sx={{
+                      fontSize: "1.5rem",
+                      fontWeight: 700,
+                      color: colors.text,
+                      lineHeight: 1,
+                      mb: 0.5,
+                    }}
+                  >
+                    ${filteredAmounts.expenses.toFixed(2)}
+                  </Typography>
+
+                  {/* Bottom Row: Text and Percentage */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: "0.8rem",
+                        color: colors.textSecondary,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Total spent this {viewType.toLowerCase()}
+                    </Typography>
+                    {percentageChange.percentage > 0 && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.25,
+                        }}
+                      >
+                        {percentageChange.isDecrease ? (
+                          <TrendingDownIcon
+                            sx={{
+                              fontSize: "1rem",
+                              color: colors.income,
+                            }}
+                          />
+                        ) : (
+                          <TrendingUpIcon
+                            sx={{
+                              fontSize: "1rem",
+                              color: colors.expense,
+                            }}
+                          />
+                        )}
+                        <Typography
+                          sx={{
+                            fontSize: "0.8rem",
+                            color: percentageChange.isDecrease
+                              ? colors.income
+                              : colors.expense,
+                            fontWeight: 500,
+                          }}
+                        >
+                          {percentageChange.percentage}%
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+              )}
+
               <Box
                 sx={{
                   display: "flex",

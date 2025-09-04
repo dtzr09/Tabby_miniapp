@@ -109,10 +109,15 @@ export const useChartData = (
       const today = new Date().toLocaleDateString("en-US", {
         weekday: "short",
       });
+      
+      // Calculate average spending for the week
+      const totalSpending = Array.from(dailyTotals.values()).reduce((sum, amount) => sum + amount, 0);
+      const averageSpending = totalSpending / dailyTotals.size;
+      
       return Array.from(dailyTotals.entries()).map(([day, amount]) => ({
         name: day,
         amount,
-        lineValue: amount * 1.1,
+        lineValue: averageSpending,
         fill: day === today ? colors.primary : colors.accent,
       }));
     } else {
@@ -142,10 +147,15 @@ export const useChartData = (
       // Convert to chart data format
       const today = new Date();
       const todayKey = `${today.getDate()} ${month}`;
+      
+      // Calculate average spending for the month
+      const totalSpending = Array.from(dailyTotals.values()).reduce((sum, amount) => sum + amount, 0);
+      const averageSpending = totalSpending / dailyTotals.size;
+      
       return Array.from(dailyTotals.entries()).map(([day, amount]) => ({
         name: day,
         amount,
-        lineValue: amount * 1.1,
+        lineValue: averageSpending,
         fill: day === todayKey ? colors.primary : colors.accent,
       }));
     }

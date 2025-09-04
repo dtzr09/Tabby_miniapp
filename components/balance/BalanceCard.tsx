@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Budget, Expense } from "../../utils/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import BudgetBreakdown from "../budget/BudgetBreakdown";
@@ -23,6 +23,8 @@ interface BalanceCardProps {
   selectedGroupId?: string | null;
   isGroupView?: boolean;
   userCount?: number;
+  sharedTimePeriod?: "weekly" | "monthly";
+  onTimePeriodChange?: (period: "weekly" | "monthly") => void;
 }
 
 type ViewType = "weekly" | "monthly";
@@ -42,13 +44,22 @@ export default function BalanceCard({
   selectedGroupId,
   isGroupView,
   userCount,
+  sharedTimePeriod = "monthly",
+  onTimePeriodChange,
 }: BalanceCardProps) {
   const { colors } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [viewType, setViewType] = useState<ViewType>("monthly");
+  const [viewType, setViewType] = useState<ViewType>(sharedTimePeriod);
+
+  // Sync viewType with sharedTimePeriod
+  useEffect(() => {
+    setViewType(sharedTimePeriod);
+  }, [sharedTimePeriod]);
 
   const toggleView = () => {
-    setViewType(viewType === "weekly" ? "monthly" : "weekly");
+    const newViewType = viewType === "weekly" ? "monthly" : "weekly";
+    setViewType(newViewType);
+    onTimePeriodChange?.(newViewType);
   };
 
   const daysRemaining = (() => {

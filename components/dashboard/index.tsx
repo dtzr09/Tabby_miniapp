@@ -58,9 +58,24 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
     initData: telegramInitData,
     isReady,
   } = useTelegramWebApp();
-  const [internalViewMode, setInternalViewMode] = useState<ViewMode>("weekly");
+  const [sharedTimePeriod, setSharedTimePeriod] = useState<"weekly" | "monthly">("monthly");
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>(sharedTimePeriod);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [isGroupView, setIsGroupView] = useState<boolean>(true);
+
+  // Sync pie chart view mode with shared time period
+  const handleSharedTimePeriodChange = (newPeriod: "weekly" | "monthly") => {
+    setSharedTimePeriod(newPeriod);
+    setInternalViewMode(newPeriod);
+  };
+
+  // Handle view mode changes from pie chart (including "daily")
+  const handleViewModeChange = (newMode: ViewMode) => {
+    setInternalViewMode(newMode);
+    if (newMode === "weekly" || newMode === "monthly") {
+      setSharedTimePeriod(newMode);
+    }
+  };
 
   // Fetch user data from database
   const { data: dbUser, isLoading: isUserLoading } = useUser(
@@ -418,6 +433,8 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
                   selectedGroupId={selectedGroupId}
                   isGroupView={isGroupView}
                   userCount={userCount}
+                  sharedTimePeriod={sharedTimePeriod}
+                  onTimePeriodChange={handleSharedTimePeriodChange}
                 />
               </Box>
             )}
@@ -427,6 +444,9 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
               <ExpenseSummaryCard
                 totalIncome={summaryData.totalIncome}
                 totalExpenses={summaryData.totalExpenses}
+                timePeriod={sharedTimePeriod}
+                expenses={currentMonthExpenses.expenses}
+                income={currentMonthExpenses.income}
               />
             </Box>
 
@@ -435,7 +455,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
               <ExpensesAndBudgetOverview
                 data={dashboardData}
                 viewMode={internalViewMode}
-                onViewModeChange={setInternalViewMode}
+                onViewModeChange={handleViewModeChange}
               />
             </Box>
 
@@ -447,6 +467,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
                 isPersonalView={!isGroupView}
                 userId={dbUser?.id}
                 chat_id={selectedGroupId}
+                sharedTimePeriod={sharedTimePeriod}
               />
             </Box>
           </Box>
