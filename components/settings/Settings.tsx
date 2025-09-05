@@ -64,11 +64,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
         try {
           const parsedState = JSON.parse(savedSettingsState);
           selectedGroupId = parsedState.selectedGroupId || user.id.toString();
-          console.log("🔧 Loaded Settings state:", parsedState);
         } catch {
-          console.warn(
-            "Failed to parse Settings state, falling back to Dashboard state"
-          );
           const dashboardState = loadNavigationState();
           selectedGroupId =
             dashboardState?.selectedGroupId || user.id.toString();
@@ -77,10 +73,6 @@ const Settings = ({ onViewChange }: SettingsProps) => {
         // Fall back to Dashboard's navigation state for initial load
         const dashboardState = loadNavigationState();
         selectedGroupId = dashboardState?.selectedGroupId || user.id.toString();
-        console.log(
-          "🔧 No Settings state found, using Dashboard state:",
-          selectedGroupId
-        );
       }
 
       setChatId(selectedGroupId);
@@ -121,8 +113,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
       setMainButtonParams({
         isVisible: false,
       });
-    } catch (err) {
-      console.error("Error setting up Telegram UI:", err);
+    } catch {
     }
 
     // Set up back button handler
@@ -136,8 +127,7 @@ const Settings = ({ onViewChange }: SettingsProps) => {
 
     try {
       backButton.onClick(handleBack);
-    } catch (err) {
-      console.error("Error setting up back button:", err);
+    } catch {
     }
 
     // Cleanup
@@ -216,12 +206,6 @@ const Settings = ({ onViewChange }: SettingsProps) => {
               dailyReminderHour={preferencesData?.daily_reminder_hour}
               onUpdateNotifications={async (enabled, hour) => {
                 try {
-                  console.log("🔄 Updating notifications:", {
-                    enabled,
-                    hour,
-                    userId: user?.id,
-                    chatId: chat_id,
-                  });
 
                   const response = await fetch("/api/preferences", {
                     method: "POST",
@@ -239,17 +223,11 @@ const Settings = ({ onViewChange }: SettingsProps) => {
                   });
 
                   if (!response.ok) {
-                    const errorData = await response.text();
-                    console.error(
-                      "❌ API call failed:",
-                      response.status,
-                      errorData
-                    );
+                    await response.text();
                     throw new Error(`API call failed: ${response.status}`);
                   }
 
-                  const updatedData = await response.json();
-                  console.log("✅ API response:", updatedData);
+                  await response.json();
 
                   // Use optimistic update with setQueryData for immediate feedback
                   queryClient.setQueryData<UserPreferences>(
@@ -261,14 +239,11 @@ const Settings = ({ onViewChange }: SettingsProps) => {
                         notification_enabled: enabled,
                         daily_reminder_hour: hour,
                       };
-                      console.log("📝 Updating cache with:", updated);
                       return updated;
                     }
                   );
 
-                  console.log("✅ Notifications updated successfully");
                 } catch (error) {
-                  console.error("❌ Error updating notifications:", error);
                   // Revert optimistic update on error
                   await queryClient.invalidateQueries({
                     queryKey: ["preferences", user?.id, chat_id],
@@ -375,10 +350,6 @@ const Settings = ({ onViewChange }: SettingsProps) => {
             }
             title={item.title}
             value={(() => {
-              console.log(
-                "📱 Settings page - notification_enabled:",
-                preferencesData?.notification_enabled
-              );
               return preferencesData?.notification_enabled ? "On" : "Off";
             })()}
             onClick={() => handleViewChange("notifications")}

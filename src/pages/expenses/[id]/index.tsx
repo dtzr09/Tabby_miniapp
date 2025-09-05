@@ -56,8 +56,7 @@ const ExpenseDetail = () => {
         if (settingsButton.isMounted()) {
           settingsButton.hide();
         }
-      } catch (err) {
-        console.error("Error initializing expense detail:", err);
+      } catch {
       }
     };
 
@@ -119,7 +118,6 @@ const ExpenseDetail = () => {
               buttons: [{ type: "ok" }],
             });
           } catch {
-            console.log("Recurring expenses will be available soon!");
           }
         }}
         // onShowSplit={() => console.log("Show split not implemented")}

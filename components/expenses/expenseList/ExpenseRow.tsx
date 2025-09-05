@@ -82,7 +82,6 @@ const ExpenseRow = ({
 
       // Don't invalidate immediately - optimistic update is sufficient
       // The DELETE API call in DeleteExpenseDialog will handle backend sync
-      console.log("🗑️ Optimistic delete completed");
     }
   };
 
@@ -93,7 +92,6 @@ const ExpenseRow = ({
       queryClient.invalidateQueries({
         queryKey: ["allEntries", userId, tx.chat_id],
       });
-      console.log("❌ Cache invalidated after delete error");
     }
   };
 
