@@ -1,24 +1,23 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { validateTelegramWebApp } from "../../../../lib/validateTelegram";
 import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { postgresClient } from "../../../../lib/postgresClient";
-import { BOT_TOKEN, isLocal } from "../../../../utils/utils";
+import { rateLimit } from "../../../../lib/security";
+import { isLocal } from "../../../../utils/utils";
 import { ExpenseShareWithUser } from "../../../../utils/types";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Rate limiting
+  if (!rateLimit(req, 100, 60000)) {
+    return res.status(429).json({ error: 'Too many requests' });
   }
 
-  const { telegram_id, initData, isIncome, chat_id } = req.query;
-  const isValid = await validateTelegramWebApp(initData as string, BOT_TOKEN);
-
-  if (!isValid) {
-    return res.status(400).json({ error: "Invalid Telegram request" });
+  // Method validation
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', ['GET']);
+    return res.status(405).json({ error: `Method ${req.method} not allowed` });
   }
+
+  const { telegram_id, isIncome, chat_id } = req.query;
 
   // Handle personal entries
   const isIncomeBoolean = isIncome === "true";
@@ -127,7 +126,7 @@ export default async function handler(
         .order("date", { ascending: false });
 
       if (error) {
-        console.error(`Error fetching ${tableName}:`, error);
+        console.error(`Error fetching ${tableName}:`);
         return res.status(500).json({ error: `Failed to fetch ${tableName}` });
       }
 
@@ -150,8 +149,8 @@ export default async function handler(
 
       return res.status(200).json(entries || []);
     }
-  } catch (error) {
-    console.error("Error in entries API:", error);
+  } catch {
     return res.status(500).json({ error: "Internal server error" });
   }
 }
+

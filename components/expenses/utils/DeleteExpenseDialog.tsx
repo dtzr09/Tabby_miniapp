@@ -45,12 +45,6 @@ export default function DeleteExpenseDialog({
         throw new Error("Missing Telegram data");
       }
 
-      console.log("🗑️ Deleting expense:", {
-        chat_id: chat_id?.toString(),
-        user_id: user.id.toString(),
-        initData,
-        isIncome,
-      });
 
       const response = await fetch(`/api/entries/${id}`, {
         method: "DELETE",
@@ -68,9 +62,7 @@ export default function DeleteExpenseDialog({
         throw new Error("Failed to delete expense");
       }
 
-      console.log("🗑️ Expense deleted successfully");
-    } catch (err) {
-      console.error("Delete failed:", err);
+    } catch {
 
       // Call onError to potentially revert optimistic update
       if (onError) {

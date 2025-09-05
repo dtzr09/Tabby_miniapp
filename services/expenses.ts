@@ -27,9 +27,7 @@ export const deleteExpense = async (id: number) => {
       throw new Error("Failed to delete expense");
     }
 
-    console.log("🗑️ Expense deleted successfully");
   } catch (err) {
-    console.error("Delete failed:", err);
     throw err; // Re-throw to maintain error handling
   }
 };
@@ -55,7 +53,6 @@ export const fetchExpenses = async (
 
   if (!response.ok) {
     const text = await response.text();
-    console.error("❌ Expenses API Error:", text);
     throw new Error(`Expenses error ${response.status}: ${text}`);
   }
 
@@ -77,7 +74,6 @@ export const fetchExpenseDetail = async (
     (res) => {
       if (!res.ok) {
         return res.text().then((text) => {
-          console.error("❌ Expense Detail API Error:", text);
           throw new Error(`Expense Detail error ${res.status}: ${text}`);
         });
       }
@@ -119,8 +115,7 @@ export const fetchExpensesAndBudgets = async (
     (res) => {
       if (!res.ok) {
         return res.text().then((text) => {
-          console.error("❌ Expenses API Error:", text);
-          throw new Error(`Expenses error ${res.status}: ${text}`);
+                throw new Error(`Expenses error ${res.status}: ${text}`);
         });
       }
       return res.json();
@@ -131,7 +126,6 @@ export const fetchExpensesAndBudgets = async (
     (res) => {
       if (!res.ok) {
         return res.text().then((text) => {
-          console.error("❌ Budgets API Error:", text);
           throw new Error(`Budgets error ${res.status}: ${text}`);
         });
       }
@@ -193,7 +187,6 @@ export const fetchExpensesForBudgets = async (
     (res) => {
       if (!res.ok) {
         return res.text().then((text) => {
-          console.error("❌ Budgets API Error:", text);
           throw new Error(`Budgets error ${res.status}: ${text}`);
         });
       }
@@ -216,8 +209,7 @@ export const fetchExpensesForBudgets = async (
   ).then((res) => {
     if (!res.ok) {
       return res.text().then((text) => {
-        console.error("❌ Expenses API Error:", text);
-        throw new Error(`Expenses error ${res.status}: ${text}`);
+            throw new Error(`Expenses error ${res.status}: ${text}`);
       });
     }
     return res.json();
@@ -251,7 +243,6 @@ export const updateExpenseAmount = async (
 
     if (!response.ok) {
       const text = await response.text();
-      console.error("❌ Update expense amount API Error:", text);
       throw new Error(
         `Update expense amount error ${response.status}: ${text}`
       );
@@ -259,7 +250,6 @@ export const updateExpenseAmount = async (
 
     return response.json();
   } catch (err) {
-    console.error("Update expense amount failed:", err);
     throw err;
   }
 };
@@ -285,7 +275,6 @@ export const updateExpenseShares = async (
 
     if (!response.ok) {
       const text = await response.text();
-      console.error("❌ Update expense shares API Error:", text);
       throw new Error(
         `Update expense shares error ${response.status}: ${text}`
       );
@@ -293,7 +282,6 @@ export const updateExpenseShares = async (
 
     return response.json();
   } catch (err) {
-    console.error("Update expense shares failed:", err);
     throw err;
   }
 };

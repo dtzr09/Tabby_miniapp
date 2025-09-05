@@ -12,7 +12,6 @@ export const fetchPreferences = async (
     params.append("chat_id", chat_id);
   }
 
-  console.log("🔍 Chat ID:", chat_id);
   const response = await fetch(`/api/preferences?${params.toString()}`);
 
   if (!response.ok) {

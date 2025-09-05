@@ -162,8 +162,7 @@ export const useFormManagement = ({
           } else {
             utcDateTime = expense.date || new Date().toISOString();
           }
-        } catch (error) {
-          console.warn("Date parsing error:", error, "using fallback date");
+        } catch {
           utcDateTime = expense.date || new Date().toISOString();
         }
 
@@ -244,13 +243,11 @@ export const useFormManagement = ({
             // Backend sync successful - cache already has optimistic data
             // Only update if there are significant differences from backend
             if (mainResponse && mainResponse.ok) {
-              console.log("Backend sync successful - keeping optimistic data");
             }
 
             // Cache is already updated optimistically and with backend data - no refetch needed
           })
-          .catch((error) => {
-            console.error("Background sync failed:", error);
+          .catch(() => {
 
             // Revert cache to original data on failure
             updateExpenseInCache({
@@ -275,8 +272,7 @@ export const useFormManagement = ({
               buttons: [{ type: "ok" }],
             });
           });
-      } catch (error) {
-        console.error("Form submission error:", error);
+      } catch {
         showPopup({
           title: "Error",
           message: "Failed to update expense. Please try again.",
