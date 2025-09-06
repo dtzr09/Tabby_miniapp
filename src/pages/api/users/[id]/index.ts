@@ -1,22 +1,37 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
 import { postgresClient } from "../../../../../lib/postgresClient";
-import { rateLimit } from "../../../../../lib/security";
-import { isLocal } from "../../../../../utils/utils";
+import { validateTelegramWebApp } from "../../../../../lib/validateTelegram";
+import { BOT_TOKEN, isLocal } from "../../../../../utils/utils";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Rate limiting
-  if (!rateLimit(req, 100, 60000)) {
-    return res.status(429).json({ error: 'Too many requests' });
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  // Method validation
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', ['GET']);
-    return res.status(405).json({ error: `Method ${req.method} not allowed` });
+  const { id: userId, initData, chat_id } = req.query;
+
+  // Validate required parameters
+  if (!userId || !initData) {
+    return res.status(400).json({
+      error: "Missing required parameters: userId or initData",
+    });
   }
 
-  const { id: userId, chat_id } = req.query;
+  if (typeof userId !== "string" || typeof initData !== "string") {
+    return res.status(400).json({ error: "Invalid parameter types" });
+  }
+
+  // Validate Telegram WebApp data
+  const isValid = validateTelegramWebApp(initData, BOT_TOKEN);
+
+  if (!isValid) {
+    return res.status(401).json({ error: "Invalid Telegram WebApp data" });
+  }
 
   const chat_id_to_use = chat_id as string;
 
@@ -51,6 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .limit(1);
 
         if (userError) {
+          console.error("Supabase user query error:", userError);
           return res.status(500).json({ error: "Failed to fetch user data" });
         }
 
@@ -59,12 +75,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         return res.status(200).json(users[0]);
-      } catch {
+      } catch (error) {
+        console.error("Unexpected error:", error);
         return res.status(500).json({ error: "An unexpected error occurred" });
       }
     }
-  } catch {
+  } catch (error) {
+    console.error("Database error:", error);
     return res.status(500).json({ error: "Database error occurred" });
   }
 }
-

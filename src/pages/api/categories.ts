@@ -119,6 +119,7 @@ async function handleUpdateCategory(
           .status(500)
           .json({ error: "Supabase client not configured" });
       }
+      console.log("Updating category:", id, name, effectiveChatId);
 
       // Check if category belongs to user/group
       const { data: existingCategory } = await supabaseAdmin
@@ -127,6 +128,7 @@ async function handleUpdateCategory(
         .eq("id", id)
         .eq("chat_id", effectiveChatId)
         .single();
+      console.log("Existing category:", existingCategory);
 
       if (!existingCategory) {
         return res
@@ -142,6 +144,7 @@ async function handleUpdateCategory(
         .eq("chat_id", effectiveChatId);
 
       if (updateError) {
+        console.log("Update error:", updateError);
         return res.status(500).json({ error: updateError.message });
       }
 
@@ -154,12 +157,15 @@ async function handleUpdateCategory(
         .single();
 
       if (fetchError) {
+        console.log("Fetch error:", fetchError);
         return res.status(500).json({ error: fetchError.message });
       }
 
+      console.log("Updated category:", updatedCategory);
       return res.status(200).json({ category: updatedCategory });
     }
-  } catch {
+  } catch (error) {
+    console.error("Error updating category:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 }
@@ -264,7 +270,8 @@ async function handleDeleteCategory(
 
       return res.status(200).json({ message: "Category deleted successfully" });
     }
-  } catch {
+  } catch (error) {
+    console.error("Error deleting category:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 }

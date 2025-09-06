@@ -11,6 +11,7 @@ export const fetchCategories = async (
   
   if (!response.ok) {
     const text = await response.text();
+    console.error("❌ Categories API Error:", text);
     throw new Error(`Categories error ${response.status}: ${text}`);
   }
 
@@ -40,9 +41,11 @@ export const updateCategory = async (
 
   if (!response.ok) {
     const text = await response.text();
+    console.error("❌ Update Category API Error:", text);
     throw new Error(`Update category error ${response.status}: ${text}`);
   }
 
+  console.log("✅ Category updated successfully");
 
   return response.json();
 };
@@ -63,6 +66,7 @@ export const deleteCategory = async (
 
   if (!response.ok) {
     const text = await response.text();
+    console.error("❌ Delete Category API Error:", text);
     
     // Try to parse the error message from the API response
     try {
@@ -78,6 +82,7 @@ export const deleteCategory = async (
     throw new Error(`Delete category error ${response.status}: ${text}`);
   }
 
+  console.log("✅ Category deleted successfully");
 
   return response.json();
 };

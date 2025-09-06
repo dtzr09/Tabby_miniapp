@@ -109,17 +109,20 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
         try {
           const [preferences, categories, user] = await Promise.all([
             fetchPreferences(tgUser.id, initData, selectedGroupId).catch(
-              () => {
+              (err) => {
+                console.warn("Failed to fetch preferences:", err);
                 return null;
               }
             ),
             fetchCategories(tgUser.id, initData, selectedGroupId).catch(
-              () => {
+              (err) => {
+                console.warn("Failed to fetch categories:", err);
                 return null;
               }
             ),
             fetchUser(tgUser.id, initData, selectedGroupId || undefined).catch(
-              () => {
+              (err) => {
+                console.warn("Failed to fetch user:", err);
                 return null;
               }
             ),
@@ -130,7 +133,8 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
             categories,
             user,
           };
-        } catch {
+        } catch (error) {
+          console.error("Dashboard config prefetch failed:", error);
           return null;
         }
       }
@@ -144,10 +148,18 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
   // Cache individual items when dashboardConfig is available (outside of query to avoid loops)
   useEffect(() => {
     if (dashboardConfig && tgUser?.id) {
+      console.log("🔄 Dashboard caching data for future use:", {
+        userId: tgUser.id,
+        selectedGroupId,
+        hasPreferences: !!dashboardConfig.preferences,
+        hasCategories: !!dashboardConfig.categories,
+        hasUser: !!dashboardConfig.user,
+      });
 
       // Cache preferences separately
       if (dashboardConfig.preferences) {
         const preferencesQueryKey = ["preferences", tgUser.id, selectedGroupId];
+        console.log("📦 Caching preferences with key:", preferencesQueryKey);
         queryClient.setQueryData(
           preferencesQueryKey,
           dashboardConfig.preferences
@@ -157,6 +169,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
       // Cache categories separately
       if (dashboardConfig.categories) {
         const categoriesQueryKey = ["categories", tgUser.id, selectedGroupId];
+        console.log("📦 Caching categories with key:", categoriesQueryKey);
         queryClient.setQueryData(
           categoriesQueryKey,
           dashboardConfig.categories
@@ -166,6 +179,7 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
       // Cache user data separately
       if (dashboardConfig.user) {
         const userQueryKey = ["user", tgUser.id, selectedGroupId];
+        console.log("📦 Caching user data with key:", userQueryKey);
         queryClient.setQueryData(userQueryKey, dashboardConfig.user);
       }
     }
@@ -234,7 +248,8 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
           backButton.hide();
           backButton.unmount();
         }
-      } catch {
+      } catch (backButtonError) {
+        console.warn("Failed to unmount back button:", backButtonError);
       }
 
       webApp.lockOrientation?.("portrait");
@@ -252,7 +267,8 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
           setSelectedGroupId(user.id.toString());
         }
       }
-    } catch {
+    } catch (err) {
+      console.error("❌ Telegram Setup Failed:", err);
     }
   }, [isReady, webApp, user, telegramInitData, onViewChange]);
 
@@ -269,6 +285,12 @@ const Dashboard = ({ onViewChange }: DashboardProps) => {
 
   const userCount = userCountData || 1;
 
+  console.log("filteredAllEntries", filteredAllEntries);
+  console.log("selectedGroupId", selectedGroupId);
+  console.log("tgUser", tgUser);
+  console.log("initData", initData);
+  console.log("isAllEntriesLoading", isAllEntriesLoading);
+  console.log("isUserLoading", isUserLoading);
   // Only show loading when we have user data and are actually fetching
   if (
     !filteredAllEntries ||

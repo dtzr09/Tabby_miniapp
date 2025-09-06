@@ -44,6 +44,10 @@ export const usePreferences = (chat_id?: string | null) => {
   } = useQuery({
     queryKey: ["preferences", user?.id, chat_id],
     queryFn: () => {
+      console.log("🌐 Settings making fresh API call for preferences", {
+        userId: user?.id?.toString(),
+        chatId: isGroup ? chat_id : undefined,
+      });
       return fetchPreferences(user!.id.toString(), initData!, chat_id);
     },
     enabled: !!(user?.id && initData && isReady),
@@ -75,6 +79,8 @@ export const usePreferences = (chat_id?: string | null) => {
   // Update form data when preferences are loaded
   useEffect(() => {
     if (preferencesData) {
+      console.log("🔍 Raw preferences data from API:", preferencesData);
+      console.log("🔍 notification_enabled specifically:", preferencesData.notification_enabled);
 
       const formData = {
         currency: preferencesData.currency || defaultValues.currency,
@@ -113,6 +119,7 @@ export const usePreferences = (chat_id?: string | null) => {
     async (countryId: string) => {
       try {
         if (!user?.id || !initData) {
+          console.error("Missing Telegram user/init data");
           return false;
         }
 
@@ -167,6 +174,7 @@ export const usePreferences = (chat_id?: string | null) => {
 
           return true; // Success
         } else {
+          console.error("Failed to save preferences:", await response.text());
           showPopup({
             title: "Error",
             message: "Failed to update country",
@@ -175,6 +183,7 @@ export const usePreferences = (chat_id?: string | null) => {
           return false;
         }
       } catch (err) {
+        console.error("Error saving country:", err);
         showPopup({
           title: "Error",
           message: "Failed to update country",
@@ -191,6 +200,7 @@ export const usePreferences = (chat_id?: string | null) => {
     async (currencyCode: string) => {
       try {
         if (!user?.id || !initData) {
+          console.error("Missing Telegram user/init data");
           return false;
         }
 
@@ -220,6 +230,7 @@ export const usePreferences = (chat_id?: string | null) => {
 
           return true; // Success
         } else {
+          console.error("Failed to save preferences:", await response.text());
           showPopup({
             title: "Error",
             message: "Failed to update currency",
@@ -228,6 +239,7 @@ export const usePreferences = (chat_id?: string | null) => {
           return false;
         }
       } catch (err) {
+        console.error("Error saving currency:", err);
         showPopup({
           title: "Error",
           message: "Failed to update currency",

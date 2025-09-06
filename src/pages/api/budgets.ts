@@ -14,6 +14,7 @@ export default async function handler(
     const isValid = validateTelegramWebApp(initData as string, BOT_TOKEN);
 
     if (!isValid) {
+      console.log("❌ Invalid Telegram WebApp data for budgets");
       return res.status(401).json({ error: "Invalid Telegram WebApp data" });
     }
 
@@ -27,6 +28,7 @@ export default async function handler(
       );
 
       if (userResult.rows.length === 0) {
+        console.log("❌ User not found for budgets:", { telegram_id });
         return res.status(404).json({ error: "User not found" });
       }
 
@@ -104,9 +106,11 @@ export default async function handler(
         .eq("year", currentYear);
 
       if (error) {
+        console.log("❌ Budgets database error:", error);
         return res.status(400).json({ error: error.message });
       }
 
+      console.log("✅ Budgets fetched:", { count: data?.length || 0, data });
       return res.status(200).json(data || []);
     }
   }

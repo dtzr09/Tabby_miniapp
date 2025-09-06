@@ -45,7 +45,8 @@ export default async function handler(
         }
 
         return res.status(200).json(userResult.rows[0]);
-      } catch {
+      } catch (error) {
+        console.error("Database error:", error);
         return res.status(500).json({ error: "Database error occurred" });
       }
     } else {
@@ -65,8 +66,12 @@ export default async function handler(
           .eq("chat_id", chat_id_to_use)
           .limit(1);
 
+        console.log(users);
+        console.log(telegram_id);
+        console.log(chat_id_to_use);
 
         if (userError) {
+          console.error("Supabase user query error:", userError);
           return res.status(500).json({ error: "Failed to fetch user data" });
         }
 
@@ -75,7 +80,8 @@ export default async function handler(
         }
 
         return res.status(200).json(users[0]);
-      } catch {
+      } catch (error) {
+        console.error("Unexpected error:", error);
         return res.status(500).json({ error: "An unexpected error occurred" });
       }
     }

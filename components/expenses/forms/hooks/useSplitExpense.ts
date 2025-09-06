@@ -379,8 +379,10 @@ export const useSplitExpense = ({
     ])
       .then(() => {
         // Sync successful - cache is already updated with optimistic data
+        console.log("Split expense sync successful");
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Failed to sync split expense with backend:", error);
 
         // Revert cache to original data on failure
         const originalExpense: UnifiedEntry = {

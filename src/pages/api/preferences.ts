@@ -12,6 +12,12 @@ export default async function handler(
     const { telegram_id, initData, chat_id } = req.query;
     const effectiveChatId = chat_id ? chat_id : telegram_id; // Use group chat_id if provided, otherwise use telegram_id for personal
     
+    console.log("🔍 GET preferences request:", {
+      telegram_id,
+      chat_id,
+      effectiveChatId,
+      isGroup: chat_id && chat_id !== telegram_id,
+    });
 
     // Validate Telegram WebApp data
     const isValid = validateTelegramWebApp(initData as string, BOT_TOKEN);
@@ -22,6 +28,7 @@ export default async function handler(
 
     if (isLocal) {
       // Use local PostgreSQL for development
+      console.log("🔧 Using local PostgreSQL connection for preferences");
 
       try { 
         let result;
@@ -52,12 +59,15 @@ export default async function handler(
         }
 
         const responseData = result.rows[0];
+        console.log("✅ Returning preferences data:", responseData);
         return res.status(200).json(responseData);
-      } catch {
+      } catch (error) {
+        console.error("❌ Local database error:", error);
         return res.status(500).json({ error: "Database error" });
       }
     } else {
       // Use Supabase for production
+      console.log("🔧 Using Supabase connection for preferences");
 
       if (!supabaseAdmin) {
         return res
@@ -103,11 +113,14 @@ export default async function handler(
         }
 
         if (error || !data) {
+          console.log("❌ No data found or error:", error);
           return res.status(404).json({ error: "Preferences not found" });
         }
 
+        console.log("✅ Returning preferences data:", data);
         return res.status(200).json(data);
-      } catch {
+      } catch (error) {
+        console.error("❌ Supabase error:", error);
         return res.status(500).json({ error: "Database error" });
       }
     }
@@ -131,6 +144,7 @@ export default async function handler(
 
     if (isLocal) {
       // Use local PostgreSQL for development
+      console.log("🔧 Using local PostgreSQL connection for preferences");
 
       try {
         let targetId, tableName, idField;
@@ -214,11 +228,13 @@ export default async function handler(
         const result = await postgresClient.query(updateQuery, updateValues);
 
         return res.status(200).json(result.rows[0]);
-      } catch {
+      } catch (error) {
+        console.error("❌ Local database error:", error);
         return res.status(500).json({ error: "Database error" });
       }
     } else {
       // Use Supabase for production
+      console.log("🔧 Using Supabase connection for preferences");
 
       if (!supabaseAdmin) {
         return res
@@ -282,11 +298,13 @@ export default async function handler(
           .single();
 
         if (error) {
+          console.error("❌ Supabase update error:", error);
           return res.status(400).json({ error: error.message });
         }
 
         return res.status(200).json(data);
-      } catch {
+      } catch (error) {
+        console.error("❌ Supabase error:", error);
         return res.status(500).json({ error: "Database error" });
       }
     }
