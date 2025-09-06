@@ -1,5 +1,5 @@
 import { ChevronLeftOutlined, ChevronRightOutlined } from "@mui/icons-material";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import MonthScrollPicker from "./MonthScrollPicker";
