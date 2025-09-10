@@ -5,6 +5,7 @@ import {
   FieldNamesMarkedBoolean,
 } from "react-hook-form";
 import { showPopup } from "@telegram-apps/sdk";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Category,
   Expense,
@@ -19,6 +20,7 @@ import {
   updateExpenseShares,
 } from "../../../../services/expenses";
 import { divideAmountEvenly } from "../../../../utils/currencyUtils";
+import { refetchExpensesQueries } from "../../../../utils/refetchExpensesQueries";
 
 interface UseFormManagementProps {
   entryId?: string;
@@ -47,6 +49,7 @@ export const useFormManagement = ({
 }: UseFormManagementProps) => {
   // Get Telegram data and query client
   const { user: tgUser, initData } = useTelegramWebApp();
+  const queryClient = useQueryClient();
 
   const { updateExpenseInCache, deleteExpenseFromCache } = useExpense({
     id: entryId as string,
@@ -243,6 +246,18 @@ export const useFormManagement = ({
             // Backend sync successful - cache already has optimistic data
             // Only update if there are significant differences from backend
             if (mainResponse && mainResponse.ok) {
+              // Check if category was changed - if so, invalidate queries to reflect keyword category map updates
+              const categoryChanged = selectedCategoryId !== expense.category?.id;
+              
+              if (categoryChanged && tgUser?.id) {
+                // Invalidate expense queries to refresh all entries with matching descriptions
+                // This ensures that keyword category map updates are reflected in the UI
+                await refetchExpensesQueries(
+                  queryClient,
+                  tgUser.id.toString(),
+                  chat_id
+                );
+              }
             }
 
             // Cache is already updated optimistically and with backend data - no refetch needed

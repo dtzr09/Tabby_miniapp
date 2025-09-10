@@ -5,6 +5,7 @@ import { postgresClient } from "../../../../../lib/postgresClient";
 import { BOT_TOKEN, isLocal } from "../../../../../utils/utils";
 import { ExpenseShareWithUser } from "../../../../../utils/types";
 import { roundToCents } from "../../../../../lib/currencyUtils";
+import { updateKeywordCategoryMap, deleteKeywordCategoryMappings } from "../../../../../utils/keywordCategoryMapUtils";
 
 export default async function handler(
   req: NextApiRequest,
@@ -249,6 +250,16 @@ export default async function handler(
             updateValues
           );
 
+          // Update keyword category mappings if category was changed
+          if (category_id !== undefined && description !== undefined) {
+            await updateKeywordCategoryMap(
+              description,
+              category_id,
+              isIncomeBoolean ? 2 : 1, // 2 for incomes, 1 for expenses
+              chat_id as string
+            );
+          }
+
           // Return minimal success response since we're using optimistic updates
           return res.status(200).json({ success: true });
         } catch (error) {
@@ -301,6 +312,16 @@ export default async function handler(
             return res.status(500).json({ error: "Failed to update entry" });
           }
 
+          // Update keyword category mappings if category was changed
+          if (category_id !== undefined && description !== undefined) {
+            await updateKeywordCategoryMap(
+              description,
+              category_id,
+              isIncomeBoolean ? 2 : 1, // 2 for incomes, 1 for expenses
+              chat_id as string
+            );
+          }
+
           // Return minimal success response since we're using optimistic updates
           return res.status(200).json({ success: true });
         } catch (error) {
@@ -313,6 +334,13 @@ export default async function handler(
         await postgresClient.query(
           `DELETE FROM ${tableName} WHERE id = $1 AND chat_id = $2`,
           [id, chat_id]
+        );
+
+        // Clean up keyword category mappings
+        await deleteKeywordCategoryMappings(
+          parseInt(id as string),
+          isIncomeBoolean ? 2 : 1, // 2 for incomes, 1 for expenses
+          chat_id as string
         );
       } else {
         if (!supabaseAdmin) {
@@ -330,6 +358,13 @@ export default async function handler(
         if (error) {
           return res.status(500).json({ error: error.message });
         }
+
+        // Clean up keyword category mappings
+        await deleteKeywordCategoryMappings(
+          parseInt(id as string),
+          isIncomeBoolean ? 2 : 1, // 2 for incomes, 1 for expenses
+          chat_id as string
+        );
       }
 
       return res.status(200).json({ success: true });

@@ -3,6 +3,7 @@ import { validateTelegramWebApp } from "../../../../../lib/validateTelegram";
 import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
 import { postgresClient } from "../../../../../lib/postgresClient";
 import { BOT_TOKEN, isLocal } from "../../../../../utils/utils";
+import { updateKeywordCategoryMap, deleteKeywordCategoryMappings } from "../../../../../utils/keywordCategoryMapUtils";
 
 export default async function handler(
   req: NextApiRequest,
@@ -117,6 +118,14 @@ export default async function handler(
           [description, amount, category_id, is_income, id, telegram_id]
         );
 
+        // Update keyword category mappings
+        await updateKeywordCategoryMap(
+          description,
+          category_id,
+          1, // 1 for expenses
+          telegram_id
+        );
+
         // Get the updated expense
         const updatedExpenseResult = await postgresClient.query(
           `SELECT e.*, c.id as category_id, c.name as category_name
@@ -183,6 +192,14 @@ export default async function handler(
           return res.status(500).json({ error: "Failed to update expense" });
         }
 
+        // Update keyword category mappings
+        await updateKeywordCategoryMap(
+          description,
+          category_id,
+          1, // 1 for expenses
+          telegram_id
+        );
+
         return res.status(200).json({ expense: updatedExpense });
       }
     } else if (req.method === "DELETE") {
@@ -191,6 +208,13 @@ export default async function handler(
         await postgresClient.query(
           "DELETE FROM expenses WHERE id = $1 AND chat_id = $2",
           [id, telegram_id]
+        );
+        
+        // Clean up keyword category mappings
+        await deleteKeywordCategoryMappings(
+          parseInt(id as string),
+          1, // 1 for expenses
+          telegram_id
         );
       } else {
         if (!supabaseAdmin) {
@@ -208,6 +232,13 @@ export default async function handler(
         if (error) {
           return res.status(500).json({ error: error.message });
         }
+
+        // Clean up keyword category mappings
+        await deleteKeywordCategoryMappings(
+          parseInt(id as string),
+          1, // 1 for expenses
+          telegram_id
+        );
       }
 
       return res.status(200).json({ success: true });
